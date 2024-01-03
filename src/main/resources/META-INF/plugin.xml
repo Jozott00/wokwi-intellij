@@ -9,10 +9,60 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.SimulatorWindowFactory" anchor="right"
+                    id="Wokwi Simulator"
+        />
+        <postStartupActivity implementation="com.github.jozott00.wokwiintellij.listeners.WokwiPostStartupActivity"/>
+
+        <notificationGroup id="Wokwi Simulator"
+                           displayType="BALLOON"/>
+
+        <!--        <projectService serviceImplementation="com.github.jozott00.wokwiintellij.states.WokwiConfigState"/>-->
     </extensions>
 
     <applicationListeners>
-        <listener class="com.github.jozott00.wokwiintellij.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+        <listener class="com.github.jozott00.wokwiintellij.listeners.WokwiActivationListener"
+                  topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
+
+    <actions>
+        <group id="com.github.jozott00.wokwiintellij.actions.WokwiToolbar">
+            <action id="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"
+                    class="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"
+                    description="Restart simulator"
+                    text="Restart Simulator"
+                    icon="AllIcons.Actions.Restart"
+            />
+            <action id="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
+                    class="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
+                    description="Stop simulator"
+                    text="Stop Simulator"
+                    icon="AllIcons.Actions.Suspend"
+            />
+            <action id="com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"
+                    class="com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"
+                    description="If enabled watches for changes on provided elf"
+                    text="Watch Changes"
+                    icon="AllIcons.Actions.BuildAutoReloadChanges"
+            />
+        </group>
+
+
+        <group id="WowkiConfigGroup">
+            <action
+                id="com.github.jozott00.wokwiintellij.actions.WokwiStartAction"
+                class="com.github.jozott00.wokwiintellij.actions.WokwiStartAction"
+                text="Start Wokwi Simulator"
+                description="Starts the Wokwi Simulator"
+                icon="AllIcons.Debugger.ThreadRunning"
+            >
+            </action>
+        </group>
+
+
+    </actions>
+    <!--            <add-to-group group-id="com.github.jozott00.wokwiintellij.actions.WokwiToolbar"-->
+    <!--                          anchor="before"-->
+    <!--                          relative-to-action="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"-->
+    <!--            />-->
 </idea-plugin>
