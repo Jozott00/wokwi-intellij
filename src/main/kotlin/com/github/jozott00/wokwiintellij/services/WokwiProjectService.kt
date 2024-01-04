@@ -2,6 +2,7 @@ package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.listeners.WokwiElfFileListener
 import com.github.jozott00.wokwiintellij.states.WokwiConfigState
+import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.wokwiServer.WokwiServer
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
@@ -56,6 +57,7 @@ class WokwiProjectService(val project: Project) : Disposable {
 
     fun elfFileUpdate() {
         println("FILE UPDATED ... restart")
+        WokwiNotifier.notifyBalloon("New build available, restarting simulation...", project)
         simulationService.restartAll()
     }
 

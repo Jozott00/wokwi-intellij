@@ -19,6 +19,7 @@ class WokwiToolWindow(private val configPanel: DialogPanel, private val simulati
         panel.add(simulationPanel)
         simulationPanel.loadSimulator()
         panel.revalidate()
+        panel.repaint()
     }
 
     fun showConfig() {
@@ -27,6 +28,7 @@ class WokwiToolWindow(private val configPanel: DialogPanel, private val simulati
         panel.add(configPanel)
         simulationPanel.stopSimulator()
         panel.revalidate()
+        panel.repaint()
     }
 
 
