@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE instance-profile
+        SYSTEM "https://resources.jetbrains.com/writerside/1.0/product-profile.dtd">
+
+<instance-profile id="wokwi-intellij"
+                 name="Wokwi Intellij Dev Notes"
+                 start-page="devnotes.md">
+
+    <toc-element topic="devnotes.md">
+    </toc-element>
+    <toc-element topic="Communication-Architecture.md"/>
+    <toc-element topic="Debugger.md">
+        <toc-element topic="Intellij-Debugger.md"/>
+    </toc-element>
+    <toc-element topic="Wokwi-Code-Notes.md"/>
+</instance-profile>
