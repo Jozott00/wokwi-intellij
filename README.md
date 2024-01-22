@@ -1,7 +1,11 @@
 # IntelliJ Wokwi Simulator Plugin
 
+<!-- Plugin description -->
+
 This plugin integrates the [Wokwi](https://wokwi.com/) simulator for ESP32 devices into JetBrains' IntelliJ-based IDEs.
 The project is currently in its early stages and has not yet been published on JetBrains' Marketplace.
+
+<!-- Plugin description end -->
 
 ## Roadmap
 

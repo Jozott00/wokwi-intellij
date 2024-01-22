@@ -2,6 +2,8 @@ package com.github.jozott00.wokwiintellij.toolWindow
 
 import com.github.jozott00.wokwiintellij.actions.WokwiRestartAction
 import com.github.jozott00.wokwiintellij.services.WokwiComponentService
+import com.github.jozott00.wokwiintellij.services.WokwiRootService
+import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -21,8 +23,11 @@ class SimulatorWindowFactory : ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val componentService = toolWindow.project.service<WokwiComponentService>()
+        val rootService = toolWindow.project.service<WokwiRootService>()
 
-        val toolWindowContent = componentService.toolWindow.getContent()
+//        val toolWindowContent = componentService.toolWindow.getContent()
+        val toolWindowContent = rootService.newSimulation()
+
         val content = ContentFactory.getInstance()
             .createContent(toolWindowContent, null, false)
         toolWindow.contentManager.addContent(content)
