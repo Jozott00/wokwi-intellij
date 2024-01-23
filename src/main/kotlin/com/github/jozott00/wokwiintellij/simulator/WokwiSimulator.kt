@@ -44,7 +44,6 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
         val license = System.getProperty("WOKWI_LICENSE")
 
         val cmd = Command.start(args.diagram, firmwareString, license)
-//        val cmd = Command.editor(args.diagram, license)
         browserPipe.send(PIPE_TOPIC, cmd)
     }
 
@@ -73,7 +72,6 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
     }
 
     override fun messageReceived(data: String): Boolean {
-
         val json = Json.parseToJsonElement(data).jsonObject
 
         val type: String = json["command"]?.jsonPrimitive?.content ?: run {
@@ -89,8 +87,8 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
                 TODO("Not yet implemented")
             } // do nothing right now
             else -> {
-                println("Data received: $data")
                 LOG.warn("Unknown command: $type")
+                LOG.debug("Unknown command data: $data")
                 return false
             }
         }

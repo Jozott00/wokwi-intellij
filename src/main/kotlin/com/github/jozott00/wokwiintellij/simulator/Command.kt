@@ -16,7 +16,7 @@ object Command {
                 "firmwareB64" to true,
                 "pause" to false,
                 "useGateway" to false, // private gateways not yet supported
-                "disableSerialMonitor" to false,
+                "disableSerialMonitor" to true,
             )
         }.toJsonString()
     }
