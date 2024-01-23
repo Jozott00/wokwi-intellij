@@ -15,7 +15,6 @@ import javax.swing.JPanel
 class WokwiComponentService(val project: Project) {
 
     val wokwiConfigState = project.service<WokwiConfigState>()
-    val wokwiSimulationService = project.service<WokwiSimulationService>()
 
     val simulatorPanel = SimulatorPanel()
     val configPanel = wokwiConfigPanel(wokwiConfigState.state) {

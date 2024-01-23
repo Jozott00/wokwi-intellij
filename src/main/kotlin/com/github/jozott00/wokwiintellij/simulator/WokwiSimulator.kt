@@ -6,6 +6,7 @@ import com.github.jozott00.wokwiintellij.jcef.impl.JcefBrowserPipe
 import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.util.Disposer
 import io.ktor.util.*
 import kotlinx.serialization.json.Json
@@ -15,6 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.net.URL
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+
+private val LOG = logger<WokwiSimulator>()
 
 class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, BrowserPipe.Subscriber {
     private val browserPipe = JcefBrowserPipe(browser)
@@ -48,7 +51,7 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
     private fun loadResourceRecv(req: JsonObject) {
         // TODO: Make this offline
         val urlString = req["url"]?.jsonPrimitive?.content ?: run {
-            logger.error("Malformed data received: No url: $req");
+//            logger.error("Malformed data received: No url: $req");
             return
         }
         val url = URL(urlString)
@@ -62,7 +65,7 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
     }
 
     private fun startRecv() {
-        logger.info("Starting simulator...")
+        LOG.info("Starting simulator...")
         browserReady = true
 
         // if run args where already provided start with them
@@ -74,7 +77,7 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
         val json = Json.parseToJsonElement(data).jsonObject
 
         val type: String = json["command"]?.jsonPrimitive?.content ?: run {
-            logger.error("Malformed data received: $data");
+            LOG.error("Malformed data received: $data");
             return false
         }
 
@@ -87,7 +90,7 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
             } // do nothing right now
             else -> {
                 println("Data received: $data")
-                logger.warn("Unknown command: $type")
+                LOG.warn("Unknown command: $type")
                 return false
             }
         }
@@ -99,8 +102,6 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
 
     companion object {
         private val PIPE_TOPIC = "wokwi"
-
-        private val logger = logger<WokwiSimulator>()
     }
 
 

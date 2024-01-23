@@ -3,8 +3,6 @@ package com.github.jozott00.wokwiintellij.jcef.impl
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.jcef.addLoadHandler
 import com.github.jozott00.wokwiintellij.jcef.executeJavaScript
-import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
@@ -18,7 +16,6 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import org.intellij.lang.annotations.Language
-import kotlin.math.log
 
 class JcefBrowserPipe(private val browser: JBCefBrowser) : BrowserPipe, CefLoadHandlerAdapter() {
 
@@ -34,8 +31,6 @@ class JcefBrowserPipe(private val browser: JBCefBrowser) : BrowserPipe, CefLoadH
     }
 
     override fun send(type: String, data: String) {
-        logger.info("Send $type")
-//        val jsonData = Json.encodeToString(MessageObj(type, data))
         val funCall = """
             window.$namspaceInBrowser.$receiveMessageFromIntelliFunc("$type", $data);
         """.trimIndent()
@@ -80,7 +75,8 @@ class JcefBrowserPipe(private val browser: JBCefBrowser) : BrowserPipe, CefLoadH
 
     private fun informSubscribers(type: String, data: String) {
         when (val subs = subscribers[type]) {
-            null -> logger.warn("No subscribers for $type!\nAttached data: $data")
+            null -> println("No subscribers for $type!\nAttached data: $data")
+//            null -> logger.warn("No subscribers for $type!\nAttached data: $data")
             else -> subs.takeWhile { it.messageReceived(data) }
         }
     }
@@ -89,13 +85,14 @@ class JcefBrowserPipe(private val browser: JBCefBrowser) : BrowserPipe, CefLoadH
         try {
             return Json.decodeFromString(json)
         } catch (e: Exception) {
-            logger.error(e)
+            println(e)
+//            logger.error(e)
             return null
         }
     }
 
     companion object {
-        val logger = logger<JcefBrowserPipe>()
+//        val logger = logger<JcefBrowserPipe>()
 
         val namspaceInBrowser = "__WokwiIntellij"
         val postMessageToIntellijFunc = "__postMessageToPipe"

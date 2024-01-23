@@ -5,7 +5,6 @@ import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import espimg.EspImg
@@ -62,7 +61,8 @@ class WokwiDataService(val project: Project) {
         val file = File(path)
 
         if (!file.exists()) {
-            thisLogger().warn("File $file does not exist!")
+            println("File $file does not exist!")
+//            thisLogger().warn("File $file does not exist!")
         }
 
         val vfile = VfsUtil.findFileByIoFile(file, true)

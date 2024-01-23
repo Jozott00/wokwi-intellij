@@ -2,10 +2,8 @@ package com.github.jozott00.wokwiintellij.listeners
 
 import com.github.jozott00.wokwiintellij.services.WokwiProjectService
 import com.github.jozott00.wokwiintellij.states.WokwiConfigState
-import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 

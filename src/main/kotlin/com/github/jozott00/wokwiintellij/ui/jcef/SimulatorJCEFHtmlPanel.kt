@@ -14,19 +14,11 @@ import org.cef.callback.CefQueryCallback
 import org.cef.handler.CefMessageRouterHandlerAdapter
 
 class SimulatorJCEFHtmlPanel :
-    JCEFHtmlPanel(isOffScreenRendering(), null, null) {
+    JCEFHtmlPanel(false, null, null) {
 
     init {
-        println("Create simulator html panel")
-
         val resource = ResourceLoader.loadInternalResource(this.javaClass, "/jcef/simulator/index.html", "text/html")
         super.loadHTML(resource?.content?.toString(Charsets.UTF_8) ?: "<h3>Not Found</h3>")
-
-
-    }
-
-    companion object {
-        private fun isOffScreenRendering(): Boolean = Registry.`is`("ide.browser.jcef.markdownView.osr.enabled")
     }
 
 
