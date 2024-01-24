@@ -31,7 +31,7 @@ class WokwiProjectServiceOld(val project: Project) : Disposable {
     }
 
     fun stopSimulator() {
-        componentService.toolWindow.showConfig()
+        componentService.simulatorToolWindow.showConfig()
         simulationRunning = false
         watchStop()
     }

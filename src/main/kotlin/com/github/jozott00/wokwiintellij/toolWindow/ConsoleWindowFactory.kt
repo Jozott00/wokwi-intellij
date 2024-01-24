@@ -7,20 +7,14 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 
-class SimulatorWindowFactory : ToolWindowFactory {
-
+class ConsoleWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val componentService = toolWindow.project.service<WokwiComponentService>()
 
-        val toolWindowContent = componentService.simulatorToolWindow
-
+        val consoleToolWindow = componentService.consoleToolWindow
         val content = ContentFactory.getInstance()
-            .createContent(toolWindowContent, null, false)
+            .createContent(consoleToolWindow, null, false)
 
         toolWindow.contentManager.addContent(content)
-
     }
-
-    override fun shouldBeAvailable(project: Project) = true
-
 }

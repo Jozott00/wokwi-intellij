@@ -3,23 +3,27 @@ package com.github.jozott00.wokwiintellij.simulator
 
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.jcef.impl.JcefBrowserPipe
+import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
 import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.util.Disposer
+import com.jetbrains.rd.generator.nova.PredefinedType
 import io.ktor.util.*
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import java.net.URL
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 private val LOG = logger<WokwiSimulator>()
 
-class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, BrowserPipe.Subscriber {
+class WokwiSimulator(
+    private val browser: SimulatorJCEFHtmlPanel,
+    private val console: SimulationConsole
+) : Disposable,
+    BrowserPipe.Subscriber {
+
     private val browserPipe = JcefBrowserPipe(browser)
 
     private var browserReady = false;
@@ -27,6 +31,7 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
 
     init {
         Disposer.register(this, browser)
+        Disposer.register(this, console)
         Disposer.register(browser, browserPipe)
         browserPipe.subscribe(PIPE_TOPIC, this, this)
     }
@@ -36,6 +41,8 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
 
         // if browser not yet ready just return
         if (!browserReady) return
+
+        console.clear()
 
         @OptIn(ExperimentalEncodingApi::class)
         val firmwareString = runArgs?.firmware?.let { Base64.encode(args.firmware) } ?: ""
@@ -47,10 +54,32 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
         browserPipe.send(PIPE_TOPIC, cmd)
     }
 
+    private fun startRecv() {
+        LOG.info("Starting simulator...")
+        browserReady = true
+
+        // if run args where already provided start with them
+        runArgs?.let { start(it) }
+    }
+
+    private fun uartDataRecv(data: JsonObject) {
+        val bytes = data["bytes"]
+            ?.jsonArray
+            ?.map { it.jsonPrimitive.int.toByte() }
+            ?.toByteArray() ?: run {
+            LOG.error("Malformed data received: No bytes: $data");
+            return
+        }
+
+        if (bytes.isEmpty()) return
+
+        console.appendLog(bytes)
+    }
+
     private fun loadResourceRecv(req: JsonObject) {
         // TODO: Make this offline
         val urlString = req["url"]?.jsonPrimitive?.content ?: run {
-//            logger.error("Malformed data received: No url: $req");
+            LOG.error("Malformed data received: No url: $req");
             return
         }
         val url = URL(urlString)
@@ -63,13 +92,6 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
 
     }
 
-    private fun startRecv() {
-        LOG.info("Starting simulator...")
-        browserReady = true
-
-        // if run args where already provided start with them
-        runArgs?.let { start(it) }
-    }
 
     override fun messageReceived(data: String): Boolean {
         val json = Json.parseToJsonElement(data).jsonObject
@@ -82,7 +104,7 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
         when (type) {
             "start" -> startRecv()
             "loadResource" -> loadResourceRecv(json)
-            "uartData" -> {} // do nothing right now
+            "uartData" -> uartDataRecv(json) // do nothing right now
             "wifiFrame", "wifiConnect" -> {
                 TODO("Not yet implemented")
             } // do nothing right now
@@ -96,12 +118,13 @@ class WokwiSimulator(private val browser: SimulatorJCEFHtmlPanel) : Disposable, 
         return true
     }
 
-    override fun dispose() {}
-
     companion object {
         private val PIPE_TOPIC = "wokwi"
     }
 
+    override fun dispose() {
+        // Nothing to do
+    }
 
     class RunArgs(
         val diagram: String,

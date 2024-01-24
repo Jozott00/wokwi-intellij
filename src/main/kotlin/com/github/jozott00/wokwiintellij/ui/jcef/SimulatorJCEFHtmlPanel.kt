@@ -14,7 +14,7 @@ import org.cef.callback.CefQueryCallback
 import org.cef.handler.CefMessageRouterHandlerAdapter
 
 class SimulatorJCEFHtmlPanel :
-    JCEFHtmlPanel(false, null, null) {
+    JCEFHtmlPanel(true, null, null) {
 
     init {
         val resource = ResourceLoader.loadInternalResource(this.javaClass, "/jcef/simulator/index.html", "text/html")

@@ -13,6 +13,12 @@
                     id="Wokwi Simulator"
                     icon="/icons/pluginIcon.svg"
         />
+
+        <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory" anchor="bottom"
+                    id="Wokwi Run"
+                    icon="/icons/logIcon@20x20.svg"
+        />
+
         <postStartupActivity implementation="com.github.jozott00.wokwiintellij.listeners.WokwiPostStartupActivity"/>
 
         <notificationGroup id="Wokwi Simulator"
@@ -30,9 +36,9 @@
         <group id="com.github.jozott00.wokwiintellij.actions.WokwiToolbar">
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"
-                    description="Restart simulator"
-                    text="Restart Simulator"
-                    icon="AllIcons.Actions.Restart"
+                    description="Restart simulation"
+                    text="Restart Simulation"
+                    icon="AllIcons.Actions.Rerun"
             />
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
