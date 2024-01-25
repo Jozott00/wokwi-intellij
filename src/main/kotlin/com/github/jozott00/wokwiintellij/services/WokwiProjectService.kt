@@ -2,6 +2,7 @@ package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
+import com.github.jozott00.wokwiintellij.toml.WokwiConfigFileProcessor
 import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
 import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
@@ -22,6 +23,8 @@ class WokwiProjectService(val project: Project) : Disposable {
     private val defaultRunArgs = WokwiSimulator.RunArgs(getDefaultDiagram(), getDefaultImage())
 
     fun startSimulator() {
+        WokwiConfigFileProcessor.processConfigFile(project, "wokwi.toml")
+
         simulator?.disposeByDisposer()
         val browser = SimulatorJCEFHtmlPanel()
         val console = SimulationConsole(project)

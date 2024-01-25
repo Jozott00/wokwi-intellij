@@ -5,8 +5,9 @@
     <vendor>jozott00</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends config-file="toml-only.xml">org.toml.lang</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <resource-bundle>messages.WokwiBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.SimulatorWindowFactory" anchor="right"
@@ -25,6 +26,7 @@
                            displayType="BALLOON"/>
 
         <!--        <projectService serviceImplementation="com.github.jozott00.wokwiintellij.states.WokwiConfigState"/>-->
+
     </extensions>
 
     <applicationListeners>
@@ -45,6 +47,12 @@
                     description="Stop simulator"
                     text="Stop Simulator"
                     icon="AllIcons.Actions.Suspend"
+            />
+            <action id="com.github.jozott00.wokwiintellij.actions.WokwiPauseAction"
+                    class="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
+                    description="Pause simulator"
+                    text="Pause Simulator"
+                    icon="AllIcons.Actions.Pause"
             />
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"
@@ -68,6 +76,8 @@
 
 
     </actions>
+
+
     <!--            <add-to-group group-id="com.github.jozott00.wokwiintellij.actions.WokwiToolbar"-->
     <!--                          anchor="before"-->
     <!--                          relative-to-action="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"-->

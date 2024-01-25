@@ -45,11 +45,20 @@ class WokwiConsoleToolWindow(project: Project) :
 
     private fun createControlActionGroup(): ActionGroup {
         val am = ActionManager.getInstance()
-        return DefaultActionGroup(
-            am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"),
-            am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiStopAction"),
-            am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"),
-        )
+        return DefaultActionGroup().apply {
+            add(am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"))
+            add(
+                SplitButtonAction(
+                    DefaultActionGroup(
+                        am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiPauseAction"),
+                        am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiStopAction")
+                    )
+                )
+            )
+            addSeparator()
+            add(am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"))
+        }
+
     }
 
     private fun createConsoleTab(): TabInfo {
@@ -60,26 +69,26 @@ class WokwiConsoleToolWindow(project: Project) :
         }
     }
 
+
+    class ConsoleWrapper : JPanel() {
+        init {
+            layout = BorderLayout()
+        }
+
+        fun setConsole(console: SimulationConsole) {
+            removeAll()
+            add(console)
+            repaint()
+        }
+
+        fun removeConsole() {
+            removeAll()
+            repaint()
+        }
+
+
+    }
+
+    class WokwiConsoleTabs(project: Project, parentDisposable: Disposable) :
+        JBRunnerTabs(project, parentDisposable)
 }
-
-class ConsoleWrapper : JPanel() {
-    init {
-        layout = BorderLayout()
-    }
-
-    fun setConsole(console: SimulationConsole) {
-        removeAll()
-        add(console)
-        repaint()
-    }
-
-    fun removeConsole() {
-        removeAll()
-        repaint()
-    }
-
-
-}
-
-class WokwiConsoleTabs(project: Project, parentDisposable: Disposable) :
-    JBRunnerTabs(project, parentDisposable)
