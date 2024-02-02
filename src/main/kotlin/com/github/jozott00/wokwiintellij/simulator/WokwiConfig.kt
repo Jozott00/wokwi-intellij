@@ -1,11 +1,10 @@
-package com.github.jozott00.wokwiintellij.toml
+package com.github.jozott00.wokwiintellij.simulator
 
 import com.intellij.openapi.vfs.VirtualFile
 
-data class WokwiConfig(
+class WokwiConfig(
     val version: String,
     val elf: VirtualFile,
     val firmware: VirtualFile,
-
-
-    )
+    val diagram: VirtualFile,
+)

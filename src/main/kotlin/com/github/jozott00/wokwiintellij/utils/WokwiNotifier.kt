@@ -1,12 +1,10 @@
 package com.github.jozott00.wokwiintellij.utils
 
-import com.intellij.notification.NotificationGroup
-import com.intellij.notification.NotificationGroupManager
-import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
+import com.intellij.notification.*
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
-
-private val pluginNotifications = NotificationGroup.balloonGroup("Rust plugin")
+import java.awt.event.ActionEvent
 
 object WokwiNotifier {
 
@@ -24,13 +22,28 @@ object WokwiNotifier {
         Notifications.Bus.notify(notification)
     }
 
-    fun notifyBalloon(title: String, message: String, type: NotificationType = NotificationType.INFORMATION) {
+
+    fun notifyBalloon(
+        title: String,
+        message: String,
+        type: NotificationType = NotificationType.INFORMATION,
+        action: NotifyAction? = null
+    ) {
         val notification = pluginNotifications().createNotification(title, message, type)
+        action?.let { notification.addAction(it) }
         Notifications.Bus.notify(notification)
     }
 
     fun pluginNotifications(): NotificationGroup {
         return NotificationGroupManager.getInstance().getNotificationGroup("Wokwi Simulator")
+    }
+
+}
+
+
+class NotifyAction(text: String, val action: (AnActionEvent, Notification) -> Unit) : NotificationAction(text) {
+    override fun actionPerformed(e: AnActionEvent, notification: Notification) {
+        action(e, notification)
     }
 
 }

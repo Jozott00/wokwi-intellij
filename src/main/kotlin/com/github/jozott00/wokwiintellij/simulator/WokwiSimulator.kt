@@ -54,6 +54,10 @@ class WokwiSimulator(
         browserPipe.send(PIPE_TOPIC, cmd)
     }
 
+    fun restart() {
+        runArgs?.let { start(it) }
+    }
+
     private fun startRecv() {
         LOG.info("Starting simulator...")
         browserReady = true
