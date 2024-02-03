@@ -18,7 +18,7 @@ import javax.swing.JProgressBar
 class SimulatorPanel : JPanel() {
 
     private val cardLayout = CardLayout()
-    private var browser: JCEFContent? = null
+//    private var browser: JCEFContent? = null
 
     private val loadingPanel = panel {
         panel {
@@ -44,21 +44,21 @@ class SimulatorPanel : JPanel() {
 
 
     fun loadSimulator() {
-        browser = JCEFContent { browser ->
-            cardLayout.show(this, "SIMULATOR")
-            revalidate()
-            repaint()
-        }
-
-        val simulator = simulator(toolbar(), browser!!)
-        add("SIMULATOR", simulator)
+//        browser = JCEFContent { browser ->
+//            cardLayout.show(this, "SIMULATOR")
+//            revalidate()
+//            repaint()
+//        }
+//
+//        val simulator = simulator(toolbar(), browser!!)
+//        add("SIMULATOR", simulator)
         revalidate()
         repaint()
     }
 
     fun stopSimulator() {
-        remove(browser)
-        browser?.dispose()
+//        remove(browser)
+//        browser?.dispose()
 
         cardLayout.show(this, "LOADING")
 

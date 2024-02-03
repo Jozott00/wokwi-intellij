@@ -5,20 +5,28 @@
     <vendor>jozott00</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends config-file="toml-only.xml">org.toml.lang</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <resource-bundle>messages.WokwiBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.SimulatorWindowFactory" anchor="right"
                     id="Wokwi Simulator"
                     icon="/icons/pluginIcon.svg"
         />
+
+        <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory" anchor="bottom"
+                    id="Wokwi Run"
+                    icon="/icons/logIcon@20x20.svg"
+        />
+
         <postStartupActivity implementation="com.github.jozott00.wokwiintellij.listeners.WokwiPostStartupActivity"/>
 
         <notificationGroup id="Wokwi Simulator"
                            displayType="BALLOON"/>
 
         <!--        <projectService serviceImplementation="com.github.jozott00.wokwiintellij.states.WokwiConfigState"/>-->
+
     </extensions>
 
     <applicationListeners>
@@ -30,15 +38,21 @@
         <group id="com.github.jozott00.wokwiintellij.actions.WokwiToolbar">
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"
-                    description="Restart simulator"
-                    text="Restart Simulator"
-                    icon="AllIcons.Actions.Restart"
+                    description="Restart simulation"
+                    text="Restart Simulation"
+                    icon="AllIcons.Actions.Rerun"
             />
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
                     description="Stop simulator"
                     text="Stop Simulator"
                     icon="AllIcons.Actions.Suspend"
+            />
+            <action id="com.github.jozott00.wokwiintellij.actions.WokwiPauseAction"
+                    class="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
+                    description="Pause simulator"
+                    text="Pause Simulator"
+                    icon="AllIcons.Actions.Pause"
             />
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"
@@ -62,6 +76,8 @@
 
 
     </actions>
+
+
     <!--            <add-to-group group-id="com.github.jozott00.wokwiintellij.actions.WokwiToolbar"-->
     <!--                          anchor="before"-->
     <!--                          relative-to-action="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"-->

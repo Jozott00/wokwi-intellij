@@ -1,5 +1,6 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 fun properties(key: String) = providers.gradleProperty(key)
 fun environment(key: String) = providers.environmentVariable(key)
@@ -28,6 +29,7 @@ dependencies {
     implementation(files("libs/espimg-0.1.0.jar"))
     implementation("org.java-websocket:Java-WebSocket:1.5.4")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+    implementation("com.beust:klaxon:5.6")
 }
 
 // Set the JVM language level used to build the project. Use Java 11 for 2020.3+, and Java 17 for 2022.2+.
@@ -79,6 +81,10 @@ tasks {
 
     runIde {
         autoReloadPlugins.set(true)
+        systemProperty(
+            "WOKWI_LICENSE",
+            System.getenv("WOKWI_LICENSE")
+        )
     }
 
     // to allow hot reload of sandbox using buildPlugin
