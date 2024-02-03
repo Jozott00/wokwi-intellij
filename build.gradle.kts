@@ -27,8 +27,8 @@ repositories {
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
     implementation(files("libs/espimg-0.1.0.jar"))
-    implementation("org.java-websocket:Java-WebSocket:1.5.5")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.java-websocket:Java-WebSocket:1.5.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
     implementation("com.beust:klaxon:5.6")
 }
 
