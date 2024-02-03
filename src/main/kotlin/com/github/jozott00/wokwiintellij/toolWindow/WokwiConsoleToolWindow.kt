@@ -47,26 +47,11 @@ class WokwiConsoleToolWindow(project: Project) :
         val am = ActionManager.getInstance()
         return DefaultActionGroup().apply {
             add(am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"))
-            add(
-                SplitButtonAction(
-                    DefaultActionGroup(
-                        am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiPauseAction"),
-                        am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiStopAction")
-                    )
-                )
-            )
+            add(am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiStopAction"))
             addSeparator()
             add(am.getAction("com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"))
         }
 
-    }
-
-    private fun createConsoleTab(): TabInfo {
-        return TabInfo(JLabel("Console")).apply {
-            text = "Console"
-            setIcon(AllIcons.Debugger.Console)
-            setActions(controlActionGroup, actionPlace)
-        }
     }
 
 

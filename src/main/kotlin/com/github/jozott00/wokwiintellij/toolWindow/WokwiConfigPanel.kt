@@ -1,8 +1,6 @@
 package com.github.jozott00.wokwiintellij.toolWindow
 
-import com.github.jozott00.wokwiintellij.states.ESPDevice
-import com.github.jozott00.wokwiintellij.states.FlashSize
-import com.github.jozott00.wokwiintellij.states.WokwiConfigState
+import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.icons.AllIcons
 import com.intellij.ide.wizard.withVisualPadding
 import com.intellij.openapi.actionSystem.ActionManager
@@ -10,13 +8,12 @@ import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.dsl.builder.*
-import com.intellij.ui.dsl.gridLayout.HorizontalAlign
 import com.intellij.ui.util.preferredWidth
 import java.awt.Font
 import javax.swing.*
 
 
-class WokwiConfigPanelBuilder(val model: WokwiConfigState) {
+class WokwiConfigPanelBuilder(val model: WokwiSettingsState) {
 
     var onChangeAction: (() -> Unit)? = null
 
@@ -45,26 +42,25 @@ class WokwiConfigPanelBuilder(val model: WokwiConfigState) {
                     }
             }
 
-            group("Simulation Settings") {
-                row("ESP target device:") {
-                    comboBox(ESPDevice.entries)
-                        .onChanged { _ -> onChange() }
-                        .bindItem(model::espDevice.toNullableProperty())
-                }.rowComment("Wokwi simulator diagram is chosen based on target device.")
-
-                row("Executable: ") {
+            group("Settings") {
+                row("wokwi.toml path: ") {
                     textField = textFieldWithBrowseButton().apply {
-                        component.preferredWidth = 300
+                        component.preferredWidth = 400
                     }
                         .onChanged { _ -> onChange() }
-                        .bindText(model::elfPath)
-                }.rowComment("Path to ELF binary to run in simulator")
+                        .bindText(model::wokwiConfigPath)
 
-                row("Flash Size: ") {
-                    comboBox(FlashSize.entries)
+                }
+                    .rowComment("The wokwi.toml holds all information the plugin needs to know. Visit <a href='https://docs.wokwi.com/vscode/project-config'>the wokwi.toml docs</a> for more information.")
+
+
+                row("diagram.json path: ") {
+                    textField = textFieldWithBrowseButton().apply {
+                        component.preferredWidth = 400
+                    }
                         .onChanged { _ -> onChange() }
-                        .bindItem(model::flashSize.toNullableProperty())
-                }.rowComment("Must be compatible with device and partition table")
+                        .bindText(model::wokwiDiagramPath)
+                }.rowComment("The diagram.json specifies the simulation runtime environment. Visit <a href='https://docs.wokwi.com/vscode/project-config'>the diagram.json docs</a> for more information.")
             }
         }
             .withVisualPadding()
@@ -75,7 +71,7 @@ class WokwiConfigPanelBuilder(val model: WokwiConfigState) {
 
 }
 
-fun wokwiConfigPanel(model: WokwiConfigState, build: WokwiConfigPanelBuilder.() -> Unit): DialogPanel {
+fun wokwiConfigPanel(model: WokwiSettingsState, build: WokwiConfigPanelBuilder.() -> Unit): DialogPanel {
     return WokwiConfigPanelBuilder(model).apply(build).build()
 }
 

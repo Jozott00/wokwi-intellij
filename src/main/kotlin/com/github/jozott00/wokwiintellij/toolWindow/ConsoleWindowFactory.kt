@@ -11,10 +11,15 @@ class ConsoleWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val componentService = toolWindow.project.service<WokwiComponentService>()
 
-        val consoleToolWindow = componentService.consoleToolWindow
+        val consoleToolWindow = componentService.consoleToolWindowComponent
         val content = ContentFactory.getInstance()
             .createContent(consoleToolWindow, null, false)
 
         toolWindow.contentManager.addContent(content)
     }
+
+    override suspend fun isApplicableAsync(project: Project): Boolean {
+        return false
+    }
+
 }

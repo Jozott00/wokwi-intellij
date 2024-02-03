@@ -12,7 +12,7 @@ class SimulatorWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val componentService = toolWindow.project.service<WokwiComponentService>()
 
-        val toolWindowContent = componentService.simulatorToolWindow
+        val toolWindowContent = componentService.simulatorToolWindowComponent
 
         val content = ContentFactory.getInstance()
             .createContent(toolWindowContent, null, false)

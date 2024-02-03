@@ -21,17 +21,16 @@ object Command {
         }.toJsonString()
     }
 
-    fun editor(diagram: String, license: String): String {
-        return json {
-            obj(
-                "command" to "editor",
-                "diagram" to diagram,
-                "license" to license,
-                "chips" to array(),
-                "readonly" to false,
-            )
-        }.toJsonString()
-    }
+    fun editor(diagram: String, license: String) = json {
+        obj(
+            "command" to "editor",
+            "diagram" to diagram,
+            "license" to license,
+            "chips" to array(),
+            "readonly" to false,
+        )
+    }.toJsonString()
+
 
     fun resourceData(buffer: String): String {
         return json {
@@ -41,4 +40,5 @@ object Command {
             )
         }.toJsonString()
     }
+    
 }

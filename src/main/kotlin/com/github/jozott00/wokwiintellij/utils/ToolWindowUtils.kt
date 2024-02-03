@@ -10,7 +10,7 @@ object ToolWindowUtils {
 
     fun setSimulatorIcon(project: Project, live: Boolean) {
         val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(WokwiConstants.TOOL_WINDOW_SIM_ID)
-        var icon = WokwiIcons.ToolWindowIcon
+        var icon = WokwiIcons.SimulatorToolWindowIcon
         if (live)
             icon = ExecutionUtil.getLiveIndicator(icon)
         toolWindow?.setIcon(icon)
