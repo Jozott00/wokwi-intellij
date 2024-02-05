@@ -27,7 +27,7 @@ repositories {
 dependencies {
     implementation(files("libs/espimg-0.1.0.jar"))
     implementation("org.java-websocket:Java-WebSocket:1.5.4")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 }
 
 // Set the JVM language level used to build the project. Use Java 11 for 2020.3+, and Java 17 for 2022.2+.
