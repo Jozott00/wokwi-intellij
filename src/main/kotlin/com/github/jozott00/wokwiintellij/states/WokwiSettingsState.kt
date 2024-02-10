@@ -11,7 +11,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 data class WokwiSettingsState(
     var wokwiConfigPath: String = WokwiConstants.WOKWI_CONFIG_FILE,
     var wokwiDiagramPath: String = WokwiConstants.WOKWI_DIAGRAM_FILE,
-    var watchElf: Boolean = true,
+    var watchFirmware: Boolean = true,
 ) : PersistentStateComponent<WokwiSettingsState> {
 
     override fun getState(): WokwiSettingsState {

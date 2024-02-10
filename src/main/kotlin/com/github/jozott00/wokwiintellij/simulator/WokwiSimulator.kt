@@ -3,13 +3,13 @@ package com.github.jozott00.wokwiintellij.simulator
 
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.jcef.impl.JcefBrowserPipe
+import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
+import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
 import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.util.Disposer
-import com.jetbrains.rd.generator.nova.PredefinedType
 import io.ktor.util.*
 import kotlinx.serialization.json.*
 import java.net.URL
@@ -19,15 +19,15 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 private val LOG = logger<WokwiSimulator>()
 
 class WokwiSimulator(
+    private val runArgs: WokwiArgs,
     private val browser: SimulatorJCEFHtmlPanel,
     private val console: SimulationConsole
 ) : Disposable,
+    Simulator,
     BrowserPipe.Subscriber {
 
+    private var browserReady = false
     private val browserPipe = JcefBrowserPipe(browser)
-
-    private var browserReady = false;
-    private var runArgs: RunArgs? = null;
 
     init {
         Disposer.register(this, browser)
@@ -36,34 +36,35 @@ class WokwiSimulator(
         browserPipe.subscribe(PIPE_TOPIC, this, this)
     }
 
-    fun start(args: RunArgs) {
-        runArgs = args
-
+    override fun start() {
+        LOG.info("(Re)starting simulation...")
         // if browser not yet ready just return
         if (!browserReady) return
 
         console.clear()
 
         @OptIn(ExperimentalEncodingApi::class)
-        val firmwareString = runArgs?.firmware?.let { Base64.encode(args.firmware) } ?: ""
+        val firmwareString = Base64.encode(runArgs.firmware.buffer)
 
         // TODO: REMOVE!
         val license = System.getProperty("WOKWI_LICENSE")
 
-        val cmd = Command.start(args.diagram, firmwareString, license)
+        val cmd = Command.start(runArgs.diagram, firmwareString, license)
         browserPipe.send(PIPE_TOPIC, cmd)
     }
 
-    fun restart() {
-        runArgs?.let { start(it) }
+    override fun setFirmware(firmware: WokwiArgsFirmware) {
+        runArgs.firmware = firmware
+    }
+
+    override fun getFirmware(): WokwiArgsFirmware {
+        return runArgs.firmware
     }
 
     private fun startRecv() {
-        LOG.info("Starting simulator...")
         browserReady = true
 
-        // if run args where already provided start with them
-        runArgs?.let { start(it) }
+        start()
     }
 
     private fun uartDataRecv(data: JsonObject) {
@@ -91,11 +92,6 @@ class WokwiSimulator(
         val cmd = Command.resourceData(resource)
         browserPipe.send(PIPE_TOPIC, cmd)
     }
-
-    private fun wifiConnectRecv() {
-
-    }
-
 
     override fun messageReceived(data: String): Boolean {
         val json = Json.parseToJsonElement(data).jsonObject
@@ -129,10 +125,5 @@ class WokwiSimulator(
     override fun dispose() {
         // Nothing to do
     }
-
-    class RunArgs(
-        val diagram: String,
-        val firmware: ByteArray,
-    )
 
 }

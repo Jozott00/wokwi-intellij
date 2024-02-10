@@ -9,16 +9,11 @@ import com.intellij.openapi.components.service
 class WokwiWatchAction : ToggleAction() {
 
     override fun isSelected(p0: AnActionEvent): Boolean {
-        return p0.project?.service<WokwiSettingsState>()?.state?.watchElf ?: false
+        return p0.project?.service<WokwiSettingsState>()?.state?.watchFirmware ?: false
     }
 
     override fun setSelected(even: AnActionEvent, watchEnabled: Boolean) {
-        even.project?.service<WokwiSettingsState>()?.state?.watchElf = watchEnabled
-        if (watchEnabled) {
-            even.project?.service<WokwiProjectService>()?.watchStart()
-        } else {
-            even.project?.service<WokwiProjectService>()?.watchStop()
-        }
+        even.project?.service<WokwiSettingsState>()?.state?.watchFirmware = watchEnabled
     }
 
 }

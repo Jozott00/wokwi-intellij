@@ -2,7 +2,6 @@ package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
-import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory
@@ -16,8 +15,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.readBytes
-import com.intellij.openapi.vfs.readText
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 
@@ -27,9 +24,11 @@ class WokwiProjectService(val project: Project) : Disposable {
     private var simulator: WokwiSimulator? = null
 
     private val componentService = project.service<WokwiComponentService>()
+    private val argsLoader = project.service<WokwiArgsLoader>()
     private var consoleToolWindow: ToolWindow? = null
 
     fun startSimulator() {
+        LOG.info("Start simulator...")
         activateConsoleToolWindow()
         val config =
             WokwiConfigProcessor.loadConfig(
@@ -38,23 +37,21 @@ class WokwiProjectService(val project: Project) : Disposable {
                 WokwiConstants.WOKWI_DIAGRAM_FILE
             )
                 ?: return
-        val args = buildArgs(config)
+        val args = argsLoader.load(config) ?: return
 
         simulator?.disposeByDisposer()
         val browser = SimulatorJCEFHtmlPanel()
         val console = SimulationConsole(project)
-        simulator = WokwiSimulator(browser, console)
-
-        simulator?.start(args)
+        simulator = WokwiSimulator(args, browser, console)
+        simulator?.start()
         ToolWindowUtils.setSimulatorIcon(project, true)
         componentService.simulatorToolWindowComponent.showSimulation(browser.component)
         componentService.consoleToolWindowComponent.setConsole(console)
-
     }
 
     fun restartSimulation() {
         simulator?.run {
-            restart()
+            start()
             return
         }
 
@@ -64,6 +61,7 @@ class WokwiProjectService(val project: Project) : Disposable {
     fun stopSimulator() {
         simulator?.disposeByDisposer()
         simulator = null
+
         ToolWindowUtils.setSimulatorIcon(project, false)
         componentService.simulatorToolWindowComponent.showConfig()
         componentService.consoleToolWindowComponent.removeConsole()
@@ -74,16 +72,18 @@ class WokwiProjectService(val project: Project) : Disposable {
         simulator?.disposeByDisposer()
     }
 
-    fun elfFileUpdate() {
-        WokwiNotifier.notifyBalloon("New build available, restarting simulation...", project)
+    fun firmwareUpdated() {
+        WokwiNotifier.notifyBalloon(title = "New firmware detected", "Restarting Wokwi simulator...")
+        simulator?.let {
+            val firmware = it.getFirmware().rootFile
+            val newFirmware = argsLoader.loadFirmware(firmware) ?: return
+            it.setFirmware(newFirmware)
+            it.start()
+        }
     }
 
-    fun watchStart() {
-        LOG.info("watchStart() invoked")
-    }
-
-    fun watchStop() {
-        LOG.info("watchStop() invoked")
+    fun getWatchPaths(): List<String>? {
+        return simulator?.getFirmware()?.binaryPaths
     }
 
     private fun activateConsoleToolWindow() {
@@ -99,13 +99,6 @@ class WokwiProjectService(val project: Project) : Disposable {
                     icon = WokwiIcons.ConsoleToolWindowIcon
                     canCloseContent = false
                 }
-    }
-
-    private fun buildArgs(config: WokwiConfig): WokwiSimulator.RunArgs {
-        val diagram = config.diagram.readText()
-        // TODO: read elf and process
-        val firmware = config.firmware.readBytes()
-        return WokwiSimulator.RunArgs(diagram, firmware)
     }
 
 

@@ -10,22 +10,10 @@ object WokwiNotifier {
 
     private val NOTIFICATION_GROUP = "Wokwi Simulator"
 
-    fun notifyBalloon(message: String, project: Project, type: NotificationType = NotificationType.INFORMATION) {
-        NotificationGroupManager.getInstance()
-            .getNotificationGroup(NOTIFICATION_GROUP)
-            .createNotification(message, type)
-            .notify(project)
-    }
-
-    fun notifyBalloon(message: String, type: NotificationType = NotificationType.INFORMATION) {
-        val notification = pluginNotifications().createNotification(message, type)
-        Notifications.Bus.notify(notification)
-    }
-
 
     fun notifyBalloon(
         title: String,
-        message: String,
+        message: String = "",
         type: NotificationType = NotificationType.INFORMATION,
         action: NotifyAction? = null
     ) {
@@ -35,7 +23,7 @@ object WokwiNotifier {
     }
 
     fun pluginNotifications(): NotificationGroup {
-        return NotificationGroupManager.getInstance().getNotificationGroup("Wokwi Simulator")
+        return NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP)
     }
 
 }

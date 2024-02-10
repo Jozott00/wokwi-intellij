@@ -20,19 +20,16 @@
                     icon="/icons/logIcon@20x20.svg"
         />
 
-        <postStartupActivity implementation="com.github.jozott00.wokwiintellij.listeners.WokwiPostStartupActivity"/>
-
         <notificationGroup id="Wokwi Simulator"
                            displayType="BALLOON"/>
-
-        <!--        <projectService serviceImplementation="com.github.jozott00.wokwiintellij.states.WokwiConfigState"/>-->
-
+        
     </extensions>
 
-    <applicationListeners>
-        <listener class="com.github.jozott00.wokwiintellij.listeners.WokwiActivationListener"
-                  topic="com.intellij.openapi.application.ApplicationActivationListener"/>
-    </applicationListeners>
+    <projectListeners>
+        <listener
+            class="com.github.jozott00.wokwiintellij.listeners.WokwiFirmwareWatcher"
+            topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </projectListeners>
 
     <actions>
         <group id="com.github.jozott00.wokwiintellij.actions.WokwiToolbar">
