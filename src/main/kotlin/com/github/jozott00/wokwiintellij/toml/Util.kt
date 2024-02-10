@@ -1,10 +1,6 @@
 package com.github.jozott00.wokwiintellij.toml
 
 import com.github.jozott00.wokwiintellij.WokwiConstants
-import com.intellij.codeInspection.InspectionManager
-import com.intellij.codeInspection.LocalInspectionTool
-import com.intellij.codeInspection.ProblemDescriptor
-import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.childrenOfType
 import org.toml.lang.psi.*

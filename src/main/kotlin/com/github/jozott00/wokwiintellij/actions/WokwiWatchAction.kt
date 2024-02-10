@@ -1,6 +1,5 @@
 package com.github.jozott00.wokwiintellij.actions
 
-import com.github.jozott00.wokwiintellij.services.WokwiProjectService
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction

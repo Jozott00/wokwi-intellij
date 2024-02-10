@@ -1,7 +1,10 @@
 package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
-import com.github.jozott00.wokwiintellij.simulator.args.*
+import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
+import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
+import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
+import com.github.jozott00.wokwiintellij.simulator.args.WokwiProjectType
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloon
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager

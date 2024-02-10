@@ -8,7 +8,6 @@ import com.intellij.credentialStore.Credentials
 import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.project.Project
 import io.ktor.http.*
 import java.nio.charset.StandardCharsets
 import java.util.*

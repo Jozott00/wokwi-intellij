@@ -2,12 +2,10 @@ package com.github.jozott00.wokwiintellij.ui.console
 
 import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.process.AnsiEscapeDecoder
-import com.intellij.execution.process.ColoredProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import java.awt.BorderLayout

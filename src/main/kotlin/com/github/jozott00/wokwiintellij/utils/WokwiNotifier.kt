@@ -1,10 +1,7 @@
 package com.github.jozott00.wokwiintellij.utils
 
 import com.intellij.notification.*
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.project.Project
-import java.awt.event.ActionEvent
 
 object WokwiNotifier {
 

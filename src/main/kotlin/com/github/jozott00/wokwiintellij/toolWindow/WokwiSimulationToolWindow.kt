@@ -1,8 +1,6 @@
 package com.github.jozott00.wokwiintellij.toolWindow
 
-import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.intellij.openapi.ui.DialogPanel
-import com.intellij.ui.dsl.builder.panel
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel

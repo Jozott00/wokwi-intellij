@@ -4,14 +4,12 @@ package com.github.jozott00.wokwiintellij.toolWindow
 import com.intellij.ide.wizard.withVisualPadding
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.ui.components.Label
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.LabelPosition
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.util.preferredWidth
 import java.awt.BorderLayout
 import java.awt.CardLayout
-import java.awt.FlowLayout
 import javax.swing.JPanel
 import javax.swing.JProgressBar
 

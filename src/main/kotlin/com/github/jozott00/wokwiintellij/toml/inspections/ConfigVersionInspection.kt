@@ -2,10 +2,14 @@ package com.github.jozott00.wokwiintellij.toml.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiBundle
 import com.github.jozott00.wokwiintellij.WokwiConstants
-import com.intellij.codeInspection.*
+import com.intellij.codeInspection.LocalInspectionTool
+import com.intellij.codeInspection.LocalQuickFix
+import com.intellij.codeInspection.ProblemDescriptor
+import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
-import org.toml.lang.psi.*
+import org.toml.lang.psi.TomlKeyValue
+import org.toml.lang.psi.TomlPsiFactory
 
 class ConfigVersionInspection : LocalInspectionTool() {
 

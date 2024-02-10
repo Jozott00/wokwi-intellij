@@ -2,13 +2,15 @@ package com.github.jozott00.wokwiintellij.toolWindow
 
 import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
 import com.intellij.execution.ui.layout.impl.JBRunnerTabs
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tabs.TabInfo
 import java.awt.BorderLayout
-import javax.swing.*
+import javax.swing.JComponent
+import javax.swing.JPanel
 
 
 class WokwiConsoleToolWindow(project: Project) :

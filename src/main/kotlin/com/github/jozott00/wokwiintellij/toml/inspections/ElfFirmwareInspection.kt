@@ -2,16 +2,13 @@ package com.github.jozott00.wokwiintellij.toml.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiBundle
 import com.github.jozott00.wokwiintellij.toml.stringValue
-import com.intellij.codeInspection.*
-import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.codeInspection.LocalInspectionTool
+import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElementVisitor
-import org.toml.lang.psi.*
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
+import org.toml.lang.psi.TomlKeyValue
 
 class ElfFirmwareInspection : LocalInspectionTool() {
 

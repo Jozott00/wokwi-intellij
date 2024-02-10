@@ -1,9 +1,6 @@
 package com.github.jozott00.wokwiintellij.toml
 
-import com.intellij.ide.highlighter.XmlFileType
-import com.intellij.psi.xml.XmlFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import com.intellij.util.PsiErrorElementUtil
 import org.toml.lang.psi.TomlFile
 import org.toml.lang.psi.TomlFileType
 

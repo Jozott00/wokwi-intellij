@@ -1,7 +1,5 @@
 package com.github.jozott00.wokwiintellij.simulator
 
-import com.beust.klaxon.Klaxon
-import com.beust.klaxon.KlaxonJson
 import com.beust.klaxon.json
 
 object Command {
@@ -40,5 +38,5 @@ object Command {
             )
         }.toJsonString()
     }
-    
+
 }

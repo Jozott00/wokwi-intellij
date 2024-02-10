@@ -4,23 +4,19 @@ import com.github.jozott00.wokwiintellij.WokwiBundle
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.toml.findTable
 import com.github.jozott00.wokwiintellij.toml.findValue
-import com.intellij.codeInsight.template.Expression
-import com.intellij.codeInsight.template.TemplateBuilderFactory
 import com.intellij.codeInsight.template.TemplateManager
 import com.intellij.codeInsight.template.impl.TextExpression
 import com.intellij.codeInspection.*
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import org.codehaus.groovy.ast.expr.ConstantExpression
-import org.toml.lang.psi.*
+import org.toml.lang.psi.TomlFile
+import org.toml.lang.psi.TomlPsiFactory
+import org.toml.lang.psi.TomlTable
 
 private fun InspectionManager.createErrorDescription(
     elem: PsiElement,

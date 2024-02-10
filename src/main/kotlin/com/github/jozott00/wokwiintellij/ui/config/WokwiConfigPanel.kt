@@ -11,10 +11,13 @@ import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.ui.dsl.builder.*
+import com.intellij.ui.dsl.builder.Align
+import com.intellij.ui.dsl.builder.BottomGap
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.util.preferredWidth
 import java.awt.Font
-import javax.swing.*
+import javax.swing.JComponent
 import kotlin.io.path.pathString
 import kotlin.io.path.relativeTo
 
