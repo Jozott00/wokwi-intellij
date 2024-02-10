@@ -1,6 +1,5 @@
-package com.github.jozott00.wokwiintellij.toolWindow
+package com.github.jozott00.wokwiintellij.ui.config
 
-import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.icons.AllIcons
 import com.intellij.ide.wizard.withVisualPadding
@@ -10,14 +9,12 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogPanel
-import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.util.preferredWidth
 import java.awt.Font
 import javax.swing.*
-import kotlin.io.path.Path
 import kotlin.io.path.pathString
 import kotlin.io.path.relativeTo
 
@@ -41,13 +38,19 @@ class WokwiConfigPanelBuilder(val project: Project, val model: WokwiSettingsStat
         }
 
         panel = panel {
-
             row {
                 button("Start Simulator", action)
                     .align(Align.CENTER)
                     .apply {
                         this.component.icon = AllIcons.Debugger.ThreadRunning
                     }
+            }
+
+            group("License") {
+                row {
+                    cell(LicensingPanel().component)
+                }
+
             }
 
             group("Settings") {
@@ -67,7 +70,11 @@ class WokwiConfigPanelBuilder(val project: Project, val model: WokwiSettingsStat
                         .bindText(model::wokwiConfigPath)
 
                 }
-                    .rowComment("The wokwi.toml holds all information the plugin needs to know. Visit <a href='https://docs.wokwi.com/vscode/project-config'>the wokwi.toml docs</a> for more information.")
+
+                row {
+                    comment("The wokwi.toml holds all information the plugin needs to know. Visit <a href='https://docs.wokwi.com/vscode/project-config'>the wokwi.toml docs</a> for more information.")
+                }
+                    .bottomGap(BottomGap.SMALL)
 
 
                 row("diagram.json path: ") {
@@ -76,8 +83,14 @@ class WokwiConfigPanelBuilder(val project: Project, val model: WokwiSettingsStat
                     }
                         .onChanged { _ -> onChange() }
                         .bindText(model::wokwiDiagramPath)
-                }.rowComment("The diagram.json specifies the simulation runtime environment. Visit <a href='https://docs.wokwi.com/vscode/project-config'>the diagram.json docs</a> for more information.")
+                }
+
+                row {
+                    comment("The diagram.json specifies the simulation runtime environment. Visit <a href='https://docs.wokwi.com/vscode/project-config'>the diagram.json docs</a> for more information.")
+                }
             }
+        }.apply {
+            autoscrolls = true
         }
             .withVisualPadding()
 

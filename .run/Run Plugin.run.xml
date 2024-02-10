@@ -2,11 +2,6 @@
   <configuration default="false" name="Run Plugin" type="GradleRunConfiguration" factoryName="Gradle">
     <log_file alias="idea.log" path="$PROJECT_DIR$/build/idea-sandbox/system/log/idea.log" />
     <ExternalSystemSettings>
-      <option name="env">
-        <map>
-          <entry key="WOKWI_LICENSE" value="JnU9Mzg3NjMwMjE1MjU2Mjg3MjMzJm49Sm96b3R0JmU9cHJpdmF0ZSU0MGpvaGFubmVzLXpvdHRlbGUuYXQmeD0yMDI0MDIyMQBso1Mb4rPeybHW7dMrqkybwZ2QJYoavSZlRii6hzE2EVx9VKxfPgM1gNg4WhnOP7FlAWtBqDHZ2QRLrLUDaY7koDe3xWtAkBq9_SSL7QXnqsXJMPvrVYYQX9ScTl43hlhlhbcUrClJJd3rkP_PANMDbviQVcYOLzIvKV5XiNTQeB45kR9q8QQuKzfksQHIjb_PWIigXZ7HBeU18zeNLCruP8WKRQtr4MBSy3I7y9jWGj5D9Rn0G_PHx1rGT9goo_PdfSeAWl_POZAiBJz7_SpC_SLxOsYTBxogJxctHRI7uG0o_PqWz3msZ6D2STZkgvYh5OdZ_SKXa5z6Ac6ACJuT06c_SH0LFar" />
-        </map>
-      </option>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
       <option name="externalSystemIdString" value="GRADLE" />

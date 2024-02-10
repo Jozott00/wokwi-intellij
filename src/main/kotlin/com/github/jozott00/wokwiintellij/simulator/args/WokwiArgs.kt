@@ -4,9 +4,10 @@ import com.intellij.openapi.vfs.VirtualFile
 
 
 class WokwiArgs(
+    val license: String,
     val diagram: String,
     var firmware: WokwiArgsFirmware,
-    val projectType: WokwiProjectType
+    val projectType: WokwiProjectType,
 )
 
 class WokwiArgsFirmware(

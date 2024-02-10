@@ -46,10 +46,8 @@ class WokwiSimulator(
         @OptIn(ExperimentalEncodingApi::class)
         val firmwareString = Base64.encode(runArgs.firmware.buffer)
 
-        // TODO: REMOVE!
-        val license = System.getProperty("WOKWI_LICENSE")
 
-        val cmd = Command.start(runArgs.diagram, firmwareString, license)
+        val cmd = Command.start(runArgs.diagram, firmwareString, runArgs.license)
         browserPipe.send(PIPE_TOPIC, cmd)
     }
 
