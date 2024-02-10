@@ -22,7 +22,7 @@
 
         <notificationGroup id="Wokwi Simulator"
                            displayType="BALLOON"/>
-        
+
     </extensions>
 
     <projectListeners>
@@ -35,14 +35,14 @@
         <group id="com.github.jozott00.wokwiintellij.actions.WokwiToolbar">
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiRestartAction"
-                    description="Restart simulation"
-                    text="Restart Simulation"
+                    description="Restart Wokwi simulation"
+                    text="Restart Wokwi Simulation"
                     icon="AllIcons.Actions.Rerun"
             />
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
-                    description="Stop simulator"
-                    text="Stop Simulator"
+                    description="Stop Wokwi simulator"
+                    text="Stop Wokwi Simulator"
                     icon="AllIcons.Actions.Suspend"
             />
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiWatchAction"

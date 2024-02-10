@@ -14,7 +14,7 @@ class WokwiComponentService(val project: Project) {
 
     val wokwiConfigState = project.service<WokwiSettingsState>()
 
-    val configPanel = wokwiConfigPanel(wokwiConfigState.state) {
+    val configPanel = wokwiConfigPanel(project, wokwiConfigState.state) {
         onChangeAction = {
             // do nothing
         }

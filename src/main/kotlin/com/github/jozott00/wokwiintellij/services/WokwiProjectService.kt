@@ -3,6 +3,7 @@ package com.github.jozott00.wokwiintellij.services
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
+import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
@@ -24,6 +25,7 @@ class WokwiProjectService(val project: Project) : Disposable {
     private var simulator: WokwiSimulator? = null
 
     private val componentService = project.service<WokwiComponentService>()
+    private val settingsState = project.service<WokwiSettingsState>()
     private val argsLoader = project.service<WokwiArgsLoader>()
     private var consoleToolWindow: ToolWindow? = null
 
@@ -33,8 +35,8 @@ class WokwiProjectService(val project: Project) : Disposable {
         val config =
             WokwiConfigProcessor.loadConfig(
                 project,
-                WokwiConstants.WOKWI_CONFIG_FILE,
-                WokwiConstants.WOKWI_DIAGRAM_FILE
+                settingsState.wokwiConfigPath,
+                settingsState.wokwiDiagramPath
             )
                 ?: return
         val args = argsLoader.load(config) ?: return

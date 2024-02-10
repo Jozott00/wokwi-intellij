@@ -1,19 +1,28 @@
 package com.github.jozott00.wokwiintellij.toolWindow
 
+import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.icons.AllIcons
 import com.intellij.ide.wizard.withVisualPadding
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.util.preferredWidth
 import java.awt.Font
 import javax.swing.*
+import kotlin.io.path.Path
+import kotlin.io.path.pathString
+import kotlin.io.path.relativeTo
 
 
-class WokwiConfigPanelBuilder(val model: WokwiSettingsState) {
+class WokwiConfigPanelBuilder(val project: Project, val model: WokwiSettingsState) {
 
     var onChangeAction: (() -> Unit)? = null
 
@@ -32,7 +41,6 @@ class WokwiConfigPanelBuilder(val model: WokwiSettingsState) {
         }
 
         panel = panel {
-            lateinit var textField: Cell<TextFieldWithBrowseButton>
 
             row {
                 button("Start Simulator", action)
@@ -44,10 +52,18 @@ class WokwiConfigPanelBuilder(val model: WokwiSettingsState) {
 
             group("Settings") {
                 row("wokwi.toml path: ") {
-                    textField = textFieldWithBrowseButton().apply {
+                    textFieldWithBrowseButton { getRootRelativePathOf(it) }.apply {
                         component.preferredWidth = 400
                     }
-                        .onChanged { _ -> onChange() }
+                        .validationOnInput {
+                            ValidationInfo("Hello world", it)
+                        }
+                        .validationOnApply {
+                            this.error("Test error")
+                        }
+                        .onChanged {
+                            onChange()
+                        }
                         .bindText(model::wokwiConfigPath)
 
                 }
@@ -55,7 +71,7 @@ class WokwiConfigPanelBuilder(val model: WokwiSettingsState) {
 
 
                 row("diagram.json path: ") {
-                    textField = textFieldWithBrowseButton().apply {
+                    textFieldWithBrowseButton { getRootRelativePathOf(it) }.apply {
                         component.preferredWidth = 400
                     }
                         .onChanged { _ -> onChange() }
@@ -69,10 +85,26 @@ class WokwiConfigPanelBuilder(val model: WokwiSettingsState) {
         return panel
     }
 
+    private fun getRootRelativePathOf(file: VirtualFile): String {
+        val projectPath = project.guessProjectDir()?.toNioPath() ?: return file.path
+        val resolved = projectPath.resolve(file.path)
+        val relative = resolved.relativeTo(projectPath)
+        return relative.pathString
+    }
+
+
+    companion object {
+        val LOG = logger<WokwiConfigPanelBuilder>()
+    }
+
 }
 
-fun wokwiConfigPanel(model: WokwiSettingsState, build: WokwiConfigPanelBuilder.() -> Unit): DialogPanel {
-    return WokwiConfigPanelBuilder(model).apply(build).build()
+fun wokwiConfigPanel(
+    project: Project,
+    model: WokwiSettingsState,
+    build: WokwiConfigPanelBuilder.() -> Unit
+): DialogPanel {
+    return WokwiConfigPanelBuilder(project, model).apply(build).build()
 }
 
 private fun JComponent.bold(isBold: Boolean) {

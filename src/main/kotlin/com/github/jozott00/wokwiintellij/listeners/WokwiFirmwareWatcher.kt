@@ -9,10 +9,11 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 
 class WokwiFirmwareWatcher(val project: Project) : BulkFileListener {
-    private val configState = project.service<WokwiSettingsState>()
-    private val projectService = project.service<WokwiProjectService>()
 
     override fun after(events: MutableList<out VFileEvent>) {
+        val configState = project.service<WokwiSettingsState>()
+        val projectService = project.service<WokwiProjectService>()
+
         if (!configState.watchFirmware) return
         val watchPaths = projectService.getWatchPaths() ?: return
 

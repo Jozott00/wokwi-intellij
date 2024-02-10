@@ -36,7 +36,13 @@ object WokwiConfigProcessor {
         val configFilePath = Paths.get(projectPath).resolve(wokwiConfigPath)
 
         if (!configFilePath.toFile().exists()) {
-            notifyError("No configuration found. Create a wokwi.toml file in your project root.")
+            notifyError("Configuration file `${configFilePath.pathString}` not found.")
+            return null
+        }
+
+        if (configFilePath.fileName.pathString != "wokwi.toml") {
+            notifyError("Wokwi configuration file must be called `wokwi.toml` but is actually `${configFilePath.fileName}`")
+            return null
         }
 
         val fileReader = TomlFileReader(
@@ -87,7 +93,7 @@ object WokwiConfigProcessor {
 
         val diagramFile = LocalFileSystem.getInstance().findFileByPath(diagramFilePath.toString()) ?: run {
             notifyError(
-                "diagram.json not found in project.",
+                "Diagram specification `${diagramFilePath.pathString}` not found",
                 NotifyAction("Create diagram.json") { _, _ ->
                     val psiManager = PsiManager.getInstance(project)
                     val virtualFile = project.guessProjectDir() ?: return@NotifyAction
