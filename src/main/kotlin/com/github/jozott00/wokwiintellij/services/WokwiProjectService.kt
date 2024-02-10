@@ -50,8 +50,11 @@ class WokwiProjectService(val project: Project) : Disposable {
     }
 
     fun restartSimulation() {
-        simulator?.run {
-            start()
+        simulator?.let {
+            val firmware = it.getFirmware().rootFile
+            val newFirmware = argsLoader.loadFirmware(firmware) ?: return
+            it.setFirmware(newFirmware)
+            it.start()
             return
         }
 
@@ -74,16 +77,15 @@ class WokwiProjectService(val project: Project) : Disposable {
 
     fun firmwareUpdated() {
         WokwiNotifier.notifyBalloon(title = "New firmware detected", "Restarting Wokwi simulator...")
-        simulator?.let {
-            val firmware = it.getFirmware().rootFile
-            val newFirmware = argsLoader.loadFirmware(firmware) ?: return
-            it.setFirmware(newFirmware)
-            it.start()
-        }
+        restartSimulation()
     }
 
     fun getWatchPaths(): List<String>? {
         return simulator?.getFirmware()?.binaryPaths
+    }
+
+    fun isSimulatorRunning(): Boolean {
+        return simulator != null
     }
 
     private fun activateConsoleToolWindow() {
