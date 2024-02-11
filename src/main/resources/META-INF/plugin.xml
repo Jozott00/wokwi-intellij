@@ -23,6 +23,8 @@
         <notificationGroup id="Wokwi Simulator"
                            displayType="BALLOON"/>
 
+        <configurationType implementation="com.github.jozott00.wokwiintellij.runner.WokwiRunConfigurationType"/>
+
     </extensions>
 
     <projectListeners>
@@ -38,7 +40,7 @@
                     description="Restart Wokwi simulation"
                     text="Restart Wokwi Simulation"
                     icon="AllIcons.Actions.Rerun"
-            />
+            />`
             <action id="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
                     class="com.github.jozott00.wokwiintellij.actions.WokwiStopAction"
                     description="Stop Wokwi simulator"

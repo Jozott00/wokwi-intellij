@@ -1,21 +1,21 @@
 package com.github.jozott00.wokwiintellij.ui.console
 
+import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
+import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.intellij.execution.filters.TextConsoleBuilderFactory
-import com.intellij.execution.process.AnsiEscapeDecoder
-import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.Key
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
 
-class SimulationConsole(project: Project) : JPanel(), Disposable {
+class SimulationConsole(project: Project) : JPanel(), Disposable, WokwiSimulatorListener {
 
     private val consoleView: ConsoleView = TextConsoleBuilderFactory.getInstance().createBuilder(project).console
-    private val ansiEscapeDecoder = AnsiEscapeDecoder()
 
     init {
         Disposer.register(this, consoleView)
@@ -24,14 +24,11 @@ class SimulationConsole(project: Project) : JPanel(), Disposable {
         add(consoleView.component)
     }
 
-    fun appendLog(bytes: ByteArray) {
-        val str = String(bytes, Charsets.UTF_8)
-        ansiEscapeDecoder.escapeText(str, ProcessOutputTypes.STDOUT) { text, contentType ->
-            consoleView.print(text, ConsoleViewContentType.getConsoleViewType(contentType))
-        }
+    override fun onTextAvailable(text: String, outputType: Key<*>) {
+        consoleView.print(text, ConsoleViewContentType.getConsoleViewType(outputType))
     }
 
-    fun clear() {
+    override fun onStarted(runArgs: WokwiArgs) {
         consoleView.clear()
     }
 

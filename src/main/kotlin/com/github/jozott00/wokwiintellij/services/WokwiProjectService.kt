@@ -1,6 +1,7 @@
 package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
+import com.github.jozott00.wokwiintellij.runner.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
@@ -13,10 +14,12 @@ import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.utils.resolveWith
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import kotlin.io.path.Path
@@ -26,6 +29,7 @@ import kotlin.io.path.exists
 class WokwiProjectService(val project: Project) : Disposable {
 
     private var simulator: WokwiSimulator? = null
+    private var console: SimulationConsole? = null
 
     private val componentService = project.service<WokwiComponentService>()
     private val settingsState = project.service<WokwiSettingsState>()
@@ -33,8 +37,25 @@ class WokwiProjectService(val project: Project) : Disposable {
     private val argsLoader = project.service<WokwiArgsLoader>()
     private var consoleToolWindow: ToolWindow? = null
 
-    fun startSimulator() {
+
+    fun startSimulator(byProcess: WokwiProcessHandler? = null) {
         LOG.info("Start simulator...")
+
+        if (simulator == null)
+            createNewSimulator()
+        else
+            updateFirmware()
+
+        byProcess?.let { simulator?.addSimulatorListener(it) }
+        simulator?.start()
+
+        invokeLater {
+            ToolWindowUtils.setSimulatorIcon(project, true)
+            activateConsoleToolWindow()
+        }
+    }
+
+    private fun createNewSimulator() {
         val config =
             WokwiConfigProcessor.loadConfig(
                 project,
@@ -46,25 +67,24 @@ class WokwiProjectService(val project: Project) : Disposable {
 
         simulator?.disposeByDisposer()
         val browser = SimulatorJCEFHtmlPanel()
-        val console = SimulationConsole(project)
-        simulator = WokwiSimulator(args, browser, console)
-        simulator?.start()
-        ToolWindowUtils.setSimulatorIcon(project, true)
-        componentService.simulatorToolWindowComponent.showSimulation(browser.component)
-        componentService.consoleToolWindowComponent.setConsole(console)
-        activateConsoleToolWindow()
+        simulator = WokwiSimulator(args, browser)
+        Disposer.register(this, simulator!!)
+
+        invokeLater {
+            val console = getConsole()
+            simulator?.addSimulatorListener(console)
+
+            componentService.simulatorToolWindowComponent.showSimulation(browser.component)
+            componentService.consoleToolWindowComponent.setConsole(console)
+        }
     }
 
-    fun restartSimulation() {
+    private fun updateFirmware() {
         simulator?.let {
             val firmware = it.getFirmware().rootFile
             val newFirmware = argsLoader.loadFirmware(firmware) ?: return
             it.setFirmware(newFirmware)
-            it.start()
-            return
         }
-
-        startSimulator()
     }
 
     fun stopSimulator() {
@@ -73,17 +93,16 @@ class WokwiProjectService(val project: Project) : Disposable {
 
         ToolWindowUtils.setSimulatorIcon(project, false)
         componentService.simulatorToolWindowComponent.showConfig()
-        componentService.consoleToolWindowComponent.removeConsole()
     }
 
 
     override fun dispose() {
-        simulator?.disposeByDisposer()
+
     }
 
     fun firmwareUpdated() {
         WokwiNotifier.notifyBalloon(title = "New firmware detected", "Restarting Wokwi simulator...")
-        restartSimulation()
+        startSimulator()
     }
 
     fun getWatchPaths(): List<String>? {
@@ -98,6 +117,15 @@ class WokwiProjectService(val project: Project) : Disposable {
         return licensingService.getLicense() != null &&
                 Path(settingsState.wokwiConfigPath).resolveWith(project)?.exists() ?: false &&
                 Path(settingsState.wokwiConfigPath).resolveWith(project)?.exists() ?: false
+    }
+
+    private fun getConsole(): SimulationConsole {
+        val console = this.console ?: run {
+            val c = SimulationConsole(project)
+            Disposer.register(this, c)
+            c
+        }
+        return console
     }
 
     private fun activateConsoleToolWindow() {

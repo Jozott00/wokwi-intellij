@@ -7,7 +7,7 @@ import com.intellij.openapi.components.service
 
 class WokwiRestartAction : AnAction() {
     override fun actionPerformed(p0: AnActionEvent) {
-        p0.project?.service<WokwiProjectService>()?.restartSimulation()
+        p0.project?.service<WokwiProjectService>()?.startSimulator()
     }
 
 }

@@ -8,6 +8,7 @@ object WokwiConstants {
     const val WOKWI_DEFAULT_CONFIG_VERSION = "1"
     const val WOKWI_LICENCE_STORE_KEY = "WokwiLicense"
     const val WOKWI_WCODE_VERSION = "1.0"
+    const val WOKWI_RUN_CONFIG_ID = "WokwiRunConfig"
 
     val WOKWI_ERROR_INSPECTIONS = arrayOf("MissingConfigurationInspection")
 }

@@ -5,11 +5,14 @@ import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.jcef.impl.JcefBrowserPipe
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
-import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
 import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
+import com.intellij.execution.process.AnsiEscapeDecoder
+import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.Key
+import com.intellij.util.containers.ContainerUtil
 import io.ktor.util.*
 import kotlinx.serialization.json.*
 import java.net.URL
@@ -21,7 +24,6 @@ private val LOG = logger<WokwiSimulator>()
 class WokwiSimulator(
     private val runArgs: WokwiArgs,
     private val browser: SimulatorJCEFHtmlPanel,
-    private val console: SimulationConsole
 ) : Disposable,
     Simulator,
     BrowserPipe.Subscriber {
@@ -29,9 +31,13 @@ class WokwiSimulator(
     private var browserReady = false
     private val browserPipe = JcefBrowserPipe(browser)
 
+    private val myEventMulticaster = createEventMulticaster()
+    private val myListeners: MutableList<WokwiSimulatorListener> = ContainerUtil.createLockFreeCopyOnWriteList()
+
+    private val ansiEscapeDecoder = AnsiEscapeDecoder()
+
     init {
         Disposer.register(this, browser)
-        Disposer.register(this, console)
         Disposer.register(browser, browserPipe)
         browserPipe.subscribe(PIPE_TOPIC, this, this)
     }
@@ -41,14 +47,13 @@ class WokwiSimulator(
         // if browser not yet ready just return
         if (!browserReady) return
 
-        console.clear()
-
         @OptIn(ExperimentalEncodingApi::class)
         val firmwareString = Base64.encode(runArgs.firmware.buffer)
 
 
         val cmd = Command.start(runArgs.diagram, firmwareString, runArgs.license)
         browserPipe.send(PIPE_TOPIC, cmd)
+        myEventMulticaster.onStarted(runArgs)
     }
 
     override fun setFirmware(firmware: WokwiArgsFirmware) {
@@ -76,7 +81,11 @@ class WokwiSimulator(
 
         if (bytes.isEmpty()) return
 
-        console.appendLog(bytes)
+        val str = String(bytes, Charsets.UTF_8)
+
+        ansiEscapeDecoder.escapeText(str, ProcessOutputTypes.STDOUT) { t, contentType ->
+            myEventMulticaster.onTextAvailable(t, contentType)
+        }
     }
 
     private fun loadResourceRecv(req: JsonObject) {
@@ -120,8 +129,36 @@ class WokwiSimulator(
         private val PIPE_TOPIC = "wokwi"
     }
 
+    fun addSimulatorListener(listener: WokwiSimulatorListener) {
+        myListeners.add(listener)
+    }
+
     override fun dispose() {
-        // Nothing to do
+        createEventMulticaster().onShutdown()
+        myListeners.clear()
+    }
+
+
+    private fun createEventMulticaster(): WokwiSimulatorListener {
+        return object : WokwiSimulatorListener {
+            override fun onStarted(runArgs: WokwiArgs) {
+                notifyAll { it.onStarted(runArgs) }
+            }
+
+            override fun onShutdown() {
+                notifyAll { it.onShutdown() }
+            }
+
+            override fun onTextAvailable(text: String, outputType: Key<*>) {
+                notifyAll { it.onTextAvailable(text, outputType) }
+            }
+
+            private fun notifyAll(m: (WokwiSimulatorListener) -> Unit) {
+                for (l in myListeners) {
+                    m(l)
+                }
+            }
+        }
     }
 
 }

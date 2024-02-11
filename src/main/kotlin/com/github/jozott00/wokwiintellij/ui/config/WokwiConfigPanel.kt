@@ -4,7 +4,6 @@ import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.icons.AllIcons
 import com.intellij.ide.wizard.withVisualPadding
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
@@ -31,13 +30,11 @@ class WokwiConfigPanelBuilder(val project: Project, val model: WokwiSettingsStat
         val action = ActionManager.getInstance().getAction("com.github.jozott00.wokwiintellij.actions.WokwiStartAction")
 
         fun onChange() {
-            invokeLater {
-                if (panel == null)
-                    return@invokeLater
+            if (panel == null)
+                return
 
-                panel!!.apply()
-                onChangeAction?.invoke()
-            }
+            panel!!.apply()
+            onChangeAction?.invoke()
         }
 
         panel = panel {
