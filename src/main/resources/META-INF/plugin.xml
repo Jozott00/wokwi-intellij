@@ -23,7 +23,7 @@
         <notificationGroup id="Wokwi Simulator"
                            displayType="BALLOON"/>
 
-        <configurationType implementation="com.github.jozott00.wokwiintellij.runner.WokwiRunConfigurationType"/>
+        <configurationType implementation="com.github.jozott00.wokwiintellij.runner.configs.WokwiStartDebugConfigType"/>
 
     </extensions>
 

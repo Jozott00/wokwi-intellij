@@ -4,7 +4,7 @@ import com.beust.klaxon.json
 
 object Command {
 
-    fun start(diagram: String, firmware: String, license: String): String {
+    fun start(diagram: String, firmware: String, license: String, waitForDebugger: Boolean): String {
         return json {
             obj(
                 "command" to "start",
@@ -12,7 +12,7 @@ object Command {
                 "license" to license,
                 "firmware" to firmware,
                 "firmwareB64" to true,
-                "pause" to false,
+                "pause" to waitForDebugger,
                 "useGateway" to false, // private gateways not yet supported
                 "disableSerialMonitor" to true,
             )
@@ -35,6 +35,23 @@ object Command {
             obj(
                 "command" to "resourceData",
                 "buffer" to buffer,
+            )
+        }.toJsonString()
+    }
+
+    fun gdbMessage(message: String): String {
+        return json {
+            obj(
+                "command" to "gdbMessage",
+                "message" to message,
+            )
+        }.toJsonString()
+    }
+
+    fun gdbBreak(): String {
+        return json {
+            obj(
+                "command" to "gdbBreak",
             )
         }.toJsonString()
     }

@@ -13,4 +13,5 @@ data class WokwiTomlTable(
     val version: Int,
     val elf: String,
     val firmware: String,
+    val gdbServerPort: Int? = null
 )

@@ -47,7 +47,8 @@ object WokwiConfigProcessor {
 
         val fileReader = TomlFileReader(
             inputConfig = TomlInputConfig(
-                ignoreUnknownNames = true
+                ignoreUnknownNames = true,
+                allowNullValues = true
             )
         )
 
@@ -115,7 +116,8 @@ object WokwiConfigProcessor {
             version = tomlConfig.version.toString(),
             elf = elfFile,
             firmware = firmwareFile,
-            diagram = diagramFile
+            diagram = diagramFile,
+            gdbServerPort = tomlConfig.gdbServerPort
         )
     }
 

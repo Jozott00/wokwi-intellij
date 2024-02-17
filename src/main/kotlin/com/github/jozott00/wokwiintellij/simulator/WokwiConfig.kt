@@ -7,4 +7,5 @@ class WokwiConfig(
     val elf: VirtualFile,
     val firmware: VirtualFile,
     val diagram: VirtualFile,
+    val gdbServerPort: Int?
 )

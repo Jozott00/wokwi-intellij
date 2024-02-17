@@ -8,6 +8,8 @@ class WokwiArgs(
     val diagram: String,
     var firmware: WokwiArgsFirmware,
     val projectType: WokwiProjectType,
+    val gdpPort: Int?,
+    var waitForDebugger: Boolean = false,
 )
 
 class WokwiArgsFirmware(

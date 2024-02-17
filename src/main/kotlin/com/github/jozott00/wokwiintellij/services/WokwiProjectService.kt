@@ -18,6 +18,10 @@ import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
+import com.intellij.openapi.progress.impl.BackgroundableProcessIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
@@ -37,14 +41,26 @@ class WokwiProjectService(val project: Project) : Disposable {
     private val argsLoader = project.service<WokwiArgsLoader>()
     private var consoleToolWindow: ToolWindow? = null
 
+    fun startSimulator(byProcess: WokwiProcessHandler? = null, byDebugger: Boolean = false) {
+        val task = object : Task.Backgroundable(project, "Start Wokwi Simulator") {
+            override fun run(indicator: ProgressIndicator) {
+                startSimulatorInternal(byProcess, byDebugger)
+            }
+        }
+        ProgressManager.getInstance().runProcessWithProgressAsynchronously(
+            task,
+            BackgroundableProcessIndicator(task)
+        )
+    }
 
-    fun startSimulator(byProcess: WokwiProcessHandler? = null) {
+    private fun startSimulatorInternal(byProcess: WokwiProcessHandler? = null, byDebugger: Boolean = false) {
         LOG.info("Start simulator...")
 
-        if (simulator == null)
-            createNewSimulator()
+        if (simulator == null || byDebugger)
+            createNewSimulator(byDebugger)
         else
             updateFirmware()
+
 
         byProcess?.let { simulator?.addSimulatorListener(it) }
         simulator?.start()
@@ -55,7 +71,7 @@ class WokwiProjectService(val project: Project) : Disposable {
         }
     }
 
-    private fun createNewSimulator() {
+    private fun createNewSimulator(waitForDebugger: Boolean = false) {
         val config =
             WokwiConfigProcessor.loadConfig(
                 project,
@@ -64,6 +80,7 @@ class WokwiProjectService(val project: Project) : Disposable {
             )
                 ?: return
         val args = argsLoader.load(config) ?: return
+        args.waitForDebugger = waitForDebugger
 
         simulator?.disposeByDisposer()
         val browser = SimulatorJCEFHtmlPanel()

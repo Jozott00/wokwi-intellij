@@ -30,7 +30,7 @@ class WokwiArgsLoader(project: Project) {
         // TODO: Check for esp image
 
 
-        val args = WokwiArgs(license, diagram, firmware, projectType)
+        val args = WokwiArgs(license, diagram, firmware, projectType, config.gdbServerPort)
         return args
     }
 

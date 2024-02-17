@@ -17,8 +17,6 @@ class WokwiFirmwareWatcher(val project: Project) : BulkFileListener {
         if (!configState.watchFirmware) return
         val watchPaths = projectService.getWatchPaths() ?: return
 
-        LOG.info("Triggered with: ${events.map { it.path }}")
-        LOG.info("Watch against: $watchPaths")
 
         val result = events.find {
             if (it.file?.isInLocalFileSystem != true)
@@ -31,6 +29,8 @@ class WokwiFirmwareWatcher(val project: Project) : BulkFileListener {
         }
 
         if (result != null) {
+            LOG.info("Triggered with: ${events.map { it.path }}")
+            LOG.info("Watch against: $watchPaths")
             projectService.firmwareUpdated()
         }
     }

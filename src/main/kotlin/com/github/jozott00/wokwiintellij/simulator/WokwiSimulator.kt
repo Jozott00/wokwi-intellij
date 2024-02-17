@@ -5,6 +5,8 @@ import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.jcef.impl.JcefBrowserPipe
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
+import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerEvent
+import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
 import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
@@ -14,6 +16,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.util.containers.ContainerUtil
 import io.ktor.util.*
+import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import java.net.URL
 import kotlin.io.encoding.Base64
@@ -35,11 +38,15 @@ class WokwiSimulator(
     private val myListeners: MutableList<WokwiSimulatorListener> = ContainerUtil.createLockFreeCopyOnWriteList()
 
     private val ansiEscapeDecoder = AnsiEscapeDecoder()
+    private val gdbServer = WokwiGDBServer()
 
     init {
         Disposer.register(this, browser)
         Disposer.register(browser, browserPipe)
+        Disposer.register(this, gdbServer)
         browserPipe.subscribe(PIPE_TOPIC, this, this)
+
+        initGdpServer()
     }
 
     override fun start() {
@@ -51,7 +58,7 @@ class WokwiSimulator(
         val firmwareString = Base64.encode(runArgs.firmware.buffer)
 
 
-        val cmd = Command.start(runArgs.diagram, firmwareString, runArgs.license)
+        val cmd = Command.start(runArgs.diagram, firmwareString, runArgs.license, runArgs.waitForDebugger)
         browserPipe.send(PIPE_TOPIC, cmd)
         myEventMulticaster.onStarted(runArgs)
     }
@@ -100,6 +107,15 @@ class WokwiSimulator(
         browserPipe.send(PIPE_TOPIC, cmd)
     }
 
+    private fun gdbResponseRecv(req: JsonObject) {
+        val response = req["response"]?.jsonPrimitive?.content ?: run {
+            LOG.error("Malformed data received: No response field: $req");
+            return
+        }
+        LOG.info("GDB Response: $response")
+        gdbServer.sendResponse(response)
+    }
+
     override fun messageReceived(data: String): Boolean {
         val json = Json.parseToJsonElement(data).jsonObject
 
@@ -115,6 +131,7 @@ class WokwiSimulator(
             "wifiFrame", "wifiConnect" -> {
                 TODO("Not yet implemented")
             } // do nothing right now
+            "gdbResponse" -> gdbResponseRecv(json)
             else -> {
                 LOG.warn("Unknown command: $type")
                 LOG.debug("Unknown command data: $data")
@@ -123,6 +140,29 @@ class WokwiSimulator(
         }
 
         return true
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun initGdpServer() {
+        val port = runArgs.gdpPort ?: return
+
+        GlobalScope.launch {
+            launch { gdbServer.listen(port) }
+            launch {
+                gdbServer.events.collect { event ->
+                    when (event) {
+                        is GDBServerEvent.Connected -> {}
+                        is GDBServerEvent.Error -> LOG.error("Error: ${event.error}")
+                        is GDBServerEvent.Message -> {
+                            LOG.info("GDB Message: ${event.message}")
+                            browserPipe.send(PIPE_TOPIC, Command.gdbMessage(event.message))
+                        }
+
+                        is GDBServerEvent.Break -> browserPipe.send(PIPE_TOPIC, Command.gdbBreak())
+                    }
+                }
+            }
+        }
     }
 
     companion object {
