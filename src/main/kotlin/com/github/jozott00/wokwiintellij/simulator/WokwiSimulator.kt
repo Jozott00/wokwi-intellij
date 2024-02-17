@@ -40,6 +40,8 @@ class WokwiSimulator(
     private val ansiEscapeDecoder = AnsiEscapeDecoder()
     private val gdbServer = WokwiGDBServer()
 
+    private var simulationRunning = false
+
     init {
         Disposer.register(this, browser)
         Disposer.register(browser, browserPipe)
@@ -50,13 +52,14 @@ class WokwiSimulator(
     }
 
     override fun start() {
+        simulationRunning = false
+
         LOG.info("(Re)starting simulation...")
         // if browser not yet ready just return
         if (!browserReady) return
 
         @OptIn(ExperimentalEncodingApi::class)
         val firmwareString = Base64.encode(runArgs.firmware.buffer)
-
 
         val cmd = Command.start(runArgs.diagram, firmwareString, runArgs.license, runArgs.waitForDebugger)
         browserPipe.send(PIPE_TOPIC, cmd)
@@ -105,6 +108,8 @@ class WokwiSimulator(
         val resource = url.readBytes().encodeBase64()
         val cmd = Command.resourceData(resource)
         browserPipe.send(PIPE_TOPIC, cmd)
+
+        checkSimulationStartedRunning()
     }
 
     private fun gdbResponseRecv(req: JsonObject) {
@@ -112,7 +117,6 @@ class WokwiSimulator(
             LOG.error("Malformed data received: No response field: $req");
             return
         }
-        LOG.info("GDB Response: $response")
         gdbServer.sendResponse(response)
     }
 
@@ -140,6 +144,13 @@ class WokwiSimulator(
         }
 
         return true
+    }
+
+    private fun checkSimulationStartedRunning() {
+        if (!simulationRunning) {
+            simulationRunning = true
+            myEventMulticaster.onRunning()
+        }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -193,11 +204,16 @@ class WokwiSimulator(
                 notifyAll { it.onTextAvailable(text, outputType) }
             }
 
+            override fun onRunning() {
+                notifyAll { it.onRunning() }
+            }
+
             private fun notifyAll(m: (WokwiSimulatorListener) -> Unit) {
                 for (l in myListeners) {
                     m(l)
                 }
             }
+
         }
     }
 

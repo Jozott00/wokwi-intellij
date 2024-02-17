@@ -3,6 +3,7 @@ package com.github.jozott00.wokwiintellij.services
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
 import com.github.jozott00.wokwiintellij.runner.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
+import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory
@@ -41,10 +42,10 @@ class WokwiProjectService(val project: Project) : Disposable {
     private val argsLoader = project.service<WokwiArgsLoader>()
     private var consoleToolWindow: ToolWindow? = null
 
-    fun startSimulator(byProcess: WokwiProcessHandler? = null, byDebugger: Boolean = false) {
-        val task = object : Task.Backgroundable(project, "Start Wokwi Simulator") {
+    fun startSimulator(withListener: WokwiSimulatorListener? = null, byDebugger: Boolean = false) {
+        val task = object : Task.Backgroundable(project, "Start Wokwi simulator") {
             override fun run(indicator: ProgressIndicator) {
-                startSimulatorInternal(byProcess, byDebugger)
+                startSimulatorSynchronous(withListener, byDebugger)
             }
         }
         ProgressManager.getInstance().runProcessWithProgressAsynchronously(
@@ -53,33 +54,36 @@ class WokwiProjectService(val project: Project) : Disposable {
         )
     }
 
-    private fun startSimulatorInternal(byProcess: WokwiProcessHandler? = null, byDebugger: Boolean = false) {
+    fun startSimulatorSynchronous(withListener: WokwiSimulatorListener? = null, byDebugger: Boolean = false): Boolean {
         LOG.info("Start simulator...")
 
-        if (simulator == null || byDebugger)
+        if (simulator == null || byDebugger) {
             createNewSimulator(byDebugger)
-        else
+        } else {
             updateFirmware()
+        }.also { if (!it) return false }
 
 
-        byProcess?.let { simulator?.addSimulatorListener(it) }
+        withListener?.let { simulator?.addSimulatorListener(it) }
         simulator?.start()
 
         invokeLater {
             ToolWindowUtils.setSimulatorIcon(project, true)
             activateConsoleToolWindow()
         }
+
+        return true
     }
 
-    private fun createNewSimulator(waitForDebugger: Boolean = false) {
+    private fun createNewSimulator(waitForDebugger: Boolean = false): Boolean {
         val config =
             WokwiConfigProcessor.loadConfig(
                 project,
                 settingsState.wokwiConfigPath,
                 settingsState.wokwiDiagramPath
             )
-                ?: return
-        val args = argsLoader.load(config) ?: return
+                ?: return false
+        val args = argsLoader.load(config) ?: return false
         args.waitForDebugger = waitForDebugger
 
         simulator?.disposeByDisposer()
@@ -94,14 +98,18 @@ class WokwiProjectService(val project: Project) : Disposable {
             componentService.simulatorToolWindowComponent.showSimulation(browser.component)
             componentService.consoleToolWindowComponent.setConsole(console)
         }
+
+        return true
     }
 
-    private fun updateFirmware() {
+    private fun updateFirmware(): Boolean {
         simulator?.let {
             val firmware = it.getFirmware().rootFile
-            val newFirmware = argsLoader.loadFirmware(firmware) ?: return
+            val newFirmware = argsLoader.loadFirmware(firmware) ?: return false
             it.setFirmware(newFirmware)
         }
+
+        return true
     }
 
     fun stopSimulator() {

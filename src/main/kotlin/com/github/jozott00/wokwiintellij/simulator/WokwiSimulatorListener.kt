@@ -7,4 +7,5 @@ interface WokwiSimulatorListener {
     fun onStarted(runArgs: WokwiArgs) {}
     fun onShutdown() {}
     fun onTextAvailable(text: String, outputType: Key<*>) {}
+    fun onRunning() {}
 }

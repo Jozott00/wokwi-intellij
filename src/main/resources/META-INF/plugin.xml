@@ -25,6 +25,8 @@
 
         <configurationType implementation="com.github.jozott00.wokwiintellij.runner.configs.WokwiStartDebugConfigType"/>
 
+        <stepsBeforeRunProvider
+            implementation="com.github.jozott00.wokwiintellij.runner.runBefore.WokwiStartDebugBeforeRunTaskProvider"/>
     </extensions>
 
     <projectListeners>

@@ -8,3 +8,8 @@ fun Path.resolveWith(project: Project): Path? {
     val basePath = project.basePath ?: return null
     return Path(basePath).resolve(this)
 }
+
+fun Boolean.onFalse(f: () -> Unit) {
+    if (!this)
+        f()
+}
