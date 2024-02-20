@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE instance-profile
+        SYSTEM "https://resources.jetbrains.com/writerside/1.0/product-profile.dtd">
+
+<instance-profile id="wipg"
+                  name="Wokwi Intellij Plugin Guide"
+                  start-page="starter-topic.md">
+
+    <toc-element topic="starter-topic.md"/>
+    <toc-element topic="Project-Configuration.md"/>
+    <toc-element topic="Debugging.md"/>
+    <toc-element topic="Roadmap.md"/>
+</instance-profile>
