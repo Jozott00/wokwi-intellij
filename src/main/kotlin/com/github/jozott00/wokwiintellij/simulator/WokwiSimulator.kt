@@ -5,6 +5,7 @@ import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.jcef.impl.JcefBrowserPipe
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
+import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerCommunicator
 import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerEvent
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
 import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
@@ -32,31 +33,37 @@ class WokwiSimulator(
     BrowserPipe.Subscriber {
 
     private var browserReady = false
+    private var startInvoked = false
+
     private val browserPipe = JcefBrowserPipe(browser)
 
     private val myEventMulticaster = createEventMulticaster()
     private val myListeners: MutableList<WokwiSimulatorListener> = ContainerUtil.createLockFreeCopyOnWriteList()
 
     private val ansiEscapeDecoder = AnsiEscapeDecoder()
-    private val gdbServer = WokwiGDBServer()
+    private var gdbServer: GDBServerCommunicator? = null
 
     private var simulationRunning = false
 
     init {
         Disposer.register(this, browser)
         Disposer.register(browser, browserPipe)
-        Disposer.register(this, gdbServer)
         browserPipe.subscribe(PIPE_TOPIC, this, this)
-
-        initGdpServer()
     }
 
     override fun start() {
+        startInvoked = true
+        startInternal()
+    }
+
+    private fun startInternal() {
         simulationRunning = false
 
-        LOG.info("(Re)starting simulation...")
         // if browser not yet ready just return
         if (!browserReady) return
+        if (!startInvoked) return
+
+        LOG.info("(Re)starting simulation...")
 
         @OptIn(ExperimentalEncodingApi::class)
         val firmwareString = Base64.encode(runArgs.firmware.buffer)
@@ -74,10 +81,25 @@ class WokwiSimulator(
         return runArgs.firmware
     }
 
+    override suspend fun connectToGDBServer(server: GDBServerCommunicator) {
+        gdbServer = server
+        server.getMessageFlow().collect { event ->
+            when (event) {
+                is GDBServerEvent.Connected -> {}
+                is GDBServerEvent.Error -> LOG.error("Error: ${event.error}")
+                is GDBServerEvent.Message -> {
+                    LOG.info("Received GDBSERVER message: ${event.message}")
+                    browserPipe.send(PIPE_TOPIC, Command.gdbMessage(event.message))
+                }
+
+                is GDBServerEvent.Break -> browserPipe.send(PIPE_TOPIC, Command.gdbBreak())
+            }
+        }
+    }
+
     private fun startRecv() {
         browserReady = true
-
-        start()
+        startInternal()
     }
 
     private fun uartDataRecv(data: JsonObject) {
@@ -117,7 +139,7 @@ class WokwiSimulator(
             LOG.error("Malformed data received: No response field: $req");
             return
         }
-        gdbServer.sendResponse(response)
+        gdbServer?.sendResponse(response)
     }
 
     override fun messageReceived(data: String): Boolean {
@@ -150,29 +172,6 @@ class WokwiSimulator(
         if (!simulationRunning) {
             simulationRunning = true
             myEventMulticaster.onRunning()
-        }
-    }
-
-    @OptIn(DelicateCoroutinesApi::class)
-    private fun initGdpServer() {
-        val port = runArgs.gdpPort ?: return
-
-        CoroutineScope(Dispatchers.Default + Job()).launch {
-            launch { gdbServer.listen(port) }
-            launch {
-                gdbServer.events.collect { event ->
-                    when (event) {
-                        is GDBServerEvent.Connected -> {}
-                        is GDBServerEvent.Error -> LOG.error("Error: ${event.error}")
-                        is GDBServerEvent.Message -> {
-                            LOG.info("GDB Message: ${event.message}")
-                            browserPipe.send(PIPE_TOPIC, Command.gdbMessage(event.message))
-                        }
-
-                        is GDBServerEvent.Break -> browserPipe.send(PIPE_TOPIC, Command.gdbBreak())
-                    }
-                }
-            }
         }
     }
 

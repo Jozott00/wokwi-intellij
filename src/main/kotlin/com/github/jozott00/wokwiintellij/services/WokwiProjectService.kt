@@ -3,6 +3,7 @@ package com.github.jozott00.wokwiintellij.services
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
+import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory
@@ -24,7 +25,10 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.util.namedChildScope
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 
@@ -39,6 +43,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
     private val licensingService = ApplicationManager.getApplication().service<WokwiLicensingService>()
     private val argsLoader = project.service<WokwiArgsLoader>()
     private var consoleToolWindow: ToolWindow? = null
+    private var gdbServer: WokwiGDBServer? = null
 
     fun childScope(name: String) = cs.namedChildScope(name)
 
@@ -55,12 +60,8 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         LOG.info("Start simulator...")
 
         if (simulator == null || byDebugger) {
-            println("CREATE NEW SIMULATOR")
-
             createNewSimulator(byDebugger)
-
         } else {
-            println("UPDATE FIRMWARE")
             updateFirmware()
         }.also { if (!it) return false }
 
@@ -89,10 +90,18 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         args.waitForDebugger = waitForDebugger
 
         simulator?.disposeByDisposer()
-        val browser = SimulatorJCEFHtmlPanel()
-        simulator = WokwiSimulator(args, browser)
-        Disposer.register(this@WokwiProjectService, simulator!!)
 
+        val browser = SimulatorJCEFHtmlPanel()
+
+        configGDBServer(
+            waitForDebugger,
+            config.gdbServerPort ?: 3333
+        ) // configures gdbServer for new simulator instance
+
+        simulator = WokwiSimulator(args, browser).also {
+            Disposer.register(this@WokwiProjectService, it)
+            gdbServer?.let { server -> cs.launch { it.connectToGDBServer(server) } } // connect to server
+        }
 
         withContext(Dispatchers.EDT) {
             val console = getConsole()
@@ -103,6 +112,22 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         }
 
         return true
+    }
+
+    private fun configGDBServer(shouldDebug: Boolean, port: Int) {
+        if (!shouldDebug) {
+            gdbServer?.disposeByDisposer()
+            gdbServer = null
+        } else {
+            gdbServer?.let {
+                it.resetEventChannel()
+                return
+            }
+            gdbServer = WokwiGDBServer(this.childScope("WokwiGDBServer")).also {
+                Disposer.register(this, it)
+                it.listen(port)
+            }
+        }
     }
 
     private suspend fun updateFirmware(): Boolean {
@@ -119,6 +144,9 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         simulator?.disposeByDisposer()
         simulator = null
 
+        gdbServer?.disposeByDisposer()
+        gdbServer = null
+
         withContext(Dispatchers.EDT) {
             ToolWindowUtils.setSimulatorIcon(project, false)
             componentService.simulatorToolWindowComponent.showConfig()
@@ -127,7 +155,6 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
 
 
     override fun dispose() {
-        println("DISPOSING WokwiProjectService")
     }
 
     fun firmwareUpdated() = cs.launch {
