@@ -27,6 +27,9 @@
 
         <stepsBeforeRunProvider
             implementation="com.github.jozott00.wokwiintellij.runner.runBefore.WokwiStartDebugBeforeRunTaskProvider"/>
+
+        <macro implementation="com.github.jozott00.wokwiintellij.runner.macros.ElfPathMacro"/>
+        <macro implementation="com.github.jozott00.wokwiintellij.runner.macros.GdbServerMacro"/>
     </extensions>
 
     <projectListeners>
