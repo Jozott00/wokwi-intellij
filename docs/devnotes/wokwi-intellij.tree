@@ -4,9 +4,9 @@
 
 <instance-profile id="wokwi-intellij"
                   name="Wokwi Intellij Dev Notes"
-                  start-page="devnotes.md">
+                  start-page="starter-topic.md">
 
-    <toc-element topic="devnotes.md">
+    <toc-element topic="starter-topic.md">
     </toc-element>
     <toc-element topic="Communication-Architecture.md"/>
     <toc-element topic="Wokwi-Config.md"/>
