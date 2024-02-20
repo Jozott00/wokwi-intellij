@@ -2,6 +2,9 @@ package com.github.jozott00.wokwiintellij.utils
 
 import com.intellij.notification.*
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.EDT
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object WokwiNotifier {
 
@@ -17,6 +20,19 @@ object WokwiNotifier {
         val notification = pluginNotifications().createNotification(title, message, type)
         action?.let { notification.addAction(it) }
         Notifications.Bus.notify(notification)
+    }
+
+    suspend fun notifyBalloonAsync(
+        title: String,
+        message: String = "",
+        type: NotificationType = NotificationType.INFORMATION,
+        action: NotifyAction? = null
+    ) {
+        withContext(Dispatchers.EDT) {
+            val notification = pluginNotifications().createNotification(title, message, type)
+            action?.let { notification.addAction(it) }
+            Notifications.Bus.notify(notification)
+        }
     }
 
     fun pluginNotifications(): NotificationGroup {

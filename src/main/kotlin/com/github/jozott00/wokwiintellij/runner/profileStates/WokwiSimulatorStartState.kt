@@ -8,6 +8,7 @@ import com.intellij.execution.Executor
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.application.TransactionGuardImpl
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 

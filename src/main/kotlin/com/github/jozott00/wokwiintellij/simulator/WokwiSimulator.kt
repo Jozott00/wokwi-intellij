@@ -157,7 +157,7 @@ class WokwiSimulator(
     private fun initGdpServer() {
         val port = runArgs.gdpPort ?: return
 
-        GlobalScope.launch {
+        CoroutineScope(Dispatchers.Default + Job()).launch {
             launch { gdbServer.listen(port) }
             launch {
                 gdbServer.events.collect { event ->

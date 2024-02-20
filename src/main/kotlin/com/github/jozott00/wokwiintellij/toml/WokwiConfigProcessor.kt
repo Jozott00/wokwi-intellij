@@ -9,6 +9,7 @@ import com.github.jozott00.wokwiintellij.utils.NotifyAction
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.utils.WokwiTemplates
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -16,6 +17,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.serializer
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -23,15 +26,20 @@ import kotlin.io.path.pathString
 
 object WokwiConfigProcessor {
 
-    fun loadConfig(project: Project, wokwiConfigPath: String, diagramPath: String): WokwiConfig? {
+    suspend fun loadConfig(project: Project, wokwiConfigPath: String, diagramPath: String): WokwiConfig? {
         val projectPath = project.guessProjectDir()?.path ?: return null
-        val tomlConfig = readConfig(project, wokwiConfigPath) ?: return null
+        val tomlConfig = withContext(Dispatchers.IO) {
+            readConfig(project, wokwiConfigPath)
+        } ?: return null
         val configFilePath = Paths.get(projectPath).resolve(wokwiConfigPath)
         val diagramFilePath = Paths.get(projectPath).resolve(diagramPath)
-        return loadConfig(project, tomlConfig, configFilePath, diagramFilePath)
+        return withContext(Dispatchers.IO) {
+            loadConfig(project, tomlConfig, configFilePath, diagramFilePath)
+        }
+
     }
 
-    private fun readConfig(project: Project, wokwiConfigPath: String): WokwiTomlTable? {
+    private suspend fun readConfig(project: Project, wokwiConfigPath: String): WokwiTomlTable? {
         val projectPath = project.guessProjectDir()?.path ?: return null
         val configFilePath = Paths.get(projectPath).resolve(wokwiConfigPath)
 
@@ -66,7 +74,7 @@ object WokwiConfigProcessor {
         return model.wokwi
     }
 
-    private fun loadConfig(
+    private suspend fun loadConfig(
         project: Project,
         tomlConfig: WokwiTomlTable,
         configFilePath: Path,
@@ -74,7 +82,6 @@ object WokwiConfigProcessor {
     ): WokwiConfig? {
 
         val projectDir = project.guessProjectDir() ?: return null;
-
 
         val elfFile = projectDir.findFileByRelativePath(tomlConfig.elf) ?: run {
             notifyError(
@@ -121,13 +128,15 @@ object WokwiConfigProcessor {
         )
     }
 
-    private fun notifyError(error: String, action: NotifyAction? = null) {
-        WokwiNotifier.notifyBalloon(
-            "Couldn't load Wokwi configuration",
-            error,
-            NotificationType.ERROR,
-            action
-        )
+    private suspend fun notifyError(error: String, action: NotifyAction? = null) {
+        withContext(Dispatchers.EDT) {
+            WokwiNotifier.notifyBalloonAsync(
+                "Couldn't load Wokwi configuration",
+                error,
+                NotificationType.ERROR,
+                action
+            )
+        }
     }
 
     private fun getNotifyJumpToAction(text: String, project: Project, filePath: Path) = NotifyAction(text) { _, _ ->

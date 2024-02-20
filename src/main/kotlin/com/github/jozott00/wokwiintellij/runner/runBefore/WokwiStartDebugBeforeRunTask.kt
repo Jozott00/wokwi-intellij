@@ -12,6 +12,8 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Key
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.swing.Icon
 
 class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDebugBeforeRunTask>() {
@@ -35,11 +37,12 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
         environment: ExecutionEnvironment,
         task: WokwiStartDebugBeforeRunTask
     ): Boolean {
-        val result = environment.project.service<WokwiProjectService>()
-            .startSimulatorSynchronous(task, true)
-
-        task.waitForSimulatorToBeRunning()
-        return result
+        val projectService = environment.project.service<WokwiProjectService>()
+        return runBlocking {
+            val result = projectService.startSimulatorSuspended(task, true)
+            task.waitForSimulatorToBeRunning()
+            result
+        }
     }
 
 }
@@ -47,28 +50,13 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
 class WokwiStartDebugBeforeRunTask :
     BeforeRunTask<WokwiStartDebugBeforeRunTask>(WokwiStartDebugBeforeRunTaskProvider.ID), WokwiSimulatorListener {
 
-    private val monitor = java.lang.Object()
+    private val simulatorRunning = CompletableDeferred<Unit>()
 
-    @Volatile
-    private var isSimulatorRunning = false
-
-    fun waitForSimulatorToBeRunning() {
-        synchronized(monitor) {
-            while (!isSimulatorRunning) {
-                try {
-                    monitor.wait()
-                } catch (e: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    return
-                }
-            }
-        }
+    suspend fun waitForSimulatorToBeRunning() {
+        simulatorRunning.await()
     }
 
     override fun onRunning() {
-        synchronized(monitor) {
-            isSimulatorRunning = true
-            monitor.notifyAll()
-        }
+        simulatorRunning.complete(Unit)
     }
 }

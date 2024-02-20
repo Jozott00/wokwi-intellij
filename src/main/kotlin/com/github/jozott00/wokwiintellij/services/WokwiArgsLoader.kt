@@ -5,15 +5,19 @@ import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiProjectType
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloon
+import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloonAsync
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
+import com.intellij.openapi.application.readAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.readBytes
 import com.intellij.openapi.vfs.readText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.*
 
 @Service(Service.Level.PROJECT)
@@ -21,30 +25,32 @@ class WokwiArgsLoader(project: Project) {
 
     private var licensingService = ApplicationManager.getApplication().service<WokwiLicensingService>()
 
-    fun load(config: WokwiConfig): WokwiArgs? {
+    suspend fun load(config: WokwiConfig): WokwiArgs? {
         val license = loadLicense() ?: return null
-        val diagram = config.diagram.readText()
+        val diagram = readAction { config.diagram.readText() }
         val firmware = loadFirmware(config.firmware) ?: return null
 
         val projectType = detectProject()
         // TODO: Check for esp image
 
-
         val args = WokwiArgs(license, diagram, firmware, projectType, config.gdbServerPort)
         return args
+
     }
 
-    fun loadFirmware(firmwareFile: VirtualFile): WokwiArgsFirmware? {
-        if (!firmwareFile.exists()) {
-            notifyBalloon(
-                title = "Failed to load firmware",
-                message = "Firmware `${firmwareFile.path}` does not exist and therefore cannot be loaded for simulation.",
-                NotificationType.ERROR
-            )
+    suspend fun loadFirmware(firmwareFile: VirtualFile): WokwiArgsFirmware? {
+        if (!readAction { firmwareFile.exists() }) {
+            withContext(Dispatchers.EDT) {
+                notifyBalloonAsync(
+                    title = "Failed to load firmware",
+                    message = "Firmware `${firmwareFile.path}` does not exist and therefore cannot be loaded for simulation.",
+                    NotificationType.ERROR
+                )
+            }
             return null
         }
 
-        val buffer = firmwareFile.readBytes()
+        val buffer = readAction { firmwareFile.readBytes() }
         val binaryPaths = listOf(firmwareFile.path)
 
         val firmware = WokwiArgsFirmware(
@@ -57,15 +63,16 @@ class WokwiArgsLoader(project: Project) {
         )
 
         return firmware
+
     }
 
-    private fun detectProject(): WokwiProjectType {
+    private suspend fun detectProject(): WokwiProjectType {
         return WokwiProjectType.RUST
     }
 
-    private fun loadLicense(): String? {
+    private suspend fun loadLicense(): String? {
         val license = licensingService.getLicense() ?: run {
-            notifyBalloon(
+            notifyBalloonAsync(
                 "No Wokwi license found",
                 "Set your Wokwi license in the Wokwi window.",
                 NotificationType.ERROR
@@ -74,12 +81,16 @@ class WokwiArgsLoader(project: Project) {
         }
 
         val licenseObj = licensingService.parseLicense(license) ?: run {
-            notifyBalloon("Invalid Wokwi license", "The Wokwi license could not be parsed.", NotificationType.ERROR)
+            notifyBalloonAsync(
+                "Invalid Wokwi license",
+                "The Wokwi license could not be parsed.",
+                NotificationType.ERROR
+            )
             return@loadLicense null
         }
 
         if (licenseObj.expiration < Date()) {
-            notifyBalloon(
+            notifyBalloonAsync(
                 "Expired Wokwi license",
                 "The Wokwi license is expired, please refresh it.",
                 NotificationType.ERROR

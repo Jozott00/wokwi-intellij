@@ -9,29 +9,35 @@ import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.ktor.http.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.nio.charset.StandardCharsets
 import java.util.*
 
 
 @Service(Service.Level.APP)
-class WokwiLicensingService() {
+class WokwiLicensingService(private val cs: CoroutineScope) {
 
     private val licenseAttributes =
         CredentialAttributes(WokwiConstants.WOWKI_PLUGIN_SERVICE_NAME, WokwiConstants.WOKWI_LICENCE_STORE_KEY)
 
     private var licenseCache: String? = null
 
-    fun getLicense() = licenseCache ?: PasswordSafe.instance.let {
-        licenseCache = it.getPassword(licenseAttributes)
-        licenseCache
+    suspend fun getLicense() = licenseCache ?: withContext(Dispatchers.IO) {
+        PasswordSafe.instance.let {
+            licenseCache = it.getPassword(licenseAttributes)
+            licenseCache
+        }
     }
 
-    fun updateLicense(license: String) {
+    fun updateLicense(license: String) = cs.launch(Dispatchers.IO) {
         LOG.info("Update Wokwi license")
         licenseCache = license
         val credentials = Credentials(WokwiConstants.WOKWI_LICENCE_STORE_KEY, license)
         PasswordSafe.instance.set(licenseAttributes, credentials)
-        WokwiNotifier.notifyBalloon("New Wokwi license activated", "You are ready to go!")
+        WokwiNotifier.notifyBalloonAsync("New Wokwi license activated", "You are ready to go!")
     }
 
     fun parseLicense(license: String): WokwiLicense? {
