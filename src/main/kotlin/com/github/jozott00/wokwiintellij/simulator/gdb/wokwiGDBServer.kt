@@ -60,9 +60,10 @@ class WokwiGDBServer(private val cs: CoroutineScope) : GDBServerCommunicator, Di
                 "Failed to create server socket: ${e.message}",
                 NotificationType.ERROR
             )
-
         }
     }
+
+    fun isRunning() = serverSocket?.isClosed?.not() ?: false
 
     private suspend fun handleConnection(socket: Socket) {
         currentMessageProcessor = MessageProcessor(socket, eventChannel)

@@ -15,15 +15,7 @@ class ElfPathMacro : Macro() {
 
     override fun expand(dataContext: DataContext): String? {
         val project = CommonDataKeys.PROJECT.getData(dataContext) ?: return null
-        val projectSettings = project.service<WokwiSettingsState>()
-        val config = runBlocking {
-            WokwiConfigProcessor.loadConfig(
-                project,
-                projectSettings.wokwiConfigPath,
-                projectSettings.wokwiDiagramPath
-            )
-        } ?: return null
-
-        return config.elf.path
+        val config = runBlocking { WokwiConfigProcessor.findElfFile(project) } ?: return null
+        return config.path
     }
 }

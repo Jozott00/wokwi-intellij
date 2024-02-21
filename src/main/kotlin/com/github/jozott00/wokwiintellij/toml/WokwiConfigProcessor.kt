@@ -5,51 +5,63 @@ import com.akuleshov7.ktoml.exceptions.TomlDecodingException
 import com.akuleshov7.ktoml.file.TomlFileReader
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
-import com.github.jozott00.wokwiintellij.utils.NotifyAction
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
-import com.github.jozott00.wokwiintellij.utils.WokwiTemplates
+import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
+import com.github.jozott00.wokwiintellij.utils.*
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.application.readAction
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.serializer
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.io.path.pathString
 
 object WokwiConfigProcessor {
 
     suspend fun loadConfig(project: Project, wokwiConfigPath: String, diagramPath: String): WokwiConfig? {
-        val projectPath = project.guessProjectDir()?.path ?: return null
+        val absoluteWokwiPath = findWokwiConfigPath(wokwiConfigPath, project) ?: return null
+        val diagramFilePath = findWokwiDiagramPath(diagramPath, project) ?: return null
         val tomlConfig = withContext(Dispatchers.IO) {
-            readConfig(project, wokwiConfigPath)
+            readConfig(absoluteWokwiPath, project)
         } ?: return null
-        val configFilePath = Paths.get(projectPath).resolve(wokwiConfigPath)
-        val diagramFilePath = Paths.get(projectPath).resolve(diagramPath)
         return withContext(Dispatchers.IO) {
-            loadConfig(project, tomlConfig, configFilePath, diagramFilePath)
+            loadConfig(project, tomlConfig, absoluteWokwiPath, diagramFilePath)
         }
-
     }
 
-    private suspend fun readConfig(project: Project, wokwiConfigPath: String): WokwiTomlTable? {
-        val projectPath = project.guessProjectDir()?.path ?: return null
-        val configFilePath = Paths.get(projectPath).resolve(wokwiConfigPath)
+    suspend fun readConfig(project: Project): WokwiTomlTable? {
+        val projectSettings = project.service<WokwiSettingsState>()
+        val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath, project) ?: return null
+        return readConfig(configFile, project)
+    }
 
-        if (!configFilePath.toFile().exists()) {
-            notifyError("Configuration file `${configFilePath.pathString}` not found.")
+    suspend fun findElfFile(project: Project): VirtualFile? {
+        val projectSettings = project.service<WokwiSettingsState>()
+        val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath, project) ?: return null
+        val tomlConfig = readConfig(project) ?: return null
+        return configFile.parent.findFileByRelativePath(tomlConfig.elf)
+    }
+
+    private suspend fun readConfig(configFile: VirtualFile, project: Project): WokwiTomlTable? {
+
+        if (!configFile.exists()) {
+            notifyError("Configuration file `${configFile.path}` not found.")
             return null
         }
 
-        if (configFilePath.fileName.pathString != "wokwi.toml") {
-            notifyError("Wokwi configuration file must be called `wokwi.toml` but is actually `${configFilePath.fileName}`")
+        if (configFile.name != "wokwi.toml") {
+            notifyError("Wokwi configuration file must be called `wokwi.toml` but is actually `${configFile.name}`")
             return null
         }
 
@@ -62,11 +74,11 @@ object WokwiConfigProcessor {
 
         lateinit var model: WokwiTomlConfig
         try {
-            model = fileReader.decodeFromFile(serializer(), configFilePath.pathString)
+            model = fileReader.decodeFromFile(serializer(), configFile.path)
         } catch (e: TomlDecodingException) {
             notifyError(
                 "Check your wokwi.toml file and try again",
-                getNotifyJumpToAction("Jump to config", project, configFilePath)
+                getNotifyJumpToAction("Jump to config", project, configFile)
             )
             return null
         }
@@ -77,47 +89,27 @@ object WokwiConfigProcessor {
     private suspend fun loadConfig(
         project: Project,
         tomlConfig: WokwiTomlTable,
-        configFilePath: Path,
-        diagramFilePath: Path
+        configFile: VirtualFile,
+        diagramFile: VirtualFile
     ): WokwiConfig? {
+        val configDir = readAction { configFile.parent }
 
-        val projectDir = project.guessProjectDir() ?: return null;
-
-        val elfFile = projectDir.findFileByRelativePath(tomlConfig.elf) ?: run {
+        val elfFile = readAction { configDir.findFileByRelativePath(tomlConfig.elf) } ?: run {
             notifyError(
                 "Invalid ELF path. Is the project already built?",
-                getNotifyJumpToAction("Jump to config", project, configFilePath)
+                getNotifyJumpToAction("Jump to config", project, configFile)
             )
             return null
         }
 
-        val firmwareFile = projectDir.findFileByRelativePath(tomlConfig.elf) ?: run {
+        val firmwareFile = readAction { configDir.findFileByRelativePath(tomlConfig.elf) } ?: run {
             notifyError(
                 "Invalid firmware path. Is the project already built?",
-                getNotifyJumpToAction("Jump to config", project, configFilePath)
+                getNotifyJumpToAction("Jump to config", project, configFile)
             )
             return null
         }
 
-        val diagramFile = LocalFileSystem.getInstance().findFileByPath(diagramFilePath.toString()) ?: run {
-            notifyError(
-                "Diagram specification `${diagramFilePath.pathString}` not found",
-                NotifyAction("Create diagram.json") { _, _ ->
-                    val psiManager = PsiManager.getInstance(project)
-                    val virtualFile = project.guessProjectDir() ?: return@NotifyAction
-                    val psiDir = psiManager.findDirectory(virtualFile)
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        val diagramFile =
-                            psiDir?.createFile(WokwiConstants.WOKWI_DIAGRAM_FILE) ?: return@runWriteCommandAction
-                        val document = diagramFile.viewProvider.document
-                        document.setText(WokwiTemplates.defaultDiagramJson(project))
-                        val descriptor = OpenFileDescriptor(project, diagramFile.virtualFile)
-                        FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
-                    }
-                }
-            )
-            return null
-        }
 
         return WokwiConfig(
             version = tomlConfig.version.toString(),
@@ -127,6 +119,7 @@ object WokwiConfigProcessor {
             gdbServerPort = tomlConfig.gdbServerPort
         )
     }
+
 
     private suspend fun notifyError(error: String, action: NotifyAction? = null) {
         withContext(Dispatchers.EDT) {
@@ -139,11 +132,55 @@ object WokwiConfigProcessor {
         }
     }
 
-    private fun getNotifyJumpToAction(text: String, project: Project, filePath: Path) = NotifyAction(text) { _, _ ->
-        val virtualFile = LocalFileSystem.getInstance().findFileByNioFile(filePath) ?: return@NotifyAction
-        val descriptor = OpenFileDescriptor(project, virtualFile)
+    private fun getNotifyJumpToAction(text: String, project: Project, file: VirtualFile) = NotifyAction(text) { _, _ ->
+        val descriptor = OpenFileDescriptor(project, file)
         FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
     }
+
+    suspend fun findWokwiConfigPath(wokwiConfigPath: String, project: Project): VirtualFile? = withContext(Dispatchers.IO) { readAction { project
+        .findRelativeFiles(wokwiConfigPath)}.run {
+        if (isEmpty()) {
+            WokwiNotifier.notifyBalloon(
+                "Configuration file `$wokwiConfigPath` not found in project."
+            )
+            return@run null
+        }
+        if (size > 1) {
+            notifyError("Found multiple configuration files: \n${joinToString("\n")}. \nSpecify the concrete one in the Settings.")
+            return@run null
+        }
+
+        return@run first()
+    }}
+
+    private suspend fun findWokwiDiagramPath(wokwiDiagramPath: String, project: Project): VirtualFile? = withContext(Dispatchers.IO) {readAction {  project
+        .findRelativeFiles(wokwiDiagramPath) }.run {
+        if (isEmpty()) {
+            notifyError(
+                "Diagram file `$wokwiDiagramPath` not found in project.",
+                NotifyAction("Create diagram.json") { _, _ ->
+                    val psiManager = PsiManager.getInstance(project)
+                    val virtualFile = project.guessProjectDir() ?: return@NotifyAction
+                    val psiDir = psiManager.findDirectory(virtualFile)
+                    WriteCommandAction.runWriteCommandAction(project) {
+                        val diagramFile =
+                            psiDir?.createFile(WokwiConstants.WOKWI_DIAGRAM_FILE) ?: return@runWriteCommandAction
+                        val document = diagramFile.viewProvider.document
+                        document.setText(WokwiTemplates.defaultDiagramJson(project))
+                        val descriptor =
+                            OpenFileDescriptor(project, diagramFile.virtualFile)
+                        FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
+                    }
+                }
+            )
+            return@run null
+        }
+        if (size > 1) {
+            notifyError("Found multiple diagram files: \n${joinToString("\n")}. \nSpecify the concrete one in the Settings.")
+            return@run null
+        }
+        return@run first()
+    }}
 
 
 }

@@ -15,14 +15,7 @@ class GdbServerMacro : Macro() {
 
     override fun expand(dataContext: DataContext): String? {
         val project = CommonDataKeys.PROJECT.getData(dataContext) ?: return null
-        val projectSettings = project.service<WokwiSettingsState>()
-        val config = runBlocking {
-            WokwiConfigProcessor.loadConfig(
-                project,
-                projectSettings.wokwiConfigPath,
-                projectSettings.wokwiDiagramPath
-            )
-        } ?: return null
+        val config = runBlocking { WokwiConfigProcessor.readConfig(project) } ?: return null
 
         val port = config.gdbServerPort ?: return null
         return "localhost:$port"

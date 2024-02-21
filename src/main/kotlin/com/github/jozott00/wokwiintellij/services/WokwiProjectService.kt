@@ -13,6 +13,7 @@ import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.utils.resolveWith
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
@@ -24,6 +25,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.ui.jcef.JBCefApp
 import com.intellij.util.namedChildScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +62,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         LOG.info("Start simulator...")
 
         if (simulator == null || byDebugger) {
-            createNewSimulator(byDebugger)
+                createNewSimulator(byDebugger)
         } else {
             updateFirmware()
         }.also { if (!it) return false }
@@ -91,6 +93,14 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
 
         simulator?.disposeByDisposer()
 
+        if (!JBCefApp.isSupported()) {
+            WokwiNotifier.notifyBalloonAsync(
+                "Could not create Wokwi simulator",
+                "JCEF browser is not supported. Please report this issue on the wokwi-intellij Github repository.",
+                NotificationType.ERROR
+            )
+            return false
+        }
         val browser = SimulatorJCEFHtmlPanel()
 
         configGDBServer(
@@ -120,6 +130,11 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
             gdbServer = null
         } else {
             gdbServer?.let {
+                if (!it.isRunning()) {
+                    it.disposeByDisposer()
+                    return@let
+                }
+
                 it.resetEventChannel()
                 return
             }
