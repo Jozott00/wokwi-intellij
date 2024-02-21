@@ -54,7 +54,7 @@ class WokwiGDBServer(private val cs: CoroutineScope) : GDBServerCommunicator, Di
                 }
             }
         } catch (e: Exception) {
-            LOG.error(e)
+            LOG.warn(e)
             WokwiNotifier.notifyBalloonAsync(
                 "Couldn't start GDB server",
                 "Failed to create server socket: ${e.message}",

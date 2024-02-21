@@ -88,10 +88,8 @@ class WokwiSimulator(
                 is GDBServerEvent.Connected -> {}
                 is GDBServerEvent.Error -> LOG.error("Error: ${event.error}")
                 is GDBServerEvent.Message -> {
-                    LOG.info("Received GDBSERVER message: ${event.message}")
                     browserPipe.send(PIPE_TOPIC, Command.gdbMessage(event.message))
                 }
-
                 is GDBServerEvent.Break -> browserPipe.send(PIPE_TOPIC, Command.gdbBreak())
             }
         }

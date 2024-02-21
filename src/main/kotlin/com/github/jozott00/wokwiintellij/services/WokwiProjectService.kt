@@ -62,7 +62,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         LOG.info("Start simulator...")
 
         if (simulator == null || byDebugger) {
-                createNewSimulator(byDebugger)
+            createNewSimulator(byDebugger)
         } else {
             updateFirmware()
         }.also { if (!it) return false }

@@ -11,9 +11,9 @@ object WokwiIcons {
 
     val Default = IconLoader.getIcon("icons/pluginIcon.svg", WokwiIcons.javaClass)
 
-    val SimulatorToolWindowIcon = Default
+    val SimulatorToolWindowIcon = IconLoader.getIcon("icons/pluginIcon@13x13.svg", WokwiIcons.javaClass)
 
-    val ConsoleToolWindowIcon = IconLoader.getIcon("icons/logIcon@20x20.svg", WokwiIcons.javaClass)
+    val ConsoleToolWindowIcon = IconLoader.getIcon("icons/logIcon@13x13.svg", WokwiIcons.javaClass)
 
     val Debug = LayeredIcon(2).also {
         it.setIcon(Default, 0)
