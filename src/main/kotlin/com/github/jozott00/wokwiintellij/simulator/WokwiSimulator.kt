@@ -7,7 +7,6 @@ import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerCommunicator
 import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerEvent
-import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
 import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
@@ -17,7 +16,6 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.util.containers.ContainerUtil
 import io.ktor.util.*
-import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import java.net.URL
 import kotlin.io.encoding.Base64

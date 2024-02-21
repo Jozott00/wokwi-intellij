@@ -6,9 +6,11 @@ import com.akuleshov7.ktoml.file.TomlFileReader
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
-import com.github.jozott00.wokwiintellij.utils.*
+import com.github.jozott00.wokwiintellij.utils.NotifyAction
+import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
+import com.github.jozott00.wokwiintellij.utils.WokwiTemplates
+import com.github.jozott00.wokwiintellij.utils.findRelativeFiles
 import com.intellij.notification.NotificationType
-import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.command.WriteCommandAction
@@ -17,15 +19,11 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.serializer
-import java.nio.file.Path
-import kotlin.io.path.pathString
 
 object WokwiConfigProcessor {
 

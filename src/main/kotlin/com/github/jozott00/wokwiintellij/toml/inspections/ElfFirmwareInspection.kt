@@ -5,14 +5,8 @@ import com.github.jozott00.wokwiintellij.toml.stringValue
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.findFile
-import com.intellij.openapi.vfs.findFileOrDirectory
 import com.intellij.psi.PsiElementVisitor
-import com.intellij.testFramework.utils.vfs.getDirectory
-import org.toml.lang.psi.TomlKey
 import org.toml.lang.psi.TomlKeyValue
-import kotlin.io.path.pathString
 
 class ElfFirmwareInspection : LocalInspectionTool() {
 

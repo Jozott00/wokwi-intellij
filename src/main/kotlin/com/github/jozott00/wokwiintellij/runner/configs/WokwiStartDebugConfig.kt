@@ -4,7 +4,10 @@ import com.github.jozott00.wokwiintellij.runner.WokwiConfigurationFactory
 import com.github.jozott00.wokwiintellij.runner.profileStates.WokwiSimulatorStartState
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
 import com.intellij.execution.Executor
-import com.intellij.execution.configurations.*
+import com.intellij.execution.configurations.ConfigurationFactory
+import com.intellij.execution.configurations.ConfigurationTypeBase
+import com.intellij.execution.configurations.RunConfigurationBase
+import com.intellij.execution.configurations.RunConfigurationOptions
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
