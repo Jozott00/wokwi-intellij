@@ -1,10 +1,15 @@
 package com.github.jozott00.wokwiintellij.services
 
 import ai.grazie.utils.mpp.Base64
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.github.jozott00.wokwiintellij.WokwiConstants
+import com.github.jozott00.wokwiintellij.exceptions.GenericError
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.credentialStore.CredentialAttributes
 import com.intellij.ide.passwordSafe.PasswordSafe
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.ktor.http.*
@@ -42,6 +47,28 @@ class WokwiLicensingService(private val cs: CoroutineScope) {
         licenseCache = null
         PasswordSafe.instance.setPassword(licenseAttributes, null)
         WokwiNotifier.notifyBalloonAsync("Wokwi license removed", "Your license has been removed.")
+    }
+
+    suspend fun loadAndCheckLicense(): Either<GenericError, String> {
+        val license = getLicense() ?:
+            return GenericError(
+                "No Wokwi license found",
+                "Set your Wokwi license in the Wokwi window.",
+            ).left()
+
+        val licenseObj = parseLicense(license) ?:
+            return GenericError(
+                "Invalid Wokwi license",
+                "The Wokwi license could not be parsed.",
+            ).left()
+
+        if (licenseObj.expiration < Date())
+            return GenericError(
+                "Expired Wokwi license",
+                "The Wokwi license is expired, please refresh it.",
+            ).left()
+
+        return license.right()
     }
 
 

@@ -1,11 +1,14 @@
 package com.github.jozott00.wokwiintellij.services
 
+import arrow.core.Either
+import com.github.jozott00.wokwiintellij.exceptions.GenericError
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiProjectType
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloonAsync
+import com.github.jozott00.wokwiintellij.utils.simulation.FirmwareUtils
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
@@ -18,10 +21,9 @@ import com.intellij.openapi.vfs.readBytes
 import com.intellij.openapi.vfs.readText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.*
 
 @Service(Service.Level.PROJECT)
-class WokwiArgsLoader(project: Project) {
+class WokwiArgsLoader(val project: Project) {
 
     private var licensingService = ApplicationManager.getApplication().service<WokwiLicensingService>()
 
@@ -38,7 +40,7 @@ class WokwiArgsLoader(project: Project) {
 
     }
 
-    suspend fun loadFirmware(firmwareFile: VirtualFile): WokwiArgsFirmware? {
+    suspend fun loadFirmware(firmwareFile: VirtualFile): WokwiArgsFirmware? = withContext(Dispatchers.IO) {
         if (!readAction { firmwareFile.exists() }) {
             withContext(Dispatchers.EDT) {
                 notifyBalloonAsync(
@@ -47,59 +49,64 @@ class WokwiArgsLoader(project: Project) {
                     NotificationType.ERROR
                 )
             }
-            return null
+            return@withContext null
         }
 
-        val buffer = readAction { firmwareFile.readBytes() }
-        val binaryPaths = listOf(firmwareFile.path)
+        val isFirmwareFile = firmwareFile.name == "flasher_args.json"
+        val format: FirmwareFormat = when {
+            firmwareFile.extension.equals("hex", ignoreCase = true) -> FirmwareFormat.HEX
+            firmwareFile.extension.equals("uf2", ignoreCase = true) -> FirmwareFormat.UF2
+            firmwareFile.extension.equals("bin", ignoreCase = true) -> FirmwareFormat.BIN
+            firmwareFile.extension.equals("json", ignoreCase = true) -> FirmwareFormat.BIN
+            else -> {
+                notifyBalloonAsync(
+                    title = "Unsupported firmware format",
+                    message = "The firmware format of `${firmwareFile.path}` is not supported.",
+                    type = NotificationType.ERROR
+                )
+                return@withContext null
+            }
+        }
 
-        val firmware = WokwiArgsFirmware(
+        val binaryPaths = mutableListOf(firmwareFile.path)
+        val buffer = if (isFirmwareFile) {
+            val packedResult=
+                when (val result = FirmwareUtils.packEspIdfFirmware(firmwareFile, project)) {
+                is Either.Left -> {
+                    notifyBalloonAsync(result.value)
+                    return@withContext null
+                }
+                is Either.Right -> result.value
+            }
+
+            binaryPaths.addAll(packedResult.binaryPaths)
+            packedResult.img
+        } else {
+            readAction { firmwareFile.readBytes() }
+        }
+
+
+        WokwiArgsFirmware(
             buffer = buffer,
-            format = FirmwareFormat.BIN,
+            format = format,
             rootFile = firmwareFile,
             isFlasherFile = false,
             size = buffer.size.toUInt(),
             binaryPaths = binaryPaths
         )
-
-        return firmware
-
     }
 
     private suspend fun detectProject(): WokwiProjectType {
         return WokwiProjectType.RUST
     }
 
-    private suspend fun loadLicense(): String? {
-        val license = licensingService.getLicense() ?: run {
+    private suspend fun loadLicense() = licensingService.loadAndCheckLicense()
+        .onLeft {
             notifyBalloonAsync(
-                "No Wokwi license found",
-                "Set your Wokwi license in the Wokwi window.",
-                NotificationType.ERROR
+                title = it.title,
+                message = it.message,
+                type = NotificationType.ERROR
             )
-            return@loadLicense null
-        }
-
-        val licenseObj = licensingService.parseLicense(license) ?: run {
-            notifyBalloonAsync(
-                "Invalid Wokwi license",
-                "The Wokwi license could not be parsed.",
-                NotificationType.ERROR
-            )
-            return@loadLicense null
-        }
-
-        if (licenseObj.expiration < Date()) {
-            notifyBalloonAsync(
-                "Expired Wokwi license",
-                "The Wokwi license is expired, please refresh it.",
-                NotificationType.ERROR
-            )
-            return null
-        }
-
-        return license
-    }
-
+        }.getOrNull()
 
 }
