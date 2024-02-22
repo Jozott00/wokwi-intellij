@@ -10,10 +10,7 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Key
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import javax.swing.Icon
 
 class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDebugBeforeRunTask>() {
@@ -38,7 +35,7 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
         task: WokwiStartDebugBeforeRunTask
     ): Boolean {
         val projectService = environment.project.service<WokwiProjectService>()
-        return runBlocking {
+        return runBlocking(Dispatchers.IO) {
             // start child scope to make cancellation on dispose possible.
             val job = projectService.childScope("WokwiStartBeforeRunTask").async {
                 val result = projectService.startSimulatorSuspended(task, true)

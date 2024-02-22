@@ -118,7 +118,6 @@ private class MessageProcessor(private val socket: Socket, private val eventChan
             val data = try {
                 reader.read()
             } catch (e: Exception) {
-                LOG.warn(e)
                 return@use
             }
             if (data == -1)

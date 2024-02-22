@@ -9,10 +9,7 @@ import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.ktor.http.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -35,10 +32,16 @@ class WokwiLicensingService(private val cs: CoroutineScope) {
     fun updateLicense(license: String) = cs.launch(Dispatchers.IO) {
         LOG.info("Update Wokwi license")
         licenseCache = license
-        val credentials = Credentials(WokwiConstants.WOKWI_LICENCE_STORE_KEY, license)
-        PasswordSafe.instance.set(licenseAttributes, credentials)
+        PasswordSafe.instance.setPassword(licenseAttributes, license)
         WokwiNotifier.notifyBalloonAsync("New Wokwi license activated", "You are ready to go!")
     }
+
+    fun removeLicense() = cs.launch(Dispatchers.IO) {
+        licenseCache = null
+        PasswordSafe.instance.setPassword(licenseAttributes, null)
+        WokwiNotifier.notifyBalloonAsync("Wokwi license removed", "Your license has been removed.")
+    }
+
 
     fun parseLicense(license: String): WokwiLicense? {
         lateinit var decoded: ByteArray
@@ -107,5 +110,9 @@ class WokwiLicensingService(private val cs: CoroutineScope) {
         val email: String,
         val expiration: Date,
         val plan: String?
-    )
+    ) {
+        fun isValid(): Boolean {
+            return expiration.after(Date())
+        }
+    }
 }
