@@ -7,7 +7,7 @@
                          displayName="Invalid configuration version"
                          enabledByDefault="true"
                          level="ERROR"
-                         implementationClass="com.github.jozott00.wokwiintellij.toml.inspections.ConfigVersionInspection"/>
+                         implementationClass="com.github.jozott00.wokwiintellij.ide.inspections.ConfigVersionInspection"/>
 
 
         <localInspection language="TOML"
@@ -16,7 +16,7 @@
                          displayName="Invalid binary path"
                          enabledByDefault="true"
                          level="ERROR"
-                         implementationClass="com.github.jozott00.wokwiintellij.toml.inspections.ElfFirmwareInspection"/>
+                         implementationClass="com.github.jozott00.wokwiintellij.ide.inspections.ElfFirmwareInspection"/>
 
         <localInspection language="TOML"
                          groupPath="Wokwi"
@@ -24,7 +24,7 @@
                          displayName="Missing configuration"
                          enabledByDefault="true"
                          level="ERROR"
-                         implementationClass="com.github.jozott00.wokwiintellij.toml.inspections.MissingConfigurationInspection"/>
+                         implementationClass="com.github.jozott00.wokwiintellij.ide.inspections.MissingConfigurationInspection"/>
 
         <fileType
             name="WOKWI_TOML"

@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.toml.inspections
+package com.github.jozott00.wokwiintellij.ide.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiBundle
 import com.github.jozott00.wokwiintellij.WokwiConstants

@@ -1,7 +1,8 @@
-package com.github.jozott00.wokwiintellij.toml.inspections
+package com.github.jozott00.wokwiintellij.ide.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.ide.WokwiFileType
+import com.github.jozott00.wokwiintellij.toml.isWokwiToml
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.ProblemDescriptor
@@ -16,14 +17,14 @@ abstract class WokwiConfigInspectionBase: LocalInspectionTool() {
         manager: InspectionManager,
         isOnTheFly: Boolean
     ): Array<ProblemDescriptor>? {
-        if (file.name != WokwiConstants.WOKWI_CONFIG_FILE) return super.checkFile(file, manager, isOnTheFly)
+        if (!file.isWokwiToml) return super.checkFile(file, manager, isOnTheFly)
         return checkFileInternal(file, manager, isOnTheFly) ?: super.checkFile(file, manager, isOnTheFly)
     }
 
     protected open fun checkFileInternal(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor>? = null
 
     final override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
-        if (holder.file.name != WokwiConstants.WOKWI_CONFIG_FILE) return super.buildVisitor(holder, isOnTheFly)
+        if (!holder.file.isWokwiToml) return super.buildVisitor(holder, isOnTheFly)
         return buildVisitorInternal(holder, isOnTheFly) ?: super.buildVisitor(holder, isOnTheFly)
     }
 
