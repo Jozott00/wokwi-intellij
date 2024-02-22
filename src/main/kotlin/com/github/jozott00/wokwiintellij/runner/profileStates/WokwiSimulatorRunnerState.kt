@@ -15,12 +15,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import java.io.OutputStream
 
-@Deprecated("The WokwiRunner is currently not used, and might be removed in future.")
+//@Deprecated("The WokwiRunner is currently not used, and might be removed in future.")
 class WokwiSimulatorRunnerState(val myEnvironment: ExecutionEnvironment) : CommandLineState(myEnvironment) {
     override fun startProcess() = WokwiRunnerProcessHandler(myEnvironment.project)
 }
 
-@Deprecated("The WokwiRunner is currently not used, and might be removed in future.")
+//@Deprecated("The WokwiRunner is currently not used, and might be removed in future.")
 class WokwiRunnerProcessHandler(val project: Project) : WokwiProcessHandler() {
 
     val wokwiService = project.service<WokwiProjectService>()
@@ -29,9 +29,9 @@ class WokwiRunnerProcessHandler(val project: Project) : WokwiProcessHandler() {
         super.startNotify()
 
         ProgressManager.getInstance().runProcessWithProgressAsynchronously(
-            object : Task.Backgroundable(project, "Wokwi Executing", false) {
+            object : Task.Backgroundable(project, "Wokwi execution", false) {
                 override fun run(indicator: ProgressIndicator) {
-                    wokwiService.startSimulator(this@WokwiRunnerProcessHandler, true)
+                    wokwiService.startSimulator(this@WokwiRunnerProcessHandler, false)
                 }
             },
             ProgressIndicatorBase()
@@ -70,8 +70,5 @@ class WokwiRunnerProcessHandler(val project: Project) : WokwiProcessHandler() {
         return stream
     }
 
-    override fun onStarted(runArgs: WokwiArgs) {
-        this.destroyProcess()
-    }
 
 }
