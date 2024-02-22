@@ -2,6 +2,7 @@ package com.github.jozott00.wokwiintellij.toml.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiBundle
 import com.github.jozott00.wokwiintellij.WokwiConstants
+import com.github.jozott00.wokwiintellij.ide.WokwiFileType
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.LocalQuickFix
 import com.intellij.codeInspection.ProblemDescriptor
@@ -11,9 +12,9 @@ import com.intellij.psi.PsiElementVisitor
 import org.toml.lang.psi.TomlKeyValue
 import org.toml.lang.psi.TomlPsiFactory
 
-class ConfigVersionInspection : LocalInspectionTool() {
+class ConfigVersionInspection : WokwiConfigInspectionBase() {
 
-    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
+    override fun buildVisitorInternal(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
         return object : WokwiConfigVisitor() {
             override fun visitVersionValue(value: TomlKeyValue) {
                 super.visitVersionValue(value)

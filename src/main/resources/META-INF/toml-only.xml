@@ -25,5 +25,13 @@
                          enabledByDefault="true"
                          level="ERROR"
                          implementationClass="com.github.jozott00.wokwiintellij.toml.inspections.MissingConfigurationInspection"/>
+
+        <fileType
+            name="WOKWI_TOML"
+            language="TOML"
+            implementationClass="com.github.jozott00.wokwiintellij.ide.WokwiFileType"
+            fieldName="INSTANCE"
+            fileNames="wokwi.toml"
+        />
     </extensions>
 </idea-plugin>

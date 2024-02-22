@@ -12,12 +12,12 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.SimulatorWindowFactory" anchor="right"
                     id="Wokwi Simulator"
-                    icon="/icons/pluginIcon.svg"
+                    icon="/icons/pluginIcon@13x13.svg"
         />
 
         <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory" anchor="bottom"
                     id="Wokwi Run"
-                    icon="/icons/logIcon@20x20.svg"
+                    icon="/icons/logIcon@13x13.svg"
         />
 
         <notificationGroup id="Wokwi Simulator"
@@ -30,6 +30,7 @@
 
         <macro implementation="com.github.jozott00.wokwiintellij.runner.macros.ElfPathMacro"/>
         <macro implementation="com.github.jozott00.wokwiintellij.runner.macros.GdbServerMacro"/>
+
     </extensions>
 
     <projectListeners>

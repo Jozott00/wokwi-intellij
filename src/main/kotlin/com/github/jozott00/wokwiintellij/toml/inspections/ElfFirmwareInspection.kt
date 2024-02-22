@@ -8,9 +8,9 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiElementVisitor
 import org.toml.lang.psi.TomlKeyValue
 
-class ElfFirmwareInspection : LocalInspectionTool() {
+class ElfFirmwareInspection : WokwiConfigInspectionBase() {
 
-    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
+    override fun buildVisitorInternal(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
         return object : WokwiConfigVisitor() {
             override fun visitElfValue(value: TomlKeyValue) {
                 super.visitElfValue(value)

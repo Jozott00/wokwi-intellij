@@ -27,9 +27,9 @@ private fun InspectionManager.createErrorDescription(
     return createProblemDescriptor(elem, descriptor, quickFix, type, false)
 }
 
-class MissingConfigurationInspection : LocalInspectionTool() {
+class MissingConfigurationInspection : WokwiConfigInspectionBase() {
 
-    override fun checkFile(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor> {
+    override fun checkFileInternal(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor> {
         val file = file as TomlFile
 
         val wokwiTable = file.findTable("wokwi") ?: run {
