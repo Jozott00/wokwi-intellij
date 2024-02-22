@@ -9,7 +9,6 @@ import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
 import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
-import com.github.jozott00.wokwiintellij.ui.jcef.SimulatorJCEFHtmlPanel
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.utils.resolveWith
@@ -101,15 +100,12 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
             )
             return false
         }
-        val browser = SimulatorJCEFHtmlPanel()
-
         configGDBServer(
             waitForDebugger,
             config.gdbServerPort ?: 3333
         ) // configures gdbServer for new simulator instance
 
-        simulator = WokwiSimulator(args, browser).also {
-            Disposer.register(this@WokwiProjectService, it)
+        simulator = WokwiSimulator(args, this).also {
             gdbServer?.let { server -> cs.launch { it.connectToGDBServer(server) } } // connect to server
         }
 
@@ -117,7 +113,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
             val console = getConsole()
             simulator?.addSimulatorListener(console)
 
-            componentService.simulatorToolWindowComponent.showSimulation(browser.component)
+            simulator?.let { componentService.simulatorToolWindowComponent.showSimulation(it.component) }
             componentService.consoleToolWindowComponent.setConsole(console)
         }
 
@@ -138,8 +134,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
                 it.resetEventChannel()
                 return
             }
-            gdbServer = WokwiGDBServer(this.childScope("WokwiGDBServer")).also {
-                Disposer.register(this, it)
+            gdbServer = WokwiGDBServer(this.childScope("WokwiGDBServer"), this).also {
                 it.listen(port)
             }
         }

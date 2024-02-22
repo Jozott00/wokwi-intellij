@@ -5,6 +5,7 @@ import com.github.jozott00.wokwiintellij.utils.runCloseable
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.util.Disposer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -34,7 +35,11 @@ interface GDBServerCommunicator {
 }
 
 
-class WokwiGDBServer(private val cs: CoroutineScope) : GDBServerCommunicator, Disposable {
+class WokwiGDBServer(private val cs: CoroutineScope, parentDisposable: Disposable) : GDBServerCommunicator, Disposable {
+
+    init {
+        Disposer.register(parentDisposable, this)
+    }
 
     private var serverSocket: ServerSocket? = null
     private var currentMessageProcessor: MessageProcessor? = null

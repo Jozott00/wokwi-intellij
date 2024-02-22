@@ -16,22 +16,3 @@ fun Path.resolveWith(project: Project): Path? {
     return Path(basePath).resolve(this)
 }
 
-fun Project.wokwiCoroutineChildScope(childName: String): CoroutineScope {
-    return service<WokwiProjectService>().childScope(childName)
-}
-
-fun Project.findRelativePaths(path: String): List<Path> {
-    val rootUrls = ProjectRootManager.getInstance(this).contentRootUrls
-    return rootUrls.map {
-            Path.of(URI(it)).resolve(path)
-        }.filter {
-            it.exists()
-        }
-    }
-
-fun Project.findRelativeFiles(path: String): List<VirtualFile> {
-    val rootUrls = ProjectRootManager.getInstance(this).contentRoots
-    return rootUrls.mapNotNull {
-        it.findFileByRelativePath(path)
-    }
-}

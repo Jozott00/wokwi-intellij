@@ -2,7 +2,6 @@ package com.github.jozott00.wokwiintellij.simulator
 
 
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
-import com.github.jozott00.wokwiintellij.jcef.impl.JcefBrowserPipe
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerCommunicator
@@ -12,6 +11,7 @@ import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.ui.ComponentContainer
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.util.containers.ContainerUtil
@@ -25,15 +25,17 @@ private val LOG = logger<WokwiSimulator>()
 
 class WokwiSimulator(
     private val runArgs: WokwiArgs,
-    private val browser: SimulatorJCEFHtmlPanel,
+    parentDisposable: Disposable,
 ) : Disposable,
     Simulator,
+    ComponentContainer,
     BrowserPipe.Subscriber {
 
     private var browserReady = false
     private var startInvoked = false
 
-    private val browserPipe = JcefBrowserPipe(browser)
+    private val browser = SimulatorJCEFHtmlPanel(this)
+    private val browserPipe = browser.browserPipe
 
     private val myEventMulticaster = createEventMulticaster()
     private val myListeners: MutableList<WokwiSimulatorListener> = ContainerUtil.createLockFreeCopyOnWriteList()
@@ -44,8 +46,7 @@ class WokwiSimulator(
     private var simulationRunning = false
 
     init {
-        Disposer.register(this, browser)
-        Disposer.register(browser, browserPipe)
+        Disposer.register(parentDisposable, this)
         browserPipe.subscribe(PIPE_TOPIC, this, this)
     }
 
@@ -183,6 +184,10 @@ class WokwiSimulator(
         createEventMulticaster().onShutdown()
         myListeners.clear()
     }
+
+    override fun getComponent() = browser.component
+
+    override fun getPreferredFocusableComponent() = component
 
 
     private fun createEventMulticaster(): WokwiSimulatorListener {

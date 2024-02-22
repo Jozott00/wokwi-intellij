@@ -1,5 +1,6 @@
 package com.github.jozott00.wokwiintellij.toolWindow
 
+import com.github.jozott00.wokwiintellij.extensions.wokwiDisposable
 import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
 import com.intellij.execution.ui.layout.impl.JBRunnerTabs
 import com.intellij.openapi.Disposable
@@ -15,7 +16,7 @@ import javax.swing.JPanel
 
 class WokwiConsoleToolWindow(project: Project) :
     JPanel() {
-    private val tabs: WokwiConsoleTabs = WokwiConsoleTabs(project, project)
+    private val tabs: WokwiConsoleTabs = WokwiConsoleTabs(project, project.wokwiDisposable)
     private val controlActionGroup = createControlActionGroup()
 
     private val actionPlace = "WokwiConsole.topMiddleToolbar"

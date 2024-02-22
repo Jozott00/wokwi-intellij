@@ -4,12 +4,14 @@ import ai.grazie.utils.mpp.Base64
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.credentialStore.CredentialAttributes
-import com.intellij.credentialStore.Credentials
 import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.ktor.http.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.nio.charset.StandardCharsets
 import java.util.*
 

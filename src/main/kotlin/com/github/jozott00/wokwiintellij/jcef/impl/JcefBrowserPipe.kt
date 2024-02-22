@@ -3,6 +3,7 @@ package com.github.jozott00.wokwiintellij.jcef.impl
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.jcef.addLoadHandler
 import com.github.jozott00.wokwiintellij.jcef.executeJavaScript
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefBrowser
@@ -21,7 +22,7 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import org.intellij.lang.annotations.Language
 
-class JcefBrowserPipe(private val browser: JBCefBrowser) : BrowserPipe, CefLoadHandlerAdapter() {
+class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Disposable) : BrowserPipe, CefLoadHandlerAdapter() {
 
     // subscribers to specific types
     private val subscribers = hashMapOf<String, MutableList<BrowserPipe.Subscriber>>()
@@ -29,6 +30,7 @@ class JcefBrowserPipe(private val browser: JBCefBrowser) : BrowserPipe, CefLoadH
     private val injectQuery = JBCefJSQuery.create(browser as JBCefBrowserBase);
 
     init {
+        Disposer.register(parentDisposable, this)
         Disposer.register(this, injectQuery)
         injectQuery.addHandler(::onReceive)
         browser.addLoadHandler(this, this)

@@ -4,12 +4,12 @@ import com.akuleshov7.ktoml.TomlInputConfig
 import com.akuleshov7.ktoml.exceptions.TomlDecodingException
 import com.akuleshov7.ktoml.file.TomlFileReader
 import com.github.jozott00.wokwiintellij.WokwiConstants
+import com.github.jozott00.wokwiintellij.extensions.findRelativeFiles
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.utils.NotifyAction
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.utils.WokwiTemplates
-import com.github.jozott00.wokwiintellij.utils.findRelativeFiles
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.readAction
@@ -135,7 +135,7 @@ object WokwiConfigProcessor {
         FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
     }
 
-    suspend fun findWokwiConfigPath(wokwiConfigPath: String, project: Project): VirtualFile? = withContext(Dispatchers.IO) { readAction { project
+    private suspend fun findWokwiConfigPath(wokwiConfigPath: String, project: Project): VirtualFile? = withContext(Dispatchers.IO) { readAction { project
         .findRelativeFiles(wokwiConfigPath)}.run {
         if (isEmpty()) {
             WokwiNotifier.notifyBalloon(

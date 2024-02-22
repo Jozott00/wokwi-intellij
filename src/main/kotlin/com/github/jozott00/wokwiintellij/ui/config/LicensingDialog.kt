@@ -2,7 +2,6 @@ package com.github.jozott00.wokwiintellij.ui.config
 
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
-import com.github.jozott00.wokwiintellij.utils.runInBackground
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -12,8 +11,6 @@ import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.rows
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import java.util.*
 
 class LicensingDialog : DialogWrapper(true) {
