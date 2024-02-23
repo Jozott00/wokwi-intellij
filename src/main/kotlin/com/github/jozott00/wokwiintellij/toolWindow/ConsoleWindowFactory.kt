@@ -18,4 +18,7 @@ class ConsoleWindowFactory : ToolWindowFactory {
         toolWindow.contentManager.addContent(content)
     }
 
+    @Deprecated("Use isApplicableAsync", ReplaceWith("isApplicableAsync"))
+    override fun isApplicable(project: Project): Boolean = false
+
 }
