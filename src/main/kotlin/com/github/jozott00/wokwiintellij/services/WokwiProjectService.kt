@@ -192,9 +192,14 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
             it.show()
             return@launch
         }
-        consoleToolWindow =
-            ToolWindowManager.getInstance(project)
-                .registerToolWindow("Wokwi Run") {
+
+        val consoleToolWindowId = "Wokwi Run"
+
+        val tm = ToolWindowManager.getInstance(project)
+        if (tm.toolWindowIds.contains(consoleToolWindowId))
+            return@launch
+
+        consoleToolWindow = tm.registerToolWindow(consoleToolWindowId) {
                     val factory = ConsoleWindowFactory()
                     contentFactory = factory
                     icon = WokwiIcons.ConsoleToolWindowIcon

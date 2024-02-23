@@ -18,8 +18,4 @@ class ConsoleWindowFactory : ToolWindowFactory {
         toolWindow.contentManager.addContent(content)
     }
 
-    override suspend fun isApplicableAsync(project: Project): Boolean {
-        return false
-    }
-
 }
