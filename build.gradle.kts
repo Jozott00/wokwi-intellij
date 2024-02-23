@@ -83,10 +83,6 @@ tasks {
 
     runIde {
         autoReloadPlugins.set(true)
-        systemProperty(
-            "WOKWI_LICENSE",
-            System.getenv("WOKWI_LICENSE")
-        )
     }
 
     // to allow hot reload of sandbox using buildPlugin

@@ -1,11 +1,10 @@
 package com.github.jozott00.wokwiintellij.utils
 
-import com.intellij.openapi.project.Project
 import org.intellij.lang.annotations.Language
 
 object WokwiTemplates {
 
-    fun defaultDiagramJson(project: Project): String {
+    fun defaultDiagramJson(): String {
         @Language("JSON")
         val diagram = """
             {

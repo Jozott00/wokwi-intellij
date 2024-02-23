@@ -18,6 +18,5 @@ class GdbServerMacro : Macro() {
 
         val port = config.gdbServerPort ?: return null
         return "localhost:$port"
-        return "Test"
     }
 }

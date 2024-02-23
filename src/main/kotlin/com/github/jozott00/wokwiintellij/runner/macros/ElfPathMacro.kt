@@ -16,7 +16,5 @@ class ElfPathMacro : Macro() {
         val project = CommonDataKeys.PROJECT.getData(dataContext) ?: return null
         val config = runBlocking(Dispatchers.IO) { WokwiConfigProcessor.findElfFile(project) } ?: return null
         return config.path
-
-        return "test"
     }
 }

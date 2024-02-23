@@ -164,7 +164,7 @@ object WokwiConfigProcessor {
                         val diagramFile =
                             psiDir?.createFile(WokwiConstants.WOKWI_DIAGRAM_FILE) ?: return@runWriteCommandAction
                         val document = diagramFile.viewProvider.document
-                        document.setText(WokwiTemplates.defaultDiagramJson(project))
+                        document.setText(WokwiTemplates.defaultDiagramJson())
                         val descriptor =
                             OpenFileDescriptor(project, diagramFile.virtualFile)
                         FileEditorManager.getInstance(project).openTextEditor(descriptor, true)

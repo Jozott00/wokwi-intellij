@@ -30,12 +30,12 @@ private fun InspectionManager.createErrorDescription(
 class MissingConfigurationInspection : WokwiConfigInspectionBase() {
 
     override fun checkFileInternal(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor> {
-        val file = file as TomlFile
+        val tomlFile = file as TomlFile
 
-        val wokwiTable = file.findTable("wokwi") ?: run {
+        val wokwiTable = tomlFile.findTable("wokwi") ?: run {
             return arrayOf(
                 manager.createErrorDescription(
-                    file,
+                    tomlFile,
                     WokwiBundle.message("config.inspection.missing.wokwi.problem.descriptor"),
                     AddWokwiConfiguration
                 )
