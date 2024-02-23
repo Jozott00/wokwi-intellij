@@ -47,9 +47,7 @@ class WokwiStartDebugConfigType : ConfigurationTypeBase(
 }
 
 
-class WokwiStartDebugConfigOptions : RunConfigurationOptions() {
-
-}
+class WokwiStartDebugConfigOptions : RunConfigurationOptions()
 
 
 class WokwiStartDebugEditor : SettingsEditor<WokwiStartDebugConfig>() {

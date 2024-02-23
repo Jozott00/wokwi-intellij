@@ -25,7 +25,7 @@ class WokwiSimulatorStartState(private val project: Project, private val waitFor
 }
 
 
-class WokwiStartProcessHandler(private val project: Project, private val waitForDebugger: Boolean) :
+class WokwiStartProcessHandler(project: Project, waitForDebugger: Boolean) :
     WokwiProcessHandler() {
 
     private val wokwiService = project.service<WokwiProjectService>()

@@ -9,7 +9,6 @@ import com.github.jozott00.wokwiintellij.exceptions.GenericError
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.credentialStore.CredentialAttributes
 import com.intellij.ide.passwordSafe.PasswordSafe
-import com.intellij.notification.NotificationType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.ktor.http.*
@@ -43,6 +42,7 @@ class WokwiLicensingService(private val cs: CoroutineScope) {
         WokwiNotifier.notifyBalloonAsync("New Wokwi license activated", "You are ready to go!")
     }
 
+    @Suppress("unused")
     fun removeLicense() = cs.launch(Dispatchers.IO) {
         licenseCache = null
         PasswordSafe.instance.setPassword(licenseAttributes, null)

@@ -14,6 +14,7 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 
 
+@Suppress("SameParameterValue")
 class WokwiConsoleToolWindow(project: Project) :
     JPanel() {
     private val tabs: WokwiConsoleTabs = WokwiConsoleTabs(project, project.wokwiDisposable)
@@ -33,10 +34,6 @@ class WokwiConsoleToolWindow(project: Project) :
 
     fun setConsole(console: SimulationConsole) {
         wrapper.setConsole(console)
-    }
-
-    fun removeConsole() {
-        wrapper.removeConsole()
     }
 
     private fun createTabInfo(title: String, content: JComponent): TabInfo {

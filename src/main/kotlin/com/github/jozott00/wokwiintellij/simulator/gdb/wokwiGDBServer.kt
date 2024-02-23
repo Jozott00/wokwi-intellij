@@ -153,7 +153,7 @@ private class MessageProcessor(private val socket: Socket, private val eventChan
         }
     }
 
-    suspend fun writeResponse(response: String) {
+    fun writeResponse(response: String) {
         writer.println(response)
     }
 

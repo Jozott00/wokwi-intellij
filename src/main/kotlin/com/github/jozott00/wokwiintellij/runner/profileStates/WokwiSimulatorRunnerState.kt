@@ -2,7 +2,6 @@ package com.github.jozott00.wokwiintellij.runner.profileStates
 
 import com.github.jozott00.wokwiintellij.runner.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.services.WokwiProjectService
-import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.intellij.execution.configurations.CommandLineState
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.components.service

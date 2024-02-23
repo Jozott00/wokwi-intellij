@@ -1,3 +1,5 @@
+@file:Suppress("SameParameterValue")
+
 package com.github.jozott00.wokwiintellij.toml
 
 import com.akuleshov7.ktoml.TomlInputConfig

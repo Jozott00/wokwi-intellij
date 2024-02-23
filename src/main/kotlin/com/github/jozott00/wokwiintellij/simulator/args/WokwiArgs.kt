@@ -7,10 +7,10 @@ class WokwiArgs(
     val license: String,
     val diagram: String,
     var firmware: WokwiArgsFirmware,
-    val projectType: WokwiProjectType,
     var waitForDebugger: Boolean = false,
 )
 
+@Suppress("unused")
 class WokwiArgsFirmware(
     val buffer: ByteArray,
     val format: FirmwareFormat,

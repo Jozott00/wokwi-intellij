@@ -1,7 +1,6 @@
 package com.github.jozott00.wokwiintellij.ide
 
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.fileTypes.ex.FileTypeIdentifiableByVirtualFile
 import com.intellij.openapi.vfs.VirtualFile

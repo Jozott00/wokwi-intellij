@@ -10,7 +10,7 @@
 
 <!-- PROJECT LOGO -->
 <br />
-<div align="center">
+<div style="text-align: center">
   <a href="https://github.com/Jozott00/wokwi-intellij">
     <!-- 
     <picture>
@@ -24,7 +24,7 @@
 
 <h3 align="center">Wokwi Intellij Plugin</h3>
 
-  <p align="center">
+  <p style="text-align: center">
     Integrate Wokwi in Intellij-based Jetbrains IDEs.
     <br />
     <a href="https://jozott00.github.io/wokwi-intellij/starter-topic.html"><strong>Explore the docs »</strong></a>

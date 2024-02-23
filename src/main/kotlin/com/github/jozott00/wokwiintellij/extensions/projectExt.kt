@@ -27,6 +27,7 @@ val Project.wokwiDisposable get() = service<WokwiPluginDisposable>() as Disposab
  * @param childName the name of the child scope.
  * @return the created CoroutineScope for the specified childName.
  */
+@Suppress("unused")
 fun Project.wokwiCoroutineChildScope(childName: String): CoroutineScope {
     return service<WokwiProjectService>().childScope(childName)
 }
@@ -37,6 +38,7 @@ fun Project.wokwiCoroutineChildScope(childName: String): CoroutineScope {
  * @param path the path to resolve against project's content roots
  * @return a list of resolved relative paths
  */
+@Suppress("unused")
 fun Project.findRelativePaths(path: String): List<Path> {
     val rootUrls = ProjectRootManager.getInstance(this).contentRootUrls
     return rootUrls.map {

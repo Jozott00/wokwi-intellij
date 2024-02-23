@@ -3,6 +3,7 @@ package com.github.jozott00.wokwiintellij.simulator
 import com.beust.klaxon.json
 import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 
+@Suppress("unused")
 object Command {
 
     fun start(diagram: String, firmware: String, firmwareFormat: FirmwareFormat, license: String, waitForDebugger: Boolean): String {

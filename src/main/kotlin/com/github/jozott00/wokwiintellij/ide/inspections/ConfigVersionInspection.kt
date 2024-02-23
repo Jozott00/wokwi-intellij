@@ -2,8 +2,6 @@ package com.github.jozott00.wokwiintellij.ide.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiBundle
 import com.github.jozott00.wokwiintellij.WokwiConstants
-import com.github.jozott00.wokwiintellij.ide.WokwiFileType
-import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.LocalQuickFix
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemsHolder

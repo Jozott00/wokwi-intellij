@@ -1,7 +1,5 @@
 package com.github.jozott00.wokwiintellij.ide.inspections
 
-import com.github.jozott00.wokwiintellij.WokwiConstants
-import com.github.jozott00.wokwiintellij.ide.WokwiFileType
 import com.github.jozott00.wokwiintellij.toml.isWokwiToml
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.LocalInspectionTool

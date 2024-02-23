@@ -1,9 +1,7 @@
 package com.github.jozott00.wokwiintellij.services
 
 import arrow.core.Either
-import com.github.jozott00.wokwiintellij.exceptions.GenericError
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
-import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiProjectType
@@ -15,7 +13,6 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.readBytes
@@ -36,7 +33,7 @@ class WokwiArgsLoader(val project: Project) {
         val projectType = detectProject()
         // TODO: Check for esp image
 
-        val args = WokwiArgs(license, diagram, firmware, projectType)
+        val args = WokwiArgs(license, diagram, firmware)
         return args
 
     }
@@ -53,10 +50,10 @@ class WokwiArgsLoader(val project: Project) {
             return@withContext null
         }
 
-        val isFirmwareFile = firmwareFile.name == "flasher_args.json"
+        val isFlasherArgsFile = firmwareFile.name == "flasher_args.json"
         val binaryPaths = mutableListOf(firmwareFile.path)
 
-        val buffer = if (isFirmwareFile) {
+        val buffer = if (isFlasherArgsFile) {
             val packedResult=
                 when (val result = FirmwareUtils.packEspIdfFirmware(firmwareFile, project)) {
                 is Either.Left -> {
@@ -78,13 +75,14 @@ class WokwiArgsLoader(val project: Project) {
             buffer = buffer,
             format = format,
             rootFile = firmwareFile,
-            isFlasherFile = false,
+            isFlasherFile = isFlasherArgsFile,
             size = buffer.size.toUInt(),
             binaryPaths = binaryPaths
         )
     }
 
-    private suspend fun detectProject(): WokwiProjectType {
+    @Suppress("SameReturnValue")
+    private fun detectProject(): WokwiProjectType {
         return WokwiProjectType.RUST
     }
 

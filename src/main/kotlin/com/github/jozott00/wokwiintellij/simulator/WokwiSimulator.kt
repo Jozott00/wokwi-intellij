@@ -2,7 +2,6 @@ package com.github.jozott00.wokwiintellij.simulator
 
 
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
-import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerCommunicator
@@ -111,7 +110,7 @@ class WokwiSimulator(
             ?.jsonArray
             ?.map { it.jsonPrimitive.int.toByte() }
             ?.toByteArray() ?: run {
-            LOG.error("Malformed data received: No bytes: $data");
+            LOG.error("Malformed data received: No bytes: $data")
             return
         }
 
@@ -127,7 +126,7 @@ class WokwiSimulator(
     private fun loadResourceRecv(req: JsonObject) {
         // TODO: Make this offline
         val urlString = req["url"]?.jsonPrimitive?.content ?: run {
-            LOG.error("Malformed data received: No url: $req");
+            LOG.error("Malformed data received: No url: $req")
             return
         }
         val url = URL(urlString)
@@ -140,7 +139,7 @@ class WokwiSimulator(
 
     private fun gdbResponseRecv(req: JsonObject) {
         val response = req["response"]?.jsonPrimitive?.content ?: run {
-            LOG.error("Malformed data received: No response field: $req");
+            LOG.error("Malformed data received: No response field: $req")
             return
         }
         gdbServer?.sendResponse(response)
@@ -150,7 +149,7 @@ class WokwiSimulator(
         val json = Json.parseToJsonElement(data).jsonObject
 
         val type: String = json["command"]?.jsonPrimitive?.content ?: run {
-            LOG.error("Malformed data received: $data");
+            LOG.error("Malformed data received: $data")
             return false
         }
 

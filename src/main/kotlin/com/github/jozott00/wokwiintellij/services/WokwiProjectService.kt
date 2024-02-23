@@ -25,6 +25,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.jcef.JBCefApp
+import com.intellij.util.childScope
 import com.intellij.util.namedChildScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
     private var consoleToolWindow: ToolWindow? = null
     private var gdbServer: WokwiGDBServer? = null
 
+    @Suppress("UnstableApiUsage")
     fun childScope(name: String) = cs.namedChildScope(name)
 
     fun startSimulator(withListener: WokwiSimulatorListener? = null, byDebugger: Boolean = false) {
@@ -178,12 +180,6 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
 
     fun isSimulatorRunning(): Boolean {
         return simulator != null
-    }
-
-    suspend fun ableToStart(): Boolean {
-        return licensingService.getLicense() != null &&
-                Path(settingsState.wokwiConfigPath).resolveWith(project)?.exists() ?: false &&
-                Path(settingsState.wokwiConfigPath).resolveWith(project)?.exists() ?: false
     }
 
     private suspend fun getConsole(): SimulationConsole {

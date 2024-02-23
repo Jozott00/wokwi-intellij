@@ -2,7 +2,6 @@ package com.github.jozott00.wokwiintellij.runner.configs
 
 import com.github.jozott00.wokwiintellij.runner.WokwiConfigurationFactory
 import com.github.jozott00.wokwiintellij.runner.profileStates.WokwiSimulatorRunnerState
-import com.github.jozott00.wokwiintellij.runner.profileStates.WokwiSimulatorStartState
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
@@ -46,9 +45,7 @@ class WokwiRunConfigType : ConfigurationTypeBase(
 }
 
 
-class WokwiRunConfigOptions : RunConfigurationOptions() {
-
-}
+class WokwiRunConfigOptions : RunConfigurationOptions()
 
 
 class WokwiRunEditor : SettingsEditor<WokwiRunConfig>() {

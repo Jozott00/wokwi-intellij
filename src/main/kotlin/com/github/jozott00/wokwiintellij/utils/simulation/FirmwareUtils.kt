@@ -23,7 +23,7 @@ import kotlinx.serialization.json.Json
 
 object FirmwareUtils {
 
-    private const val MAX_FIRMWARE_SIZE = 16 * 1024 * 1024;
+    private const val MAX_FIRMWARE_SIZE = 16 * 1024 * 1024
     private val LOG = logger<FirmwareUtils>()
 
     private val jsonParser = Json { ignoreUnknownKeys = true }
@@ -96,10 +96,7 @@ object FirmwareUtils {
 
         val finalMagicNumber = block.sliceArray(block.size - 4 until block.size)
         val expectedFinalMagicNumber = "0x0AB16F30".hexStringToByteArray()!!
-        if (!finalMagicNumber.contentEquals(expectedFinalMagicNumber))
-            return false
-
-        return true
+        return finalMagicNumber.contentEquals(expectedFinalMagicNumber)
     }
 
 

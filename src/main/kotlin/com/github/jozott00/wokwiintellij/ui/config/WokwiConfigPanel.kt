@@ -107,7 +107,6 @@ class WokwiConfigPanelBuilder(val project: Project, val model: WokwiSettingsStat
 
 
     companion object {
-        val LOG = logger<WokwiConfigPanelBuilder>()
     }
 
 }
@@ -120,6 +119,3 @@ fun wokwiConfigPanel(
     return WokwiConfigPanelBuilder(project, model).apply(build).build()
 }
 
-private fun JComponent.bold(isBold: Boolean) {
-    font = font.deriveFont(if (isBold) Font.BOLD else Font.PLAIN)
-}

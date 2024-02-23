@@ -27,7 +27,7 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
     // subscribers to specific types
     private val subscribers = hashMapOf<String, MutableList<BrowserPipe.Subscriber>>()
 
-    private val injectQuery = JBCefJSQuery.create(browser as JBCefBrowserBase);
+    private val injectQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
 
     init {
         Disposer.register(parentDisposable, this)
@@ -73,6 +73,7 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
         browser?.executeJavaScript("window.dispatchEvent(new Event('IdeReady'));", null, 0)
     }
 
+    @Suppress("SameReturnValue")
     private fun onReceive(msg: String): JBCefJSQuery.Response? {
         val (type, data) = msg.let(::parseObj) ?: return null
         informSubscribers(type, data)
@@ -109,7 +110,7 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
     @Serializable
     private data class MessageObj(
         val type: String,
-        @Serializable(with = JcefBrowserPipe.RawJsonSerializer::class) val data: String
+        @Serializable(with = RawJsonSerializer::class) val data: String
     )
 
     @OptIn(ExperimentalSerializationApi::class)

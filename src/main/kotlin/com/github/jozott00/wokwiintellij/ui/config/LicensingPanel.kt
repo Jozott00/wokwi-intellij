@@ -1,3 +1,5 @@
+@file:Suppress("SameParameterValue")
+
 package com.github.jozott00.wokwiintellij.ui.config
 
 import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
@@ -59,6 +61,7 @@ class LicensingPanel : ComponentContainer {
         checkLicenseAvailability()
     }
 
+    @Suppress("SameParameterValue")
     private fun checkLicenseAvailability(recentlyChanged: Boolean = false) = runInBackground{ runBlocking(Dispatchers.IO) {
         if (recentlyChanged) {
             invokeLater { statusCardLayout.show(statusCard, "LOADING") }

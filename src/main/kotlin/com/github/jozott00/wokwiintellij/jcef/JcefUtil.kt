@@ -13,6 +13,7 @@ internal fun JBCefBrowser.executeJavaScript(@Language("JavaScript") code: String
     cefBrowser.executeJavaScript(code, null, 0)
 }
 
+@Suppress("unused")
 internal fun JBCefClient.addRequestHandler(
     handler: CefRequestHandler,
     browser: CefBrowser,
