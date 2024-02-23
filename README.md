@@ -14,7 +14,7 @@
   <a href="https://github.com/Jozott00/wokwi-intellij">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="./blob/imgs/pluginIcon_dark.svg" width="80" height="80">
-      <img alt="Wokwi Intellij Icon" src="./blob/imgs/pluginIcon.svg" width="80" height="80">
+      <img alt="Wokwi Intellij Icon" src="./blob/imgs/logoColorful.svg" width="80" height="80">
     </picture>
   </a>
   
