@@ -4,4 +4,7 @@
 
 ## [Unreleased]
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- Embedded Wokwi simulator
+- Wokwi console to control simulator
+- wokwi.toml analysis support
+- Wokwi simulation debugging support

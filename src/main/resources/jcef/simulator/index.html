@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Full-Width and Full-Height Iframe</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<iframe id="wcode-frame" src="https://wokwi.com/vscode/wcode?v=2.4.0"></iframe>
+</body>
+<script>
+
+    // wokwi communication channel
+    let commPort = null;
+    let missed_cmds = [];
+
+    if (window.__WokwiIntellij === undefined) {
+        window.__WokwiIntellij = {};
+    }
+
+    window.__WokwiIntellij.__receiveMessageFromPipe = (type, data) => {
+        console.log("GOT MESSAGE: ", type, data)
+        commPort.postMessage(data)
+    }
+
+
+    let sendMissedPkgs = () => {
+        for (pkg of missed_cmds) {
+            console.log("Send missed package: ", pkg)
+            window.__WokwiIntellij.__postMessageToPipe(pkg)
+        }
+        missed_cmds = []
+    }
+
+    let postToIntellij = event => {
+        var pkg = JSON.stringify({type: "wokwi", data: event.data})
+        if (window.__WokwiIntellij.__postMessageToPipe === undefined) {
+            console.log("Pipe not yet setup, will store in queue", pkg)
+            missed_cmds.push(pkg)
+        } else {
+            window.__WokwiIntellij.__postMessageToPipe(pkg)
+        }
+    }
+
+    window.addEventListener("message", (event) => {
+        console.log("Message incoming: ", event)
+        if (event.origin !== "https://wokwi.com") {
+            return;
+        }
+
+        // store and setup wcode messaging channel
+        if (event.data.command === "start") {
+            commPort = event.data.port
+            commPort.onmessage = postToIntellij
+            commPort.onmessageerror = event => {
+                console.error("Message Error on Wcode Port", event)
+            }
+        }
+
+        postToIntellij(event)
+
+    });
+
+
+    window.addEventListener("IdeReady", () => {
+        console.log("IDE is ready, send all missed packages")
+        sendMissedPkgs()
+    })
+
+
+</script>
+
+</html>

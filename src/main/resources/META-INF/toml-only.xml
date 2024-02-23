@@ -1,0 +1,37 @@
+<idea-plugin>
+    <resource-bundle>messages.WokwiBundle</resource-bundle>
+    <extensions defaultExtensionNs="com.intellij">
+        <localInspection language="TOML"
+                         groupPath="Wokwi"
+                         groupName="Configuration"
+                         displayName="Invalid configuration version"
+                         enabledByDefault="true"
+                         level="ERROR"
+                         implementationClass="com.github.jozott00.wokwiintellij.ide.inspections.ConfigVersionInspection"/>
+
+
+        <localInspection language="TOML"
+                         groupPath="Wokwi"
+                         groupName="Configuration"
+                         displayName="Invalid binary path"
+                         enabledByDefault="true"
+                         level="ERROR"
+                         implementationClass="com.github.jozott00.wokwiintellij.ide.inspections.ElfFirmwareInspection"/>
+
+        <localInspection language="TOML"
+                         groupPath="Wokwi"
+                         groupName="Configuration"
+                         displayName="Missing configuration"
+                         enabledByDefault="true"
+                         level="ERROR"
+                         implementationClass="com.github.jozott00.wokwiintellij.ide.inspections.MissingConfigurationInspection"/>
+
+        <fileType
+            name="WOKWI_TOML"
+            language="TOML"
+            implementationClass="com.github.jozott00.wokwiintellij.ide.WokwiFileType"
+            fieldName="INSTANCE"
+            fileNames="wokwi.toml"
+        />
+    </extensions>
+</idea-plugin>
