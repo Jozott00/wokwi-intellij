@@ -8,20 +8,21 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 
-
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
   <a href="https://github.com/Jozott00/wokwi-intellij">
-    <img src="blob/imgs/pluginIcon_dark.svg#gh-dark-mode-only" alt="Logo" width="80" height="80">
-    <img src="blob/imgs/pluginIcon.svg#gh-light-mode-only" alt="Logo" width="80" height="80">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./blob/imgs/pluginIcon_dark.svg" width="80" height="80">
+      <img alt="Wokwi Intellij Icon" src="./blob/imgs/pluginIcon.svg" width="80" height="80">
+    </picture>
   </a>
+  
 
 <h3 align="center">Wokwi Intellij Plugin</h3>
 
   <p align="center">
-    Integrate Wokwi in Intellij-based Jetbrain IDEs.
+    Integrate Wokwi in Intellij-based Jetbrains IDEs.
     <br />
     <a href="https://jozott00.github.io/wokwi-intellij/starter-topic.html"><strong>Explore the docs »</strong></a>
     <br />
@@ -32,46 +33,16 @@
   </p>
 </div>
 
-
-
-<!-- TABLE OF CONTENTS -->
-<!-- 
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details> 
--->
-
-
-
 <!-- ABOUT THE PROJECT -->
 ## About The Plugin
 
-<img src="blob/imgs/sim_running.png" alt="Wokwi Debug Showcase" />
+![Wokwi Debug Showcase](blob/imgs/sim_running.png)
 
 <!-- Plugin description -->
 The Wokwi Intellij plugin, an open-source tool, integrates the [Wokwi](https://wokwi.com) simulator with Jetbrains IDEs like CLion and RustRover. 
 It adopts the Wokwi VS Code extension's configuration approach for seamless IDE transitions, supporting the same platforms.
+
+This plugin is a community plugin and not maintained by the [Wokwi](https://wokwi.com) team.
 <!-- Plugin description end -->
 
 ### Features 
