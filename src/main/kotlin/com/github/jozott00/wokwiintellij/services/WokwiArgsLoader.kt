@@ -15,6 +15,7 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.readBytes
@@ -56,16 +57,7 @@ class WokwiArgsLoader(val project: Project) {
         val format: FirmwareFormat = when {
             firmwareFile.extension.equals("hex", ignoreCase = true) -> FirmwareFormat.HEX
             firmwareFile.extension.equals("uf2", ignoreCase = true) -> FirmwareFormat.UF2
-            firmwareFile.extension.equals("bin", ignoreCase = true) -> FirmwareFormat.BIN
-            firmwareFile.extension.equals("json", ignoreCase = true) -> FirmwareFormat.BIN
-            else -> {
-                notifyBalloonAsync(
-                    title = "Unsupported firmware format",
-                    message = "The firmware format of `${firmwareFile.path}` is not supported.",
-                    type = NotificationType.ERROR
-                )
-                return@withContext null
-            }
+            else -> FirmwareFormat.BIN
         }
 
         val binaryPaths = mutableListOf(firmwareFile.path)

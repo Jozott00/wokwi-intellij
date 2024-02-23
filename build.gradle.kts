@@ -31,8 +31,7 @@ dependencies {
     implementation("com.beust:klaxon:5.6")
     implementation("com.akuleshov7:ktoml-core:0.5.1")
     implementation("com.akuleshov7:ktoml-file:0.5.1")
-    implementation("io.arrow-kt:arrow-core:1.2.0")
-    implementation("io.arrow-kt:arrow-fx-coroutines:1.2.0")
+    implementation("io.arrow-kt:arrow-core:1.2.1")
 }
 
 // Set the JVM language level used to build the project. Use Java 11 for 2020.3+, and Java 17 for 2022.2+.

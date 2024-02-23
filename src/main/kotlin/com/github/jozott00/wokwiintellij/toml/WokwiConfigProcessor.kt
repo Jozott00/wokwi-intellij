@@ -100,7 +100,7 @@ object WokwiConfigProcessor {
             return null
         }
 
-        val firmwareFile = readAction { configDir.findFileByRelativePath(tomlConfig.elf) } ?: run {
+        val firmwareFile = readAction { configDir.findFileByRelativePath(tomlConfig.firmware) } ?: run {
             notifyError(
                 "Invalid firmware path. Is the project already built?",
                 getNotifyJumpToAction("Jump to config", project, configFile)
