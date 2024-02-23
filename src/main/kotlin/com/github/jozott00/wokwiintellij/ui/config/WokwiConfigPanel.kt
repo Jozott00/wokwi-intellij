@@ -103,9 +103,6 @@ class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSett
     }
 
 
-    companion object {
-    }
-
 }
 
 fun wokwiConfigPanel(

@@ -1,5 +1,3 @@
-@file:Suppress("unused", "unused", "unused", "unused", "unused", "unused", "unused")
-
 package com.github.jozott00.wokwiintellij.ui.jcef
 
 object ResourceLoader {

@@ -1,5 +1,3 @@
-@file:Suppress("unused", "unused")
-
 package com.github.jozott00.wokwiintellij.utils.simulation
 
 import arrow.core.Either
