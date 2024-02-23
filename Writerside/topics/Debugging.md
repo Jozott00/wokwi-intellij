@@ -1,5 +1,7 @@
 # Debugging
 
+![Wokwi Debug Showcase](sim_dbg.png)
+
 > Debugging is currently only possible with the **CLion IDE**.
 > {style="warning"}
 
@@ -8,7 +10,7 @@
 Create a new <b>Remote Debug</b> configuration
 </step>
 <step>
-For the <b>Debugger</b> set the GDB executable for your target platform.
+For the <b>Debugger</b> set the GDB executable that targets the desired platform.
 
 E.g. the `xtensa-esp32s3-elf-gdb` executable is suitable to debug esp32s3 target
 programs.
@@ -19,26 +21,22 @@ programs.
 
 <step>
 
-For the <b>'target remote' args</b> enter `$WokwiGdbServer$` to the field.
+For the **'target remote' args**, input `$WokwiGdbServer$` into the field.
 
-Alternatively click on the **＋** icon and select the `WokwiGdbServer` macro.
-This will automatically insert the correct GDB server address, specified
-in the `wokwi.toml`.
+Or, click the **＋** icon and choose the `WokwiGdbServer` macro. This action auto-fills the correct GDB server address from the `wokwi.toml`.
 </step>
 
 <step>
 
-In the **Symbol file** field enter `$WokwiElfPath$` or select it from the
-macro list by clicking on the **＋** icon.
+In the **Symbol file** field, enter `$WokwiElfPath$` or choose it from the macro list by clicking on the **＋** icon.
 
-This will set the debug symbol file path to the ELF path defined in the
+This configures the debug symbol file path to match the ELF path specified in the
 `wokwi.toml`.
 </step>
 
 <step>
 
-Under the **Before launch** task list, click on the **＋** icon. From the list
-select the `Start Wokwi Debug` task.
+In the **Before launch** task list, click on the **＋** icon and select the `Start Wokwi Debug` task from the list.
 
 <img src="select_start_debug_task.png" alt="Select Start Wokwi Debug" width="250"/>
 
@@ -46,9 +44,9 @@ select the `Start Wokwi Debug` task.
 
 <step>
 
-Click **Apply** to safe the configuration. When running the configuration, Wokwi is started in debug mode,
-starts a GDB server and waits for some client to connect. Then the debugging client is started and
-connects to the GDB server which starts the program execution.
+Click **Apply** to save the configuration. When running this configuration, Wokwi will initiate in debug mode, 
+launch a GDB server and wait for a client to connect. 
+Subsequently, the debugging client starts and connects to the GDB server, which then begins the program execution.
 
 <img src="wokwi_debug_config.png" alt="Select Start Wokwi Debug" />
 
@@ -58,7 +56,7 @@ connects to the GDB server which starts the program execution.
 
 ## Limitations
 
-Because the **Remote Debug** configuration is only available in CLion,
-it is not possible to debug Wokwi simulations in other IDEs such as Intellij
-or RustRover. However, it is most likely that RustRover will get a similar
-configuration once it is out of EAP.
+Due to the **Remote Debug** configuration being exclusive to CLion, 
+debugging Wokwi simulations in other IDEs like IntelliJ or RustRover is currently not feasible. 
+Nonetheless, it's expected that RustRover will implement a similar configuration after its 
+Early Access Program (EAP) concludes.

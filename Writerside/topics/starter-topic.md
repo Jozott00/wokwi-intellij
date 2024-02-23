@@ -1,12 +1,17 @@
 # Wokwi Intellij Plugin Guide
 
-The Wokwi Intellij plugin is an open source plugin to make the [Wokwi simulator](https://wokwi.com) available to
-Intellij based Jetbrains IDEs such as CLion and RustRover.
+The Wokwi Intellij plugin, an open-source tool, integrates the [Wokwi](https://wokwi.com) simulator with Jetbrains IDEs like CLion and RustRover.
+It adopts the Wokwi VS Code extension's configuration approach for seamless IDE transitions, supporting the same platforms.
 
-Wokwi Intellij uses the same configuration method as the official Wokwi VS Code extension, to make switching between
-IDEs as simple as possible. It therefore works for the same set of platforms as the VS Code extension.
+> This plugin is a community plugin and not maintained by the [Wokwi](https://wokwi.com) team.
 
-## Installation
+## Installation {id="installation"}
+
+> To run the embedded simulator, a Wokwi community license is required. 
+> The license is free for open source projects but requires a Wokwi account.
+> 
+> Sign up on [wokwi.com](https://wokwi.com)
+
 
 <procedure title="Install and Setup Wokwi Intellij">
 <step>

@@ -1,0 +1,12 @@
+<buildprofiles xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="https://resources.jetbrains.com/writerside/1.0/build-profiles.xsd">
+    <variables>
+        <primary-color>purple</primary-color>
+        <custom-favicons>pluginIcon_dark.svg</custom-favicons>
+        <header-logo>logoColorful.svg</header-logo>
+        <product-web-url>https://help.example.com</product-web-url>
+<!--        <download-title>Get Wokwi-Intellij</download-title>-->
+<!--        <download-page>https://example.com</download-page>-->
+<!--        <showDownloadButton>true</showDownloadButton>-->
+    </variables>
+</buildprofiles>

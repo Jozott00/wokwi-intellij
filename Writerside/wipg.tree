@@ -7,7 +7,9 @@
                   start-page="starter-topic.md">
 
     <toc-element topic="starter-topic.md"/>
-    <toc-element topic="Project-Configuration.md"/>
+    <toc-element topic="Project-Configuration.md">
+        <toc-element topic="Running-the-Simulator.md"/>
+    </toc-element>
     <toc-element topic="Debugging.md"/>
     <toc-element topic="Roadmap.md"/>
 </instance-profile>
