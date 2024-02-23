@@ -2,6 +2,7 @@ package com.github.jozott00.wokwiintellij.simulator
 
 
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
+import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerCommunicator
@@ -67,7 +68,13 @@ class WokwiSimulator(
         @OptIn(ExperimentalEncodingApi::class)
         val firmwareString = Base64.encode(runArgs.firmware.buffer)
 
-        val cmd = Command.start(runArgs.diagram, firmwareString, runArgs.license, runArgs.waitForDebugger)
+        val cmd = Command.start(
+            diagram = runArgs.diagram,
+            firmware = firmwareString,
+            firmwareFormat = runArgs.firmware.format,
+            license = runArgs.license,
+            waitForDebugger = runArgs.waitForDebugger
+        )
         browserPipe.send(PIPE_TOPIC, cmd)
         myEventMulticaster.onStarted(runArgs)
     }

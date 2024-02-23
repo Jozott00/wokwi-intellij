@@ -1,16 +1,18 @@
 package com.github.jozott00.wokwiintellij.simulator
 
 import com.beust.klaxon.json
+import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 
 object Command {
 
-    fun start(diagram: String, firmware: String, license: String, waitForDebugger: Boolean): String {
+    fun start(diagram: String, firmware: String, firmwareFormat: FirmwareFormat, license: String, waitForDebugger: Boolean): String {
         return json {
             obj(
                 "command" to "start",
                 "diagram" to diagram,
                 "license" to license,
                 "firmware" to firmware,
+                "firmwareFormat" to firmwareFormat.toString(),
                 "firmwareB64" to true,
                 "pause" to waitForDebugger,
                 "useGateway" to false, // private gateways not yet supported

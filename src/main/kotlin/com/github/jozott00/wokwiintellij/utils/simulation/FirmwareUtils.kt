@@ -5,7 +5,8 @@ import arrow.core.left
 import arrow.core.right
 import com.github.jozott00.wokwiintellij.exceptions.GenericError
 import com.github.jozott00.wokwiintellij.exceptions.catchIllArg
-import com.github.jozott00.wokwiintellij.extensions.findRelativeFiles
+import com.github.jozott00.wokwiintellij.extensions.hexStringToByteArray
+import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
@@ -64,6 +65,43 @@ object FirmwareUtils {
 
         EspIdfPackResult(firmwareData, partPaths.toList()).right()
     }
+
+    fun determineFirmwareFormat(file: VirtualFile, content: ByteArray): FirmwareFormat {
+        val isUf2 = content.size >= 512 && isUf2Block(content.sliceArray(0 until 512))
+        if (isUf2)
+            return FirmwareFormat.UF2
+
+        val fileExtension = file.extension?.lowercase()
+        val format = when (fileExtension) {
+            "hex" -> FirmwareFormat.HEX
+            else -> FirmwareFormat.BIN
+        }
+
+        return format
+    }
+
+    fun isUf2Block(block: ByteArray): Boolean {
+        if (block.size != 512)
+            return false
+
+        val firstMagicNumber = block.sliceArray(0 until 4)
+        val expectedFirstMagicNumber = "0x0A324655".hexStringToByteArray()!!
+        if (!firstMagicNumber.contentEquals(expectedFirstMagicNumber))
+            return false
+
+        val secondMagicNumber = block.sliceArray(4 until 8)
+        val expectedSecondMagicNumber = "0x9E5D5157".hexStringToByteArray()!!
+        if (!secondMagicNumber.contentEquals(expectedSecondMagicNumber))
+            return false
+
+        val finalMagicNumber = block.sliceArray(block.size - 4 until block.size)
+        val expectedFinalMagicNumber = "0x0AB16F30".hexStringToByteArray()!!
+        if (!finalMagicNumber.contentEquals(expectedFinalMagicNumber))
+            return false
+
+        return true
+    }
+
 
     class EspIdfPackResult(
         val img: ByteArray,

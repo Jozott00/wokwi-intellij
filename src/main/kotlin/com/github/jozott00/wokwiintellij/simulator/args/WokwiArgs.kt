@@ -23,7 +23,9 @@ class WokwiArgsFirmware(
 enum class FirmwareFormat {
     HEX,
     UF2,
-    BIN
+    BIN;
+
+    override fun toString() = name.lowercase()
 }
 
 enum class WokwiProjectType {

@@ -54,13 +54,8 @@ class WokwiArgsLoader(val project: Project) {
         }
 
         val isFirmwareFile = firmwareFile.name == "flasher_args.json"
-        val format: FirmwareFormat = when {
-            firmwareFile.extension.equals("hex", ignoreCase = true) -> FirmwareFormat.HEX
-            firmwareFile.extension.equals("uf2", ignoreCase = true) -> FirmwareFormat.UF2
-            else -> FirmwareFormat.BIN
-        }
-
         val binaryPaths = mutableListOf(firmwareFile.path)
+
         val buffer = if (isFirmwareFile) {
             val packedResult=
                 when (val result = FirmwareUtils.packEspIdfFirmware(firmwareFile, project)) {
@@ -77,6 +72,7 @@ class WokwiArgsLoader(val project: Project) {
             readAction { firmwareFile.readBytes() }
         }
 
+        val format = FirmwareUtils.determineFirmwareFormat(firmwareFile, buffer)
 
         WokwiArgsFirmware(
             buffer = buffer,
