@@ -26,7 +26,7 @@ open class WokwiConfigVisitor : TomlVisitor() {
 
     }
 
-    open fun visitUnknownTable(value: TomlTable) {
+    open fun visitUnknownTable(ignoredValue: TomlTable) {
 
     }
 

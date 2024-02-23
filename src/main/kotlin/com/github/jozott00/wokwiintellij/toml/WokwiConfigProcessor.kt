@@ -1,5 +1,3 @@
-@file:Suppress("SameParameterValue")
-
 package com.github.jozott00.wokwiintellij.toml
 
 import com.akuleshov7.ktoml.TomlInputConfig
@@ -132,6 +130,7 @@ object WokwiConfigProcessor {
         }
     }
 
+    @Suppress("SameParameterValue")
     private fun getNotifyJumpToAction(text: String, project: Project, file: VirtualFile) = NotifyAction(text) { _, _ ->
         val descriptor = OpenFileDescriptor(project, file)
         FileEditorManager.getInstance(project).openTextEditor(descriptor, true)

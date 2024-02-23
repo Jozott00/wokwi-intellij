@@ -19,13 +19,13 @@ abstract class WokwiConfigInspectionBase: LocalInspectionTool() {
         return checkFileInternal(file, manager, isOnTheFly) ?: super.checkFile(file, manager, isOnTheFly)
     }
 
-    protected open fun checkFileInternal(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor>? = null
+    protected open fun checkFileInternal(file: PsiFile, manager: InspectionManager, ignoreIsOnTheFly: Boolean): Array<ProblemDescriptor>? = null
 
     final override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
         if (!holder.file.isWokwiToml) return super.buildVisitor(holder, isOnTheFly)
         return buildVisitorInternal(holder, isOnTheFly) ?: super.buildVisitor(holder, isOnTheFly)
     }
 
-    protected open fun buildVisitorInternal(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor? = null
+    protected open fun buildVisitorInternal(holder: ProblemsHolder, ignoreIsOnTheFly: Boolean): PsiElementVisitor? = null
 
 }
