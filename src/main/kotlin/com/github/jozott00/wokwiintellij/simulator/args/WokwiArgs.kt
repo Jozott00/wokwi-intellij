@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.github.jozott00.wokwiintellij.simulator.args
 
 import com.intellij.openapi.vfs.VirtualFile

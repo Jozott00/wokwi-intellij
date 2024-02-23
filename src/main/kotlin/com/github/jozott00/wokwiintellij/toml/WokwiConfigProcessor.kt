@@ -1,4 +1,4 @@
-@file:Suppress("SameParameterValue")
+@file:Suppress("SameParameterValue", "SameParameterValue")
 
 package com.github.jozott00.wokwiintellij.toml
 

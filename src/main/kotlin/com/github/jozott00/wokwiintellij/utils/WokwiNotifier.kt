@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 
 object WokwiNotifier {
 
-    private val NOTIFICATION_GROUP = "Wokwi Simulator"
+    private const val NOTIFICATION_GROUP = "Wokwi Simulator"
 
 
     fun notifyBalloon(
@@ -40,7 +40,7 @@ object WokwiNotifier {
         }
     }
 
-    fun pluginNotifications(): NotificationGroup {
+    private fun pluginNotifications(): NotificationGroup {
         return NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP)
     }
 

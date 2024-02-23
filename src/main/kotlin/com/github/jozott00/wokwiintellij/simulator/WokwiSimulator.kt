@@ -179,7 +179,7 @@ class WokwiSimulator(
     }
 
     companion object {
-        private val PIPE_TOPIC = "wokwi"
+        private const val PIPE_TOPIC = "wokwi"
     }
 
     fun addSimulatorListener(listener: WokwiSimulatorListener) {

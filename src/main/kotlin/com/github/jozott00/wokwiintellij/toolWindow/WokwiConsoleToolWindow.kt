@@ -66,11 +66,6 @@ class WokwiConsoleToolWindow(project: Project) :
             repaint()
         }
 
-        fun removeConsole() {
-            removeAll()
-            repaint()
-        }
-
 
     }
 

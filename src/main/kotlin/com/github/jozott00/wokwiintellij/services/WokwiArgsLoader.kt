@@ -55,7 +55,7 @@ class WokwiArgsLoader(val project: Project) {
 
         val buffer = if (isFlasherArgsFile) {
             val packedResult=
-                when (val result = FirmwareUtils.packEspIdfFirmware(firmwareFile, project)) {
+                when (val result = FirmwareUtils.packEspIdfFirmware(firmwareFile)) {
                 is Either.Left -> {
                     notifyBalloonAsync(result.value)
                     return@withContext null

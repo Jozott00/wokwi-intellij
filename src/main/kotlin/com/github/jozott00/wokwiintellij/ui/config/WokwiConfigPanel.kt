@@ -4,7 +4,6 @@ import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.icons.AllIcons
 import com.intellij.ide.wizard.withVisualPadding
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogPanel
@@ -15,13 +14,11 @@ import com.intellij.ui.dsl.builder.BottomGap
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.util.preferredWidth
-import java.awt.Font
-import javax.swing.JComponent
 import kotlin.io.path.pathString
 import kotlin.io.path.relativeTo
 
 
-class WokwiConfigPanelBuilder(val project: Project, val model: WokwiSettingsState) {
+class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSettingsState) {
 
     var onChangeAction: (() -> Unit)? = null
 

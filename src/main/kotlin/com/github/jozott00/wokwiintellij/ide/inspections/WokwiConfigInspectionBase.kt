@@ -1,3 +1,5 @@
+@file:Suppress("unused", "unused")
+
 package com.github.jozott00.wokwiintellij.ide.inspections
 
 import com.github.jozott00.wokwiintellij.toml.isWokwiToml

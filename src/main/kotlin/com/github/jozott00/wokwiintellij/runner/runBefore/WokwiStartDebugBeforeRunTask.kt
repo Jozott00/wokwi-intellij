@@ -15,10 +15,6 @@ import javax.swing.Icon
 
 class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDebugBeforeRunTask>() {
 
-    companion object {
-        val ID: Key<WokwiStartDebugBeforeRunTask> = Key.create("WokwiStartDebug.Before.Run")
-    }
-
     override fun getId(): Key<WokwiStartDebugBeforeRunTask> = ID
 
     override fun getName() = "Start Wokwi Debug"
@@ -53,7 +49,7 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
 }
 
 class WokwiStartDebugBeforeRunTask :
-    BeforeRunTask<WokwiStartDebugBeforeRunTask>(WokwiStartDebugBeforeRunTaskProvider.ID), WokwiSimulatorListener {
+    BeforeRunTask<WokwiStartDebugBeforeRunTask>(ID), WokwiSimulatorListener {
 
     private val simulatorRunning = CompletableDeferred<Unit>()
 
@@ -65,3 +61,5 @@ class WokwiStartDebugBeforeRunTask :
         simulatorRunning.complete(Unit)
     }
 }
+
+val ID: Key<WokwiStartDebugBeforeRunTask> = Key.create("WokwiStartDebug.Before.Run")

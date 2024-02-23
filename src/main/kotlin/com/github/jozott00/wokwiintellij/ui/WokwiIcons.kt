@@ -9,7 +9,7 @@ import javax.swing.SwingConstants
 
 object WokwiIcons {
 
-    val Default = IconLoader.getIcon("icons/pluginIcon.svg", WokwiIcons.javaClass)
+    private val Default = IconLoader.getIcon("icons/pluginIcon.svg", WokwiIcons.javaClass)
 
     val SimulatorToolWindowIcon = IconLoader.getIcon("icons/pluginIcon@13x13.svg", WokwiIcons.javaClass)
 

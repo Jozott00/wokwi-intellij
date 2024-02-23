@@ -1,3 +1,5 @@
+@file:Suppress("unused", "unused", "unused", "unused", "unused", "unused", "unused")
+
 package com.github.jozott00.wokwiintellij.ui.jcef
 
 object ResourceLoader {
@@ -5,10 +7,6 @@ object ResourceLoader {
         val content: ByteArray,
         val type: String? = null
     )
-
-    fun <T> canLoadResource(cls: Class<T>, path: String): Boolean {
-        return cls.getResource(path) != null
-    }
 
     fun <T> loadInternalResource(cls: Class<T>, path: String, contentType: String?): Resource? {
         return cls.getResourceAsStream(path)?.use {

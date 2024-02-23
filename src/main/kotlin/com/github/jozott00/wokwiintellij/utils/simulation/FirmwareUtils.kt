@@ -1,3 +1,5 @@
+@file:Suppress("unused", "unused")
+
 package com.github.jozott00.wokwiintellij.utils.simulation
 
 import arrow.core.Either
@@ -10,7 +12,6 @@ import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.readBytes
 import com.intellij.openapi.vfs.readText
@@ -28,7 +29,7 @@ object FirmwareUtils {
 
     private val jsonParser = Json { ignoreUnknownKeys = true }
 
-    suspend fun packEspIdfFirmware(flasherArgs: VirtualFile, project: Project): Either<GenericError, EspIdfPackResult> = withContext(Dispatchers.IO) {
+    suspend fun packEspIdfFirmware(flasherArgs: VirtualFile): Either<GenericError, EspIdfPackResult> = withContext(Dispatchers.IO) {
         LOG.info("Packing ESP-IDF image from flasher-args '${flasherArgs.path}'")
         fun buildErrorResult(message: String) = GenericError("Failed to build image from flasher_args.json", message).left()
 
@@ -80,7 +81,7 @@ object FirmwareUtils {
         return format
     }
 
-    fun isUf2Block(block: ByteArray): Boolean {
+    private fun isUf2Block(block: ByteArray): Boolean {
         if (block.size != 512)
             return false
 

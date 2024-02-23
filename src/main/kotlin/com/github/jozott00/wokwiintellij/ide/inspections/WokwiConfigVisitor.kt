@@ -30,7 +30,7 @@ open class WokwiConfigVisitor : TomlVisitor() {
 
     }
 
-    open fun visitUnknownWokwiValue(value: TomlKeyValue) {
+    open fun visitUnknownWokwiValue() {
 
     }
 
@@ -39,7 +39,7 @@ open class WokwiConfigVisitor : TomlVisitor() {
             "version" -> visitVersionValue(element)
             "elf" -> visitElfValue(element)
             "firmware" -> visitFirmwareValue(element)
-            else -> visitUnknownWokwiValue(element)
+            else -> visitUnknownWokwiValue()
         }
     }
 

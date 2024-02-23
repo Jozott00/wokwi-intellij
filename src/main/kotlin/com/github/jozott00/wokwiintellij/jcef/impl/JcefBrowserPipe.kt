@@ -99,9 +99,9 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
     companion object {
         val logger = logger<JcefBrowserPipe>()
 
-        val namspaceInBrowser = "__WokwiIntellij"
-        val postMessageToIntellijFunc = "__postMessageToPipe"
-        val receiveMessageFromIntelliFunc = "__receiveMessageFromPipe"
+        const val namspaceInBrowser = "__WokwiIntellij"
+        const val postMessageToIntellijFunc = "__postMessageToPipe"
+        const val receiveMessageFromIntelliFunc = "__receiveMessageFromPipe"
 
 
     }

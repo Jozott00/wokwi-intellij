@@ -11,10 +11,8 @@ import com.github.jozott00.wokwiintellij.ui.WokwiIcons
 import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
-import com.github.jozott00.wokwiintellij.utils.resolveWith
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
@@ -25,14 +23,11 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.jcef.JBCefApp
-import com.intellij.util.childScope
 import com.intellij.util.namedChildScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.io.path.Path
-import kotlin.io.path.exists
 
 @Service(Service.Level.PROJECT)
 class WokwiProjectService(val project: Project, private val cs: CoroutineScope) : Disposable {
@@ -42,7 +37,6 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
 
     private val componentService = project.service<WokwiComponentService>()
     private val settingsState = project.service<WokwiSettingsState>()
-    private val licensingService = ApplicationManager.getApplication().service<WokwiLicensingService>()
     private val argsLoader = project.service<WokwiArgsLoader>()
     private var consoleToolWindow: ToolWindow? = null
     private var gdbServer: WokwiGDBServer? = null

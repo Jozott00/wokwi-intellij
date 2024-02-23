@@ -7,7 +7,8 @@ import com.github.jozott00.wokwiintellij.toml.findValue
 import com.intellij.codeInsight.template.TemplateManager
 import com.intellij.codeInsight.template.impl.TextExpression
 import com.intellij.codeInspection.*
-import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
@@ -17,6 +18,7 @@ import com.intellij.psi.PsiFile
 import org.toml.lang.psi.TomlFile
 import org.toml.lang.psi.TomlPsiFactory
 import org.toml.lang.psi.TomlTable
+import org.toml.lang.psi.TomlTableHeader
 
 private fun InspectionManager.createErrorDescription(
     elem: PsiElement,
@@ -50,7 +52,6 @@ class MissingConfigurationInspection : WokwiConfigInspectionBase() {
                     wokwiTable.header,
                     WokwiBundle.message("config.inspection.missing.version.problem.descriptor"),
                     AddWokwiAttribute(
-                        wokwiTable,
                         "version",
                         WokwiConstants.WOKWI_DEFAULT_CONFIG_VERSION,
                         false,
@@ -66,7 +67,6 @@ class MissingConfigurationInspection : WokwiConfigInspectionBase() {
                     wokwiTable.header,
                     WokwiBundle.message("config.inspection.missing.elf.problem.descriptor"),
                     AddWokwiAttribute(
-                        wokwiTable,
                         "elf",
                         "path/to/your/elf",
                         true,
@@ -82,7 +82,6 @@ class MissingConfigurationInspection : WokwiConfigInspectionBase() {
                     wokwiTable.header,
                     WokwiBundle.message("config.inspection.missing.firmware.problem.descriptor"),
                     AddWokwiAttribute(
-                        wokwiTable,
                         "firmware",
                         "path/to/your/firmware",
                         true,
@@ -118,10 +117,9 @@ class MissingConfigurationInspection : WokwiConfigInspectionBase() {
     }
 
     class AddWokwiAttribute(
-        private val wokwiTable: TomlTable,
         private val attribute: String,
         private val defaultValue: String,
-        val runTemplate: Boolean,
+        private val runTemplate: Boolean,
         private val familyName: String,
     ) : LocalQuickFix {
 
@@ -130,7 +128,19 @@ class MissingConfigurationInspection : WokwiConfigInspectionBase() {
         }
 
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
+            if (!ApplicationManager.getApplication().isDispatchThread)
+                return
+
             val factory = TomlPsiFactory(project, true)
+
+            val wokwiTable = when (val elem = descriptor.psiElement) {
+                is TomlTable -> elem
+                is TomlTableHeader -> elem.parent as TomlTable
+                else -> {
+                    thisLogger().error("Invalid PSI element for AddWokwiAttribute quickfix: $elem")
+                    return
+                }
+            }
 
             wokwiTable.add(factory.createNewline())
             if (!runTemplate) {
@@ -141,23 +151,14 @@ class MissingConfigurationInspection : WokwiConfigInspectionBase() {
             }
 
 
-
-            WriteCommandAction.runWriteCommandAction(project) {
-                // apply template
-                val editor =
-                    FileEditorManager.getInstance(project).selectedTextEditor ?: return@runWriteCommandAction
-
-                PsiDocumentManager.getInstance(project)
-                    .doPostponedOperationsAndUnblockDocument(editor.document)
-
-                insertTemplate(project, editor)
-
-            }
-
-
+            val editor =
+                FileEditorManager.getInstance(project).selectedTextEditor ?: return
+            PsiDocumentManager.getInstance(project)
+                .doPostponedOperationsAndUnblockDocument(editor.document)
+            insertTemplate(wokwiTable, project, editor)
         }
 
-        private fun insertTemplate(project: Project, editor: Editor) {
+        private fun insertTemplate(wokwiTable: TomlTable, project: Project, editor: Editor) {
             val templateManager = TemplateManager.getInstance(project)
             val template = templateManager.createTemplate("", "", "$attribute = \"\$PATH$\"").apply {
                 addVariable("PATH", TextExpression(defaultValue), true)
@@ -170,6 +171,7 @@ class MissingConfigurationInspection : WokwiConfigInspectionBase() {
 
             templateManager.startTemplate(editor, template)
         }
+
 
     }
 

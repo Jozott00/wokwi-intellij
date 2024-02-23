@@ -67,7 +67,7 @@
                 id="com.github.jozott00.wokwiintellij.actions.WokwiStartAction"
                 class="com.github.jozott00.wokwiintellij.actions.WokwiStartAction"
                 text="Start Wokwi Simulator"
-                description="Starts the Wokwi Simulator"
+                description="Starts the Wokwi simulator"
                 icon="AllIcons.Debugger.ThreadRunning"
             >
             </action>

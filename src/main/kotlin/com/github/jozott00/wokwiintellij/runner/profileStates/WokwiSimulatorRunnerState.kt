@@ -14,12 +14,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import java.io.OutputStream
 
-//@Deprecated("The WokwiRunner is currently not used, and might be removed in future.")
-class WokwiSimulatorRunnerState(val myEnvironment: ExecutionEnvironment) : CommandLineState(myEnvironment) {
+//@Deprecated("The WokwiRunner is currently not used, and might be removed in the future.")
+class WokwiSimulatorRunnerState(private val myEnvironment: ExecutionEnvironment) : CommandLineState(myEnvironment) {
     override fun startProcess() = WokwiRunnerProcessHandler(myEnvironment.project)
 }
 
-//@Deprecated("The WokwiRunner is currently not used, and might be removed in future.")
+//@Deprecated("The WokwiRunner is currently not used, and might be removed in the future.")
 class WokwiRunnerProcessHandler(val project: Project) : WokwiProcessHandler() {
 
     val wokwiService = project.service<WokwiProjectService>()

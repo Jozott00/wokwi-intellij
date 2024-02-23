@@ -1,3 +1,5 @@
+@file:Suppress("DialogTitleCapitalization")
+
 package com.github.jozott00.wokwiintellij.ui.config
 
 import com.github.jozott00.wokwiintellij.WokwiConstants

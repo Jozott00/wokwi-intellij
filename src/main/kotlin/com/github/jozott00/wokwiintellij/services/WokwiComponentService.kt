@@ -12,9 +12,9 @@ import com.intellij.openapi.project.Project
 @Service(Service.Level.PROJECT)
 class WokwiComponentService(val project: Project) {
 
-    val wokwiConfigState = project.service<WokwiSettingsState>()
+    private val wokwiConfigState = project.service<WokwiSettingsState>()
 
-    val configPanel = wokwiConfigPanel(project, wokwiConfigState.state) {
+    private val configPanel = wokwiConfigPanel(project, wokwiConfigState.state) {
         onChangeAction = {
             // do nothing
         }
