@@ -10,7 +10,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.components.service
 
-class WokwiSimulatorRunnerState(private val myEnvironment: ExecutionEnvironment) : CommandLineState(myEnvironment) {
+class WokwiSimulatorRunnerState(myEnvironment: ExecutionEnvironment) : CommandLineState(myEnvironment) {
     private val projectService = myEnvironment.project.service<WokwiProjectService>()
     private val am = ActionManager.getInstance()
     override fun startProcess() = projectService.startSimulator(false)

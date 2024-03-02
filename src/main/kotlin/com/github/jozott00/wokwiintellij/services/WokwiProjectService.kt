@@ -1,16 +1,13 @@
 package com.github.jozott00.wokwiintellij.services
 
-import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
 import com.github.jozott00.wokwiintellij.execution.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
+import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
-import com.github.jozott00.wokwiintellij.toolWindow.ConsoleWindowFactory
-import com.github.jozott00.wokwiintellij.ui.WokwiIcons
-import com.github.jozott00.wokwiintellij.ui.console.SimulationConsole
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.notification.NotificationType
@@ -21,9 +18,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.wm.ToolWindow
-import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.util.namedChildScope
 import kotlinx.coroutines.CoroutineScope
