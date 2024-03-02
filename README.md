@@ -42,8 +42,8 @@
 ![Wokwi Debug Showcase](blob/imgs/sim_running.png)
 
 <!-- Plugin description -->
-The Wokwi Intellij plugin, an open-source tool, integrates the [Wokwi](https://wokwi.com) simulator with Jetbrains IDEs like CLion and RustRover. 
-It adopts the Wokwi VS Code extension's configuration approach for seamless IDE transitions, supporting the same platforms.
+The Wokwi Intellij plugin integrates the [Wokwi](https://wokwi.com) simulator with Jetbrains IDEs like CLion and RustRover. 
+It adopts the configuration approach of the Wokwi VS code extension for seamless IDE transitions and supports the same platforms.
 
 This plugin is a community plugin and not maintained by the [Wokwi](https://wokwi.com) team.
 <!-- Plugin description end -->
