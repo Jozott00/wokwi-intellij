@@ -1,6 +1,6 @@
-package com.github.jozott00.wokwiintellij.runner.processHandler
+package com.github.jozott00.wokwiintellij.execution.processHandler
 
-import com.github.jozott00.wokwiintellij.runner.WokwiProcessHandler
+import com.github.jozott00.wokwiintellij.execution.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.services.WokwiProjectService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project

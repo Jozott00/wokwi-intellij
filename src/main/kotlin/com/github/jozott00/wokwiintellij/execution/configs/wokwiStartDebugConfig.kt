@@ -1,7 +1,7 @@
-package com.github.jozott00.wokwiintellij.runner.configs
+package com.github.jozott00.wokwiintellij.execution.configs
 
-import com.github.jozott00.wokwiintellij.runner.WokwiConfigurationFactory
-import com.github.jozott00.wokwiintellij.runner.profileStates.WokwiSimulatorStartState
+import com.github.jozott00.wokwiintellij.execution.WokwiConfigurationFactory
+import com.github.jozott00.wokwiintellij.execution.profileStates.WokwiSimulatorStartState
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory

@@ -1,9 +1,9 @@
-package com.github.jozott00.wokwiintellij.runner.runBefore
+package com.github.jozott00.wokwiintellij.execution.runBefore
 
 import com.github.jozott00.wokwiintellij.services.WokwiProjectService
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
-import com.github.jozott00.wokwiintellij.utils.simulation.startSimulatorRunExecution
+import com.github.jozott00.wokwiintellij.utils.simulation.SimulatorRunUtils
 import com.intellij.execution.BeforeRunTask
 import com.intellij.execution.BeforeRunTaskProvider
 import com.intellij.execution.configurations.RunConfiguration
@@ -41,7 +41,10 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
             }
             try {
                 val result = job.await()
-                startSimulatorRunExecution(environment.project) // start run execution for additional log output
+
+                // start run execution for additional log output
+                SimulatorRunUtils.startExecutionIfNotRunning(environment.project)
+
                 result
             } catch (e: CancellationException) {
               false

@@ -1,6 +1,6 @@
-package com.github.jozott00.wokwiintellij.runner.profileStates
+package com.github.jozott00.wokwiintellij.execution.profileStates
 
-import com.github.jozott00.wokwiintellij.runner.WokwiProcessHandler
+import com.github.jozott00.wokwiintellij.execution.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.services.WokwiProjectService
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.intellij.execution.ExecutionResult
@@ -10,7 +10,6 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import org.jetbrains.debugger.RemoteDebugConfiguration
 
 class WokwiSimulatorStartState(private val project: Project, private val waitForDebugger: Boolean) : RunProfileState {
     override fun execute(executor: Executor?, runner: ProgramRunner<*>) = object : ExecutionResult {
