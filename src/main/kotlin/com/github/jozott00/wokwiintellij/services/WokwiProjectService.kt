@@ -21,7 +21,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.getProjectDataPathRoot
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
@@ -37,6 +36,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
 
     private var simulator: WokwiSimulator? = null
     private var console: SimulationConsole? = null
+    private var currentProcessHandler: WokwiProcessHandler? = null
 
     private val componentService = project.service<WokwiComponentService>()
     private val settingsState = project.service<WokwiSettingsState>()
@@ -47,20 +47,16 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
     @Suppress("UnstableApiUsage")
     fun childScope(name: String) = cs.namedChildScope(name)
 
-    fun startSimulator(withListener: WokwiSimulatorListener? = null, byDebugger: Boolean = false) {
+    fun startSimulator(byDebugger: Boolean = false): WokwiProcessHandler {
+        val processHandler = getProcessHandler()
         cs.launch {
-            startSimulatorSuspended(withListener, byDebugger)
+            startSimulatorAsync(processHandler, byDebugger)
         }
+        return processHandler
     }
 
-    fun startSimulatorNew(byDebugger: Boolean = false): WokwiProcessHandler {
-        val processhandler = WokwiRunProcessHandler(project)
-        startSimulator(withListener = processhandler, byDebugger)
-        return processhandler
-    }
-
-    suspend fun startSimulatorSuspended(
-        withListener: WokwiSimulatorListener? = null,
+    suspend fun startSimulatorAsync(
+        listener: WokwiSimulatorListener? = null,
         byDebugger: Boolean = false
     ): Boolean {
         LOG.info("Start simulator...")
@@ -71,15 +67,10 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
             updateFirmware()
         }.also { if (!it) return false }
 
-
-        withListener?.let { simulator?.addSimulatorListener(it) }
+        listener?.let { simulator?.addSimulatorListener(it) }
         simulator?.start()
 
-        invokeLater {
-            ToolWindowUtils.setSimulatorIcon(project, true)
-            activateConsoleToolWindow()
-        }
-
+        invokeLater { ToolWindowUtils.setSimulatorIcon(project, true) }
         return true
     }
 
@@ -115,15 +106,29 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         }
 
         withContext(Dispatchers.EDT) {
-            val console = getConsole()
-            simulator?.addSimulatorListener(console)
+//            val console = getConsole()
+//            simulator?.addSimulatorListener(console)
 
             simulator?.let { componentService.simulatorToolWindowComponent.showSimulation(it.component) }
-            componentService.consoleToolWindowComponent.setConsole(console)
+//            componentService.consoleToolWindowComponent.setConsole(console)
         }
 
         return true
     }
+
+    private fun getProcessHandler(): WokwiProcessHandler {
+        val current = currentProcessHandler
+        val processHandler = if (current != null && !current.isProcessTerminated) {
+            current
+        } else {
+            WokwiRunProcessHandler(project).also {
+                currentProcessHandler = it
+            }
+        }
+
+        return processHandler
+    }
+
 
     private fun configGDBServer(shouldDebug: Boolean, port: Int) {
         if (!shouldDebug) {
@@ -162,6 +167,9 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         gdbServer?.disposeByDisposer()
         gdbServer = null
 
+        currentProcessHandler?.destroyProcess()
+        currentProcessHandler = null
+
         withContext(Dispatchers.EDT) {
             ToolWindowUtils.setSimulatorIcon(project, false)
             componentService.simulatorToolWindowComponent.showConfig()
@@ -174,7 +182,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
 
     fun firmwareUpdated() = cs.launch {
         WokwiNotifier.notifyBalloonAsync(title = "New firmware detected", "Restarting Wokwi simulator...")
-        startSimulatorSuspended()
+        startSimulatorAsync()
     }
 
     fun getWatchPaths(): List<String>? {

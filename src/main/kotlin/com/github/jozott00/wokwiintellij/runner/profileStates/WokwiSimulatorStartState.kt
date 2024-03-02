@@ -10,6 +10,7 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import org.jetbrains.debugger.RemoteDebugConfiguration
 
 class WokwiSimulatorStartState(private val project: Project, private val waitForDebugger: Boolean) : RunProfileState {
     override fun execute(executor: Executor?, runner: ProgramRunner<*>) = object : ExecutionResult {
@@ -31,7 +32,7 @@ class WokwiStartProcessHandler(project: Project, waitForDebugger: Boolean) :
     private val wokwiService = project.service<WokwiProjectService>()
 
     init {
-        wokwiService.startSimulator(this, waitForDebugger)
+        wokwiService.startSimulator(waitForDebugger)
     }
 
     override fun destroyProcessImpl() {

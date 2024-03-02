@@ -33,7 +33,7 @@ import java.io.OutputStream
 class WokwiSimulatorRunnerState(private val myEnvironment: ExecutionEnvironment) : CommandLineState(myEnvironment) {
     private val projectService = myEnvironment.project.service<WokwiProjectService>()
     private val am = ActionManager.getInstance()
-    override fun startProcess() = projectService.startSimulatorNew(false)
+    override fun startProcess() = projectService.startSimulator(false)
 
     override fun createActions(console: ConsoleView?, processHandler: ProcessHandler?, executor: Executor?) = arrayOf(
         Separator(),
@@ -48,55 +48,3 @@ class WokwiSimulatorRunnerState(private val myEnvironment: ExecutionEnvironment)
 
 }
 
-
-//@Deprecated("The WokwiRunner is currently not used, and might be removed in the future.")
-class WokwiRunnerProcessHandler(val project: Project) : WokwiProcessHandler() {
-
-    val wokwiService = project.service<WokwiProjectService>()
-
-    override fun startNotify() {
-        super.startNotify()
-        ProgressManager.getInstance().runProcessWithProgressAsynchronously(
-            object : Task.Backgroundable(project, "Wokwi execution", false) {
-                override fun run(indicator: ProgressIndicator) {
-                    wokwiService.startSimulator(this@WokwiRunnerProcessHandler, false)
-                }
-            },
-            ProgressIndicatorBase()
-        )
-
-    }
-
-    override fun onShutdown() {
-        destroyProcess()
-    }
-
-    override fun onTextAvailable(text: String, outputType: Key<*>) {
-        notifyTextAvailable(text, outputType)
-    }
-
-    override fun destroyProcessImpl() {
-        thisLogger().info("Destroy Process")
-        wokwiService.stopSimulator()
-        notifyProcessTerminated(0)
-    }
-
-    override fun detachProcessImpl() {
-        thisLogger().info("Detach Process")
-        notifyProcessDetached()
-    }
-
-    override fun detachIsDefault() = false
-
-    override fun getProcessInput(): OutputStream {
-        thisLogger().info("Ouput stream")
-        val stream = object : OutputStream() {
-            override fun write(b: Int) {
-                thisLogger().info("Got new input $b")
-            }
-        }
-        return stream
-    }
-
-
-}
