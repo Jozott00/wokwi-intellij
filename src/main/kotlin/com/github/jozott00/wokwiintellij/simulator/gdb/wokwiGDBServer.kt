@@ -36,7 +36,6 @@ interface GDBServerCommunicator {
 
 
 class WokwiGDBServer(private val cs: CoroutineScope, parentDisposable: Disposable) : GDBServerCommunicator, Disposable {
-
     init {
         Disposer.register(parentDisposable, this)
     }
@@ -45,9 +44,15 @@ class WokwiGDBServer(private val cs: CoroutineScope, parentDisposable: Disposabl
     private var currentMessageProcessor: MessageProcessor? = null
     private var eventChannel = Channel<GDBServerEvent> { Channel.BUFFERED }
 
-    fun listen(port: Int) = cs.launch(Dispatchers.IO) {
+
+    /**
+     * Listens for incoming connections on the specified port and handles them.
+     *
+     * @param port The port number to listen on. If null, a random port will be used.
+     */
+    fun listen(port: Int?) = cs.launch(Dispatchers.IO) {
         try {
-            ServerSocket(port).use { socket ->
+            ServerSocket(port ?: 0).use { socket ->
                 serverSocket = socket
 
                 LOG.info("GDB Server listening on port $port")
@@ -72,6 +77,9 @@ class WokwiGDBServer(private val cs: CoroutineScope, parentDisposable: Disposabl
             )
         }
     }
+
+
+    fun getCurrentServerPort() = serverSocket?.localPort
 
     fun isRunning() = serverSocket?.isClosed?.not() ?: false
 

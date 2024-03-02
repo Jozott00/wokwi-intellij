@@ -35,13 +35,11 @@ import kotlinx.coroutines.withContext
 class WokwiProjectService(val project: Project, private val cs: CoroutineScope) : Disposable {
 
     private var simulator: WokwiSimulator? = null
-    private var console: SimulationConsole? = null
     private var currentProcessHandler: WokwiProcessHandler? = null
 
     private val componentService = project.service<WokwiComponentService>()
     private val settingsState = project.service<WokwiSettingsState>()
     private val argsLoader = project.service<WokwiArgsLoader>()
-    private var consoleToolWindow: ToolWindow? = null
     private var gdbServer: WokwiGDBServer? = null
 
     @Suppress("UnstableApiUsage")
@@ -98,7 +96,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         }
         configGDBServer(
             waitForDebugger,
-            config.gdbServerPort ?: 3333
+            config.gdbServerPort
         ) // configures gdbServer for new simulator instance
 
         simulator = WokwiSimulator(args, this).also {
@@ -106,11 +104,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         }
 
         withContext(Dispatchers.EDT) {
-//            val console = getConsole()
-//            simulator?.addSimulatorListener(console)
-
             simulator?.let { componentService.simulatorToolWindowComponent.showSimulation(it.component) }
-//            componentService.consoleToolWindowComponent.setConsole(console)
         }
 
         return true
@@ -130,7 +124,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
     }
 
 
-    private fun configGDBServer(shouldDebug: Boolean, port: Int) {
+    private fun configGDBServer(shouldDebug: Boolean, port: Int?) {
         if (!shouldDebug) {
             gdbServer?.disposeByDisposer()
             gdbServer = null
@@ -178,6 +172,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         }
     }
 
+    fun getRunningGDBPort(): Int? = gdbServer?.getCurrentServerPort()
 
     override fun dispose() {
     }
@@ -193,37 +188,6 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
 
     fun isSimulatorRunning(): Boolean {
         return simulator != null
-    }
-
-    private suspend fun getConsole(): SimulationConsole {
-        return withContext(Dispatchers.EDT) {
-            val console = this@WokwiProjectService.console ?: run {
-                val c = SimulationConsole(project)
-                Disposer.register(this@WokwiProjectService, c)
-                c
-            }
-            console
-        }
-    }
-
-    private fun activateConsoleToolWindow() = cs.launch(Dispatchers.EDT) {
-        consoleToolWindow?.let {
-            it.show()
-            return@launch
-        }
-
-        val consoleToolWindowId = "Wokwi Run"
-
-        val tm = ToolWindowManager.getInstance(project)
-        if (tm.toolWindowIds.contains(consoleToolWindowId))
-            return@launch
-
-        consoleToolWindow = tm.registerToolWindow(consoleToolWindowId) {
-                    val factory = ConsoleWindowFactory()
-                    contentFactory = factory
-                    icon = WokwiIcons.ConsoleToolWindowIcon
-                    canCloseContent = false
-                }
     }
 
 
