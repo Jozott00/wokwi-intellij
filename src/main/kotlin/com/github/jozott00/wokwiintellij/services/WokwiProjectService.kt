@@ -1,6 +1,8 @@
 package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
+import com.github.jozott00.wokwiintellij.runner.WokwiProcessHandler
+import com.github.jozott00.wokwiintellij.runner.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
@@ -19,6 +21,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.getProjectDataPathRoot
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
@@ -48,6 +51,12 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
         cs.launch {
             startSimulatorSuspended(withListener, byDebugger)
         }
+    }
+
+    fun startSimulatorNew(byDebugger: Boolean = false): WokwiProcessHandler {
+        val processhandler = WokwiRunProcessHandler(project)
+        startSimulator(withListener = processhandler, byDebugger)
+        return processhandler
     }
 
     suspend fun startSimulatorSuspended(

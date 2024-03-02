@@ -24,6 +24,7 @@
                            displayType="BALLOON"/>
 
         <configurationType implementation="com.github.jozott00.wokwiintellij.runner.configs.WokwiStartDebugConfigType"/>
+        <configurationType implementation="com.github.jozott00.wokwiintellij.runner.configs.WokwiRunConfigType"/>
 
         <stepsBeforeRunProvider
             implementation="com.github.jozott00.wokwiintellij.runner.runBefore.WokwiStartDebugBeforeRunTaskProvider"/>

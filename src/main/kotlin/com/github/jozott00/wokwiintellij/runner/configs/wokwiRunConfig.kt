@@ -33,7 +33,7 @@ class WokwiRunConfig(
 
 class WokwiRunConfigType : ConfigurationTypeBase(
     ID, "Wokwi Run", "Run the Wokwi simulator and let it wait for a GDB debugger.",
-    NotNullLazyValue.createValue { WokwiIcons.Debug }
+    NotNullLazyValue.createValue { WokwiIcons.SimulatorToolWindowIcon }
 ) {
     init {
         addFactory(WokwiConfigurationFactory(this))
