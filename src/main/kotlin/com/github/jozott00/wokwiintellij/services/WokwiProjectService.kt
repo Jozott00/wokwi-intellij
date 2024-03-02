@@ -1,8 +1,8 @@
 package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
-import com.github.jozott00.wokwiintellij.runner.WokwiProcessHandler
-import com.github.jozott00.wokwiintellij.runner.processHandler.WokwiRunProcessHandler
+import com.github.jozott00.wokwiintellij.execution.WokwiProcessHandler
+import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
@@ -161,6 +161,8 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
     }
 
     fun stopSimulator() = cs.launch {
+        LOG.info("Stop simulator...")
+
         simulator?.disposeByDisposer()
         simulator = null
 
