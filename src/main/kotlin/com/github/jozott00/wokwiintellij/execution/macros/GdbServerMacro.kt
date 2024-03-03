@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.execution.macros
 
-import com.github.jozott00.wokwiintellij.services.WokwiProjectService
+import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.intellij.ide.macro.Macro
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -17,7 +17,7 @@ class GdbServerMacro : Macro() {
     override fun expand(dataContext: DataContext): String? {
         val project = CommonDataKeys.PROJECT.getData(dataContext) ?: return null
         val config = runBlocking(Dispatchers.IO) { WokwiConfigProcessor.readConfig(project) } ?: return null
-        val wokwiService = project.service<WokwiProjectService>()
+        val wokwiService = project.service<WokwiSimulatorService>()
 
         val port = wokwiService.getRunningGDBPort() ?: config.gdbServerPort ?: return "localhost:<unknown-port>"
 

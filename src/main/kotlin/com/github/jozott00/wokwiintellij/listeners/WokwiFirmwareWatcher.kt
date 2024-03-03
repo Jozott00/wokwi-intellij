@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.listeners
 
-import com.github.jozott00.wokwiintellij.services.WokwiProjectService
+import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -12,7 +12,7 @@ class WokwiFirmwareWatcher(val project: Project) : BulkFileListener {
 
     override fun after(events: MutableList<out VFileEvent>) {
         val configState = project.service<WokwiSettingsState>()
-        val projectService = project.service<WokwiProjectService>()
+        val projectService = project.service<WokwiSimulatorService>()
 
         if (!configState.watchFirmware) return
         val watchPaths = projectService.getWatchPaths() ?: return

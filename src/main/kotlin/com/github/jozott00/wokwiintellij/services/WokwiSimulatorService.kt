@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Service(Service.Level.PROJECT)
-class WokwiProjectService(val project: Project, private val cs: CoroutineScope) : Disposable {
+class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope) : Disposable {
 
     private var simulator: WokwiSimulator? = null
     private var currentProcessHandler: WokwiProcessHandler? = null
@@ -189,7 +189,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
 
 
     companion object {
-        private val LOG = logger<WokwiProjectService>()
+        private val LOG = logger<WokwiSimulatorService>()
     }
 
 }

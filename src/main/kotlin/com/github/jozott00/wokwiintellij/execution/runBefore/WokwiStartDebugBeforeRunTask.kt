@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.execution.runBefore
 
-import com.github.jozott00.wokwiintellij.services.WokwiProjectService
+import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
 import com.github.jozott00.wokwiintellij.utils.simulation.SimulatorRunUtils
@@ -49,7 +49,7 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
         environment: ExecutionEnvironment,
         task: WokwiStartDebugBeforeRunTask
     ): Boolean {
-        val projectService = environment.project.service<WokwiProjectService>()
+        val projectService = environment.project.service<WokwiSimulatorService>()
         return runBlocking(Dispatchers.IO) {
             // start child scope to make cancellation on dispose possible.
             val job = projectService.childScope().async {

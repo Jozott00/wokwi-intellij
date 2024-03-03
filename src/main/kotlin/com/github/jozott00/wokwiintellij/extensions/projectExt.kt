@@ -1,7 +1,7 @@
 package com.github.jozott00.wokwiintellij.extensions
 
 import com.github.jozott00.wokwiintellij.services.WokwiPluginDisposable
-import com.github.jozott00.wokwiintellij.services.WokwiProjectService
+import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -29,7 +29,7 @@ val Project.wokwiDisposable get() = service<WokwiPluginDisposable>() as Disposab
  */
 @Suppress("unused")
 fun Project.wokwiCoroutineChildScope(childName: String): CoroutineScope {
-    return service<WokwiProjectService>().childScope()
+    return service<WokwiSimulatorService>().childScope()
 }
 
 /**
