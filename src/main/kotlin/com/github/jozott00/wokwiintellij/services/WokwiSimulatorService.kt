@@ -3,7 +3,8 @@ package com.github.jozott00.wokwiintellij.services
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
-import com.github.jozott00.wokwiintellij.simulator.EXIT_CODE
+import com.github.jozott00.wokwiintellij.extensions.wokwiDisposable
+import com.github.jozott00.wokwiintellij.simulator.SimExitCode
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
@@ -14,7 +15,6 @@ import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -61,7 +61,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         cs.launch {
             val result = startSimulatorAsync(processHandler, byDebugger)
             if (!result) {
-                processHandler.onShutdown(EXIT_CODE.CONFIG_ERROR)
+                processHandler.onShutdown(SimExitCode.CONFIG_ERROR)
             }
         }
         return processHandler
@@ -128,7 +128,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
             config.gdbServerPort
         ) // configures gdbServer for new simulator instance
 
-        simulator = WokwiSimulator(args, this).also {
+        simulator = WokwiSimulator(args, project.wokwiDisposable).also {
             gdbServer?.let { server -> childScope().launch { it.connectToGDBServer(server) } } // connect to server
         }
 
@@ -167,7 +167,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         }
 
         if (shouldDebug && gdbServer == null) {
-            gdbServer = WokwiGDBServer(childScope(), this).also {
+            gdbServer = WokwiGDBServer(childScope(), project.wokwiDisposable).also {
                 it.listen(port)
             }
         }

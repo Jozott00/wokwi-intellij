@@ -1,7 +1,7 @@
 package com.github.jozott00.wokwiintellij.execution.processHandler
 
 import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
-import com.github.jozott00.wokwiintellij.simulator.EXIT_CODE
+import com.github.jozott00.wokwiintellij.simulator.SimExitCode
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -30,7 +30,7 @@ class WokwiRunProcessHandler(project: Project): WokwiProcessHandler() {
         notifyTextAvailable(text, outputType)
     }
 
-    override fun onShutdown(exitCode: EXIT_CODE) {
+    override fun onShutdown(exitCode: SimExitCode) {
         if (!isProcessTerminated) {
             notifyProcessTerminated(exitCode.int)
         }

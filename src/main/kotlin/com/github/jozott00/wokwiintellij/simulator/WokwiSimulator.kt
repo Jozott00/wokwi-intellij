@@ -255,7 +255,7 @@ class WokwiSimulator(
      * Disposes of the resources used by this simulator instance, notifying listeners of the shutdown.
      */
     override fun dispose() {
-        createEventMulticaster().onShutdown(EXIT_CODE.OK)
+        createEventMulticaster().onShutdown(SimExitCode.OK)
         myListeners.clear()
     }
 
@@ -285,7 +285,7 @@ class WokwiSimulator(
                 notifyAll { it.onStarted(runArgs) }
             }
 
-            override fun onShutdown(exitCode: EXIT_CODE) {
+            override fun onShutdown(exitCode: SimExitCode) {
                 notifyAll { it.onShutdown(exitCode) }
             }
 
