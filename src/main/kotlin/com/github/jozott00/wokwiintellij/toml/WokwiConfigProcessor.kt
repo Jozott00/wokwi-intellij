@@ -140,7 +140,9 @@ object WokwiConfigProcessor {
         .findRelativeFiles(wokwiConfigPath)}.run {
         if (isEmpty()) {
             WokwiNotifier.notifyBalloon(
-                "Configuration file `$wokwiConfigPath` not found in project."
+                "Failed to load Wokwi config",
+                "Configuration file `$wokwiConfigPath` not found in project.",
+                type = NotificationType.ERROR
             )
             return@run null
         }
