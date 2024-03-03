@@ -20,25 +20,42 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefApp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
+/**
+ * Manages the lifecycle and configuration of the Wokwi simulator within the project context.
+ * It handles starting, stopping, and updating the Wokwi simulator and its components.
+ *
+ * @property project The IntelliJ [Project] context in which this service operates.
+ * @property cs The [CoroutineScope] used for launching coroutines in this service.
+ */
 @Service(Service.Level.PROJECT)
 class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope) : Disposable {
 
     private var simulator: WokwiSimulator? = null
     private var currentProcessHandler: WokwiProcessHandler? = null
 
-    private val componentService = project.service<WokwiComponentService>()
-    private val settingsState = project.service<WokwiSettingsState>()
-    private val argsLoader = project.service<WokwiArgsLoader>()
+    private val componentService by lazy { project.service<WokwiComponentService>() }
+    private val settingsState by lazy { project.service<WokwiSettingsState>() }
+    private val argsLoader by lazy { project.service<WokwiArgsLoader>() }
     private var gdbServer: WokwiGDBServer? = null
 
+    /**
+     * Creates a new coroutine scope as a child of the service's main coroutine scope.
+     *
+     * @return A new [CoroutineScope] instance.
+     */
     // TODO: implement this using cs.namedChildScope() once it is stable
-    fun childScope() = cs
+    fun childScope() = CoroutineScope(cs.coroutineContext + SupervisorJob())
 
+    /**
+     * Starts the Wokwi simulator with optional debugger support.
+     * This function creates a new process handler for the simulator if needed and launches
+     * the simulator asynchronously.
+     *
+     * @param byDebugger Indicates whether the simulator is started with debugger support.
+     * @return The [WokwiProcessHandler] associated with the simulator process.
+     */
     fun startSimulator(byDebugger: Boolean = false): WokwiProcessHandler {
         val processHandler = getProcessHandler()
         cs.launch {
@@ -50,6 +67,14 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         return processHandler
     }
 
+    /**
+     * Asynchronously starts the Wokwi simulator, with the option to attach a debugger.
+     * This function can either create a new simulator instance or update the firmware of an existing one.
+     *
+     * @param listener An optional [WokwiSimulatorListener] to be notified about simulator events.
+     * @param byDebugger Indicates whether the simulator is started with debugger support.
+     * @return `true` if the simulator was successfully started, `false` otherwise.
+     */
     suspend fun startSimulatorAsync(
         listener: WokwiSimulatorListener? = null,
         byDebugger: Boolean = false
@@ -57,18 +82,24 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         LOG.info("Start simulator...")
 
         if (simulator == null || byDebugger) {
-            createNewSimulator(byDebugger)
+            if (!createNewSimulator(byDebugger)) return false
         } else {
-            updateFirmware()
-        }.also { if (!it) return false }
+            if (!updateFirmware()) return false
+        }
 
         listener?.let { simulator?.addSimulatorListener(it) }
         simulator?.start()
 
-        invokeLater { ToolWindowUtils.setSimulatorIcon(project, true) }
         return true
     }
 
+    /**
+     * Creates a new instance of the Wokwi simulator.
+     * This function loads the simulator configuration, initializes a new simulator instance, and optionally configures GDB server.
+     *
+     * @param waitForDebugger Indicates whether to wait for a debugger connection.
+     * @return `true` if the simulator was successfully created, `false` otherwise.
+     */
     private suspend fun createNewSimulator(waitForDebugger: Boolean = false): Boolean {
 
         val config =
@@ -76,8 +107,8 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
                 project,
                 settingsState.wokwiConfigPath,
                 settingsState.wokwiDiagramPath
-            )
-                ?: return false
+            ) ?: return false
+
         val args = argsLoader.load(config) ?: return false
         args.waitForDebugger = waitForDebugger
 
@@ -91,66 +122,73 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
             )
             return false
         }
+
         configGDBServer(
             waitForDebugger,
             config.gdbServerPort
         ) // configures gdbServer for new simulator instance
 
         simulator = WokwiSimulator(args, this).also {
-            gdbServer?.let { server -> cs.launch { it.connectToGDBServer(server) } } // connect to server
+            gdbServer?.let { server -> childScope().launch { it.connectToGDBServer(server) } } // connect to server
         }
 
         withContext(Dispatchers.EDT) {
             simulator?.let { componentService.simulatorToolWindowComponent.showSimulation(it.component) }
+            ToolWindowUtils.setSimulatorIcon(project, true)
         }
 
         return true
     }
 
-    private fun getProcessHandler(): WokwiProcessHandler {
-        val current = currentProcessHandler
-        val processHandler = if (current != null && !current.isProcessTerminated) {
-            current
-        } else {
-            WokwiRunProcessHandler(project).also {
-                currentProcessHandler = it
+    /**
+     * Retrieves the current [WokwiProcessHandler] for the simulator, creating a new one if necessary.
+     *
+     * @return The current or a new [WokwiProcessHandler].
+     */
+    private fun getProcessHandler(): WokwiProcessHandler =
+        currentProcessHandler.takeIf { it?.isProcessTerminated == false }
+            ?: WokwiRunProcessHandler(project).also { currentProcessHandler = it }
+
+
+    /**
+     * Configures the GDB server for debugging the simulator.
+     *
+     * @param shouldDebug Indicates whether debugging is enabled.
+     * @param port The port number on which the GDB server should listen.
+     */
+    private fun configGDBServer(shouldDebug: Boolean, port: Int?) {
+        gdbServer?.apply {
+            if (!shouldDebug || !isRunning()) {
+                disposeByDisposer()
+                gdbServer = null
+            } else {
+                resetEventChannel()
             }
         }
 
-        return processHandler
-    }
-
-
-    private fun configGDBServer(shouldDebug: Boolean, port: Int?) {
-        if (!shouldDebug) {
-            gdbServer?.disposeByDisposer()
-            gdbServer = null
-        } else {
-            gdbServer?.let {
-                if (!it.isRunning()) {
-                    it.disposeByDisposer()
-                    return@let
-                }
-
-                it.resetEventChannel()
-                return
-            }
-            gdbServer = WokwiGDBServer(this.childScope(), this).also {
+        if (shouldDebug && gdbServer == null) {
+            gdbServer = WokwiGDBServer(childScope(), this).also {
                 it.listen(port)
             }
         }
     }
 
-    private suspend fun updateFirmware(): Boolean {
-        simulator?.let {
-            val firmware = it.getFirmware().rootFile
-            val newFirmware = argsLoader.loadFirmware(firmware) ?: return false
-            it.setFirmware(newFirmware)
-        }
+    /**
+     * Updates the firmware of the currently running simulator.
+     *
+     * @return `true` if the firmware was successfully updated, `false` otherwise.
+     */
+    private suspend fun updateFirmware(): Boolean = simulator?.let {
+        val firmware = it.getFirmware().rootFile
+        val newFirmware = argsLoader.loadFirmware(firmware) ?: return false
+        it.setFirmware(newFirmware)
+        true
+    } ?: false
 
-        return true
-    }
 
+    /**
+     * Stops the currently running Wokwi simulator and cleans up resources.
+     */
     fun stopSimulator() = cs.launch {
         LOG.info("Stop simulator...")
 
@@ -169,23 +207,36 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         }
     }
 
+    /**
+     * Gets the current GDB server port if the server is running.
+     *
+     * @return The GDB server port, or `null` if the server is not running.
+     */
     fun getRunningGDBPort(): Int? = gdbServer?.getCurrentServerPort()
 
-    override fun dispose() {
-    }
+    override fun dispose() {}
 
+    /**
+     * Notifies the service that the firmware has been updated and restarts the simulator.
+     */
     fun firmwareUpdated() = cs.launch {
         WokwiNotifier.notifyBalloonAsync(title = "New firmware detected", "Restarting Wokwi simulator...")
         startSimulatorAsync()
     }
 
-    fun getWatchPaths(): List<String>? {
-        return simulator?.getFirmware()?.binaryPaths
-    }
+    /**
+     * Gets the watch paths for the simulator's firmware.
+     *
+     * @return A list of firmware binary paths, or `null` if the simulator is not running.
+     */
+    fun getWatchPaths(): List<String>? = simulator?.getFirmware()?.binaryPaths
 
-    fun isSimulatorRunning(): Boolean {
-        return simulator != null
-    }
+    /**
+     * Checks whether the Wokwi simulator is currently running.
+     *
+     * @return `true` if the simulator is running, `false` otherwise.
+     */
+    fun isSimulatorRunning(): Boolean = simulator != null
 
 
     companion object {
