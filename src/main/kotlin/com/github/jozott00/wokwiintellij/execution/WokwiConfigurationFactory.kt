@@ -13,14 +13,12 @@ class WokwiConfigurationFactory(type: ConfigurationType) : ConfigurationFactory(
     override fun createTemplateConfiguration(
         project: Project
     ) = when (type) {
-        is WokwiStartDebugConfigType -> WokwiStartDebugConfig(project, this, type.displayName)
         is WokwiRunConfigType -> WokwiRunConfig(project, this, type.displayName)
         else -> error("Invalid configuration type")
     }
 
 
     override fun getOptionsClass() = when (type) {
-        is WokwiStartDebugConfigType -> WokwiStartDebugConfigOptions::class.java
         is WokwiRunConfigType -> WokwiRunConfigOptions::class.java
         else -> error("Invalid configuration type")
     }

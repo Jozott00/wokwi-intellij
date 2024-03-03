@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.services
 
-import com.github.jozott00.wokwiintellij.execution.WokwiProcessHandler
+import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
 import com.github.jozott00.wokwiintellij.simulator.EXIT_CODE
