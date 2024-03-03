@@ -1,5 +1,6 @@
 package com.github.jozott00.wokwiintellij.ui.console
 
+import com.github.jozott00.wokwiintellij.simulator.EXIT_CODE
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.intellij.execution.filters.TextConsoleBuilderFactory
@@ -39,7 +40,7 @@ class SimulationConsole(project: Project) : JPanel(), Disposable, WokwiSimulator
         consoleView.clear()
     }
 
-    override fun onShutdown() {
+    override fun onShutdown(exitCode: EXIT_CODE) {
         executionRunning = false
     }
 

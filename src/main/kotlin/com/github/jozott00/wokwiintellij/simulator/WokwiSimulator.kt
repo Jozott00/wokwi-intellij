@@ -187,7 +187,7 @@ class WokwiSimulator(
     }
 
     override fun dispose() {
-        createEventMulticaster().onShutdown()
+        createEventMulticaster().onShutdown(EXIT_CODE.OK)
         myListeners.clear()
     }
 
@@ -202,8 +202,8 @@ class WokwiSimulator(
                 notifyAll { it.onStarted(runArgs) }
             }
 
-            override fun onShutdown() {
-                notifyAll { it.onShutdown() }
+            override fun onShutdown(exitCode: EXIT_CODE) {
+                notifyAll { it.onShutdown(exitCode) }
             }
 
             override fun onTextAvailable(text: String, outputType: Key<*>) {

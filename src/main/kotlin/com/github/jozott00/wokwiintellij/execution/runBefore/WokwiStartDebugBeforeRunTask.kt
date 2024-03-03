@@ -34,7 +34,7 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
         val projectService = environment.project.service<WokwiProjectService>()
         return runBlocking(Dispatchers.IO) {
             // start child scope to make cancellation on dispose possible.
-            val job = projectService.childScope("WokwiStartBeforeRunTask").async {
+            val job = projectService.childScope().async {
                 val result = projectService.startSimulatorAsync(task, true)
                 task.waitForSimulatorToBeRunning()
                 result

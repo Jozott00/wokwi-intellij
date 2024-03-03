@@ -23,4 +23,6 @@ class SimulatorWindowFactory : ToolWindowFactory {
 
     override fun shouldBeAvailable(project: Project) = true
 
+
+
 }

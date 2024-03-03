@@ -29,7 +29,7 @@ val Project.wokwiDisposable get() = service<WokwiPluginDisposable>() as Disposab
  */
 @Suppress("unused")
 fun Project.wokwiCoroutineChildScope(childName: String): CoroutineScope {
-    return service<WokwiProjectService>().childScope(childName)
+    return service<WokwiProjectService>().childScope()
 }
 
 /**

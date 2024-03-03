@@ -3,6 +3,7 @@ package com.github.jozott00.wokwiintellij.services
 import com.github.jozott00.wokwiintellij.execution.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
+import com.github.jozott00.wokwiintellij.simulator.EXIT_CODE
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
@@ -19,7 +20,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefApp
-import com.intellij.util.namedChildScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,13 +36,16 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
     private val argsLoader = project.service<WokwiArgsLoader>()
     private var gdbServer: WokwiGDBServer? = null
 
-    @Suppress("UnstableApiUsage")
-    fun childScope(name: String) = cs.namedChildScope(name)
+    // TODO: implement this using cs.namedChildScope() once it is stable
+    fun childScope() = cs
 
     fun startSimulator(byDebugger: Boolean = false): WokwiProcessHandler {
         val processHandler = getProcessHandler()
         cs.launch {
-            startSimulatorAsync(processHandler, byDebugger)
+            val result = startSimulatorAsync(processHandler, byDebugger)
+            if (!result) {
+                processHandler.onShutdown(EXIT_CODE.CONFIG_ERROR)
+            }
         }
         return processHandler
     }
@@ -132,7 +135,7 @@ class WokwiProjectService(val project: Project, private val cs: CoroutineScope) 
                 it.resetEventChannel()
                 return
             }
-            gdbServer = WokwiGDBServer(this.childScope("WokwiGDBServer"), this).also {
+            gdbServer = WokwiGDBServer(this.childScope(), this).also {
                 it.listen(port)
             }
         }

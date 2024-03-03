@@ -18,7 +18,6 @@ class WokwiStopAction : AnAction() {
         val p = e.presentation
 
         p.isEnabled = s.isSimulatorRunning()
-
     }
 
     override fun actionPerformed(event: AnActionEvent) {
