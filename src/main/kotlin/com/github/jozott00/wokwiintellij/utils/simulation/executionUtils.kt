@@ -36,7 +36,7 @@ object SimulatorRunUtils {
 
     fun startExecutionIfNotRunning(project: Project) {
         val runningProcess = ExecutionManager.getInstance(project).getRunningProcesses().find {
-            it is WokwiProcessHandler
+            !it.isProcessTerminated && !it.isProcessTerminating && it is WokwiProcessHandler
         }
 
         if (runningProcess == null) {
