@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+This update switches from the custom run toolwindow
+to a headless run configuration, which is more familiar for
+most Intellij users.
+
+### Added
+- Run configuration for simulator instance
+- Automatic GDB port selection
+
+### Removed
+- WokwiDebugStart configuration
+- Wokwi Run toolwindow
+
 ## [0.9.0] - 2024-02-23
 
 ### Added
