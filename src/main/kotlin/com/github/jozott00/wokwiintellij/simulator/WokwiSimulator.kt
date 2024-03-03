@@ -18,11 +18,20 @@ import com.intellij.util.containers.ContainerUtil
 import io.ktor.util.*
 import kotlinx.serialization.json.*
 import java.net.URL
+import javax.swing.JComponent
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 private val LOG = logger<WokwiSimulator>()
 
+/**
+ * Represents the Wokwi simulator, encapsulating the simulation's lifecycle, communication, and interaction
+ * with the embedded web browser component. It implements the [Simulator], [ComponentContainer], and
+ * [BrowserPipe.Subscriber] interfaces to provide comprehensive control and feedback mechanisms for the simulation.
+ *
+ * @property runArgs The arguments to run the simulation with, including firmware and diagram information.
+ * @param parentDisposable The parent disposable for managing the lifecycle of this instance.
+ */
 class WokwiSimulator(
     private val runArgs: WokwiArgs,
     parentDisposable: Disposable,
@@ -50,11 +59,19 @@ class WokwiSimulator(
         browserPipe.subscribe(PIPE_TOPIC, this, this)
     }
 
+    /**
+     * Starts the simulation. If the browser component is not ready or the start has not been invoked,
+     * it will delay the actual start of the simulation until these conditions are met.
+     */
     override fun start() {
         startInvoked = true
         startInternal()
     }
 
+    /**
+     * Internal method to handle the actual starting of the simulation, sending the necessary commands
+     * to the browser component.
+     */
     private fun startInternal() {
         simulationRunning = false
 
@@ -78,14 +95,30 @@ class WokwiSimulator(
         myEventMulticaster.onStarted(runArgs)
     }
 
+    /**
+     * Updates the firmware used in the simulation.
+     *
+     * @param firmware The new firmware to be used for the simulation.
+     */
     override fun setFirmware(firmware: WokwiArgsFirmware) {
         runArgs.firmware = firmware
     }
 
+    /**
+     * Retrieves the current firmware used in the simulation.
+     *
+     * @return The current [WokwiArgsFirmware].
+     */
     override fun getFirmware(): WokwiArgsFirmware {
         return runArgs.firmware
     }
 
+    /**
+     * Establishes a connection to a GDB server for debugging purposes, handling the communication
+     * between the simulator and the GDB server.
+     *
+     * @param server The [GDBServerCommunicator] to connect to.
+     */
     override suspend fun connectToGDBServer(server: GDBServerCommunicator) {
         gdbServer = server
         server.getMessageFlow().collect { event ->
@@ -100,11 +133,20 @@ class WokwiSimulator(
         }
     }
 
+    /**
+     * Called when start command is received. Indicates that the browser is ready
+     * and calls [startInternal].
+     */
     private fun startRecv() {
         browserReady = true
         startInternal()
     }
 
+    /**
+     * When uart data is received from the simulation, it gets
+     * decoded to UTF8, converted to the correct content-type (by the [AnsiEscapeDecoder])
+     * and then shared using the [myEventMulticaster].
+     */
     private fun uartDataRecv(data: JsonObject) {
         val bytes = data["bytes"]
             ?.jsonArray
@@ -123,6 +165,10 @@ class WokwiSimulator(
         }
     }
 
+    /**
+     * Loads the requested resource (currently from the internet) and
+     * sends it to the simulation.
+     */
     private fun loadResourceRecv(req: JsonObject) {
         // TODO: Make this offline
         val urlString = req["url"]?.jsonPrimitive?.content ?: run {
@@ -137,6 +183,9 @@ class WokwiSimulator(
         checkSimulationStartedRunning()
     }
 
+    /**
+     * Sends the received GDB response to the gdbServer.
+     */
     private fun gdbResponseRecv(req: JsonObject) {
         val response = req["response"]?.jsonPrimitive?.content ?: run {
             LOG.error("Malformed data received: No response field: $req")
@@ -145,6 +194,12 @@ class WokwiSimulator(
         gdbServer?.sendResponse(response)
     }
 
+    /**
+     * Receives messages from the browser component and handles them according to their type.
+     *
+     * @param data The message data received.
+     * @return `true` if the message was processed successfully, `false` otherwise.
+     */
     override fun messageReceived(data: String): Boolean {
         val json = Json.parseToJsonElement(data).jsonObject
 
@@ -171,6 +226,11 @@ class WokwiSimulator(
         return true
     }
 
+    /**
+     * If the [simulationRunning] is not yet true,
+     * it becomes true and all [myListeners] are notified
+     * that the simulation is running.
+     */
     private fun checkSimulationStartedRunning() {
         if (!simulationRunning) {
             simulationRunning = true
@@ -182,20 +242,43 @@ class WokwiSimulator(
         private const val PIPE_TOPIC = "wokwi"
     }
 
+    /**
+     * Adds a listener to be notified of simulator events.
+     *
+     * @param listener The [WokwiSimulatorListener] to add.
+     */
     fun addSimulatorListener(listener: WokwiSimulatorListener) {
         myListeners.add(listener)
     }
 
+    /**
+     * Disposes of the resources used by this simulator instance, notifying listeners of the shutdown.
+     */
     override fun dispose() {
         createEventMulticaster().onShutdown(EXIT_CODE.OK)
         myListeners.clear()
     }
 
-    override fun getComponent() = browser.component
+    /**
+     * Retrieves the main component of the simulator, typically the browser view.
+     *
+     * @return The simulator's main [JComponent].
+     */
+    override fun getComponent(): JComponent = browser.component
 
+    /**
+     * Retrieves the component that should receive focus when the simulator is displayed.
+     *
+     * @return The [JComponent] that should be focused.
+     */
     override fun getPreferredFocusableComponent() = component
 
 
+    /**
+     * Creates an event multicaster for dispatching simulator events to listeners.
+     *
+     * @return A [WokwiSimulatorListener] that multicasts events to all registered listeners.
+     */
     private fun createEventMulticaster(): WokwiSimulatorListener {
         return object : WokwiSimulatorListener {
             override fun onStarted(runArgs: WokwiArgs) {
