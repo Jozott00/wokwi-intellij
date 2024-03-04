@@ -204,7 +204,7 @@ class WokwiSimulator(
         val json = Json.parseToJsonElement(data).jsonObject
 
         val type: String = json["command"]?.jsonPrimitive?.content ?: run {
-            LOG.error("Malformed data received: $data")
+            LOG.error("Malformed data received: $data", Throwable())
             return false
         }
 
@@ -217,7 +217,7 @@ class WokwiSimulator(
             } // do nothing right now
             "gdbResponse" -> gdbResponseRecv(json)
             else -> {
-                LOG.warn("Unknown command: $type")
+                LOG.warn("Unknown command: $type", Throwable())
                 LOG.debug("Unknown command data: $data")
                 return false
             }
