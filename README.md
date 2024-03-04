@@ -30,9 +30,9 @@
     <a href="https://jozott00.github.io/wokwi-intellij/starter-topic.html"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/Jozott00/wokwi-intellij/issues">Report Bug</a>
+    <a href="https://github.com/Jozott00/wokwi-intellij/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=%5BBUG%5D">Report Bug</a>
     ·
-    <a href="https://github.com/Jozott00/wokwi-intellij/issues">Request Feature</a>
+    <a href="https://github.com/Jozott00/wokwi-intellij/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=%5BFEATURE-REQUEST%5D">Request Feature</a>
   </p>
 </div>
 
