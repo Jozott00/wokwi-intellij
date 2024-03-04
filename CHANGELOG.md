@@ -26,4 +26,5 @@ most Intellij users.
 - Wokwi simulation debugging support
 
 [Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.9.0...HEAD
+[0.10.0]: https://github.com/Jozott00/wokwi-intellij/commits/v0.9.0
 [0.9.0]: https://github.com/Jozott00/wokwi-intellij/commits/v0.9.0
