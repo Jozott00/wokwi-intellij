@@ -18,7 +18,7 @@
     </style>
 </head>
 <body>
-<iframe id="wcode-frame" src="https://wokwi.com/vscode/wcode?v=2.4.0"></iframe>
+<iframe id="wcode-frame" src="https://wokwi.com/vscode/wcode?v=2.4.0" onload="onIFrameLoad()"></iframe>
 </body>
 <script>
 
@@ -44,8 +44,8 @@
         missed_cmds = []
     }
 
-    let postToIntellij = event => {
-        var pkg = JSON.stringify({type: "wokwi", data: event.data})
+    let postToIntellij = (type, data) => {
+        var pkg = JSON.stringify({type: type, data: data})
         if (window.__WokwiIntellij.__postMessageToPipe === undefined) {
             console.log("Pipe not yet setup, will store in queue", pkg)
             missed_cmds.push(pkg)
@@ -63,13 +63,13 @@
         // store and setup wcode messaging channel
         if (event.data.command === "start") {
             commPort = event.data.port
-            commPort.onmessage = postToIntellij
+            commPort.onmessage = (event) => postToIntellij("wokwi", event.data)
             commPort.onmessageerror = event => {
                 console.error("Message Error on Wcode Port", event)
             }
         }
 
-        postToIntellij(event)
+        postToIntellij("wokwi", event.data)
 
     });
 
@@ -79,6 +79,9 @@
         sendMissedPkgs()
     })
 
+    function onIFrameLoad() {
+        postToIntellij("meta", {msg: "frameLoaded"})
+    }
 
 </script>
 

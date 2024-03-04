@@ -1,7 +1,6 @@
 package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
-import com.github.jozott00.wokwiintellij.toolWindow.WokwiConsoleToolWindow
 import com.github.jozott00.wokwiintellij.toolWindow.WokwiSimulationToolWindow
 import com.github.jozott00.wokwiintellij.ui.config.wokwiConfigPanel
 import com.intellij.openapi.components.Service
@@ -21,7 +20,4 @@ class WokwiComponentService(val project: Project) {
     }
 
     val simulatorToolWindowComponent = WokwiSimulationToolWindow(configPanel)
-    val consoleToolWindowComponent = WokwiConsoleToolWindow(project)
-
-
 }

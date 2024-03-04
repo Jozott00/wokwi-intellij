@@ -20,7 +20,6 @@ import kotlinx.serialization.json.JsonElement
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
-import org.intellij.lang.annotations.Language
 
 class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Disposable) : BrowserPipe, CefLoadHandlerAdapter() {
 
@@ -38,7 +37,7 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
 
     override fun send(type: String, data: String) {
         val funCall = """
-            window.$namspaceInBrowser.$receiveMessageFromIntelliFunc("$type", $data);
+            window.$NAMESPACE_IN_BROWSER.$RECEIVE_MESSAGE_FROM_INTELLIJ_FUNC("$type", $data);
         """.trimIndent()
 
         browser.executeJavaScript(funCall)
@@ -64,9 +63,8 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
 
     // inject code to browser
     override fun onLoadEnd(browser: CefBrowser?, frame: CefFrame?, httpStatusCode: Int) {
-        @Language("JavaScript")
         val code = """
-            window.$namspaceInBrowser.$postMessageToIntellijFunc = data => ${injectQuery.inject("data")};
+            window.$NAMESPACE_IN_BROWSER.$POST_MESSAGE_FROM_INTELLIJ_FUNC = data => ${injectQuery.inject("data")};
         """.trimIndent()
 
         browser?.executeJavaScript(code, null, 0)
@@ -99,10 +97,9 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
     companion object {
         val logger = logger<JcefBrowserPipe>()
 
-        const val namspaceInBrowser = "__WokwiIntellij"
-        const val postMessageToIntellijFunc = "__postMessageToPipe"
-        const val receiveMessageFromIntelliFunc = "__receiveMessageFromPipe"
-
+        const val NAMESPACE_IN_BROWSER = "__WokwiIntellij"
+        const val POST_MESSAGE_FROM_INTELLIJ_FUNC = "__postMessageToPipe"
+        const val RECEIVE_MESSAGE_FROM_INTELLIJ_FUNC = "__receiveMessageFromPipe"
 
     }
 
