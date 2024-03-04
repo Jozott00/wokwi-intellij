@@ -2,7 +2,7 @@
 
 # wokwi-intellij Changelog
 
-## [Unreleased]
+## [0.10.0] - 2024-03-04
 
 This update switches from the custom run toolwindow
 to a headless run configuration, which is more familiar for
