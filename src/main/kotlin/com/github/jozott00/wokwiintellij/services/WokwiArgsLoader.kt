@@ -4,7 +4,6 @@ import arrow.core.Either
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
-import com.github.jozott00.wokwiintellij.simulator.args.WokwiProjectType
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloonAsync
 import com.github.jozott00.wokwiintellij.utils.simulation.FirmwareUtils
 import com.intellij.notification.NotificationType
@@ -77,11 +76,6 @@ class WokwiArgsLoader(val project: Project) {
             size = buffer.size.toUInt(),
             binaryPaths = binaryPaths
         )
-    }
-
-    @Suppress("SameReturnValue")
-    private fun detectProject(): WokwiProjectType {
-        return WokwiProjectType.RUST
     }
 
     private suspend fun loadLicense() = licensingService.loadAndCheckLicense()

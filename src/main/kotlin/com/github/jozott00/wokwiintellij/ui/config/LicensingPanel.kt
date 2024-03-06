@@ -19,7 +19,6 @@ import java.awt.CardLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 
 
 class LicensingPanel : ComponentContainer {
