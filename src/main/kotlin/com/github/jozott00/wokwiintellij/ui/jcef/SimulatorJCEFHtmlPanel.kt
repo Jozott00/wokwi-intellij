@@ -14,7 +14,6 @@ import com.intellij.ui.dsl.builder.BottomGap
 import com.intellij.ui.dsl.builder.TopGap
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.jcef.JCEFHtmlPanel
-import com.intellij.ui.util.preferredWidth
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -23,6 +22,7 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandler
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.CardLayout
+import java.awt.Dimension
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JProgressBar
@@ -72,7 +72,7 @@ class SimulatorJCEFHtmlPanel(parentDisposable: Disposable) : ComponentContainer 
                 row {
                     cell(JProgressBar().also {
                         it.isIndeterminate = true
-                        it.preferredWidth = 300
+                        it.preferredSize = Dimension(300, it.preferredSize.height)
                     })
                 }
                     .topGap(TopGap.NONE)
