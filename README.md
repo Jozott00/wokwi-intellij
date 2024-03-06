@@ -31,6 +31,8 @@
     <a href="https://jozott00.github.io/wokwi-intellij/starter-topic.html"><strong>Explore the docs »</strong></a>
     <br />
     <br />
+    <a href="https://plugins.jetbrains.com/plugin/23826-wokwi-simulator">Install in IDE</a>
+    ·
     <a href="https://github.com/Jozott00/wokwi-intellij/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=%5BBUG%5D">Report Bug</a>
     ·
     <a href="https://github.com/Jozott00/wokwi-intellij/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=%5BFEATURE-REQUEST%5D">Request Feature</a>
