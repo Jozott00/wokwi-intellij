@@ -18,7 +18,7 @@
         <notificationGroup id="Wokwi Simulator"
                            displayType="BALLOON"/>
 
-        <configurationType implementation="com.github.jozott00.wokwiintellij.execution.configs.WokwiRunConfigType"/>
+        <!--        <configurationType implementation="com.github.jozott00.wokwiintellij.execution.configs.WokwiRunConfigType"/>-->
 
         <stepsBeforeRunProvider
             implementation="com.github.jozott00.wokwiintellij.execution.runBefore.WokwiStartDebugBeforeRunTaskProvider"/>
