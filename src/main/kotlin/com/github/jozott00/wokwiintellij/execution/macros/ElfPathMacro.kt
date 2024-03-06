@@ -20,8 +20,6 @@ class ElfPathMacro : Macro() {
 
     override fun expand(dataContext: DataContext): String? {
         val project = CommonDataKeys.PROJECT.getData(dataContext) ?: throw ExecutionCancelledException()
-        val simulatorService = project.service<WokwiSimulatorService>()
-        val settingsService = project.service<WokwiSettingsState>()
 
         val config = runBlocking {
             project.wokwiCoroutineChildScope("ElfPathMacro").async(Dispatchers.IO) {
