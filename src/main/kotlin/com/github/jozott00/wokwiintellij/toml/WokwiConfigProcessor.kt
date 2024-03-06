@@ -136,52 +136,63 @@ object WokwiConfigProcessor {
         FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
     }
 
-    private suspend fun findWokwiConfigPath(wokwiConfigPath: String, project: Project): VirtualFile? = withContext(Dispatchers.IO) { readAction { project
-        .findRelativeFiles(wokwiConfigPath)}.run {
-        if (isEmpty()) {
-            WokwiNotifier.notifyBalloon(
-                "Failed to load Wokwi config",
-                "Configuration file `$wokwiConfigPath` not found in project.",
-                type = NotificationType.ERROR
-            )
-            return@run null
-        }
-        if (size > 1) {
-            notifyError("Found multiple configuration files: \n${joinToString("\n")}. \nSpecify the concrete one in the Settings.")
-            return@run null
+    private suspend fun findWokwiConfigPath(wokwiConfigPath: String, project: Project): VirtualFile? =
+        withContext(Dispatchers.IO) {
+            readAction {
+                project
+                    .findRelativeFiles(wokwiConfigPath)
+            }
+        }.run {
+            if (isEmpty()) {
+                WokwiNotifier.notifyBalloon(
+                    "Failed to load Wokwi config",
+                    "Configuration file `$wokwiConfigPath` not found in project.",
+                    type = NotificationType.ERROR
+                )
+                return@run null
+            }
+            if (size > 1) {
+                notifyError("Found multiple configuration files: \n${joinToString("\n")}. \nSpecify the concrete one in the Settings.")
+                return@run null
+            }
+
+            return@run first()
         }
 
-        return@run first()
-    }}
-
-    private suspend fun findWokwiDiagramPath(wokwiDiagramPath: String, project: Project): VirtualFile? = withContext(Dispatchers.IO) {readAction {  project
-        .findRelativeFiles(wokwiDiagramPath) }.run {
-        if (isEmpty()) {
-            notifyError(
-                "Diagram file `$wokwiDiagramPath` not found in project.",
-                NotifyAction("Create diagram.json") { _, _ ->
-                    val psiManager = PsiManager.getInstance(project)
-                    val virtualFile = project.guessProjectDir() ?: return@NotifyAction
-                    val psiDir = psiManager.findDirectory(virtualFile)
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        val diagramFile =
-                            psiDir?.createFile(WokwiConstants.WOKWI_DIAGRAM_FILE) ?: return@runWriteCommandAction
-                        val document = diagramFile.viewProvider.document
-                        document.setText(WokwiTemplates.defaultDiagramJson())
-                        val descriptor =
-                            OpenFileDescriptor(project, diagramFile.virtualFile)
-                        FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
-                    }
+    private suspend fun findWokwiDiagramPath(wokwiDiagramPath: String, project: Project): VirtualFile? =
+        withContext(Dispatchers.IO) {
+            readAction {
+                project
+                    .findRelativeFiles(wokwiDiagramPath)
+            }.run {
+                if (isEmpty()) {
+                    notifyError(
+                        "Diagram file `$wokwiDiagramPath` not found in project.",
+                        NotifyAction("Create diagram.json") { _, _ ->
+                            val psiManager = PsiManager.getInstance(project)
+                            val virtualFile = project.guessProjectDir() ?: return@NotifyAction
+                            val psiDir = psiManager.findDirectory(virtualFile)
+                            WriteCommandAction.runWriteCommandAction(project) {
+                                val diagramFile =
+                                    psiDir?.createFile(WokwiConstants.WOKWI_DIAGRAM_FILE)
+                                        ?: return@runWriteCommandAction
+                                val document = diagramFile.viewProvider.document
+                                document.setText(WokwiTemplates.defaultDiagramJson())
+                                val descriptor =
+                                    OpenFileDescriptor(project, diagramFile.virtualFile)
+                                FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
+                            }
+                        }
+                    )
+                    return@run null
                 }
-            )
-            return@run null
+                if (size > 1) {
+                    notifyError("Found multiple diagram files: \n${joinToString("\n")}. \nSpecify the concrete one in the Settings.")
+                    return@run null
+                }
+                return@run first()
+            }
         }
-        if (size > 1) {
-            notifyError("Found multiple diagram files: \n${joinToString("\n")}. \nSpecify the concrete one in the Settings.")
-            return@run null
-        }
-        return@run first()
-    }}
 
 
 }

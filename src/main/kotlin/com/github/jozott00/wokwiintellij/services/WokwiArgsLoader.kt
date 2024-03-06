@@ -4,7 +4,6 @@ import arrow.core.Either
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
-import com.github.jozott00.wokwiintellij.simulator.args.WokwiProjectType
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloonAsync
 import com.github.jozott00.wokwiintellij.utils.simulation.FirmwareUtils
 import com.intellij.notification.NotificationType
@@ -30,9 +29,6 @@ class WokwiArgsLoader(val project: Project) {
         val diagram = readAction { config.diagram.readText() }
         val firmware = loadFirmware(config.firmware) ?: return null
 
-        val projectType = detectProject()
-        // TODO: Check for esp image
-
         val args = WokwiArgs(license, diagram, firmware)
         return args
 
@@ -54,14 +50,15 @@ class WokwiArgsLoader(val project: Project) {
         val binaryPaths = mutableListOf(firmwareFile.path)
 
         val buffer = if (isFlasherArgsFile) {
-            val packedResult=
+            val packedResult =
                 when (val result = FirmwareUtils.packEspIdfFirmware(firmwareFile)) {
-                is Either.Left -> {
-                    notifyBalloonAsync(result.value)
-                    return@withContext null
+                    is Either.Left -> {
+                        notifyBalloonAsync(result.value)
+                        return@withContext null
+                    }
+
+                    is Either.Right -> result.value
                 }
-                is Either.Right -> result.value
-            }
 
             binaryPaths.addAll(packedResult.binaryPaths)
             packedResult.img
@@ -79,11 +76,6 @@ class WokwiArgsLoader(val project: Project) {
             size = buffer.size.toUInt(),
             binaryPaths = binaryPaths
         )
-    }
-
-    @Suppress("SameReturnValue")
-    private fun detectProject(): WokwiProjectType {
-        return WokwiProjectType.RUST
     }
 
     private suspend fun loadLicense() = licensingService.loadAndCheckLicense()

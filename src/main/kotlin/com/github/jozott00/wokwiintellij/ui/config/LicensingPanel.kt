@@ -62,20 +62,21 @@ class LicensingPanel : ComponentContainer {
     }
 
     @Suppress("SameParameterValue")
-    private fun checkLicenseAvailability(recentlyChanged: Boolean = false) = runInBackground{ runBlocking(Dispatchers.IO) {
-        if (recentlyChanged) {
-            invokeLater { statusCardLayout.show(statusCard, "LOADING") }
-            delay(500)
-        }
-
-        val raw = licensingService.getLicense()
-            ?: return@runBlocking invokeLater {
-                statusCardLayout.show(statusCard, "LICENSE_MISSING")
+    private fun checkLicenseAvailability(recentlyChanged: Boolean = false) = runInBackground {
+        runBlocking(Dispatchers.IO) {
+            if (recentlyChanged) {
+                invokeLater { statusCardLayout.show(statusCard, "LOADING") }
+                delay(500)
             }
 
-        invokeLater {
-            val parsed = licensingService.parseLicense(raw)
-            val statusPanel = when {
+            val raw = licensingService.getLicense()
+                ?: return@runBlocking invokeLater {
+                    statusCardLayout.show(statusCard, "LICENSE_MISSING")
+                }
+
+            invokeLater {
+                val parsed = licensingService.parseLicense(raw)
+                val statusPanel = when {
                     parsed == null -> "LICENSE_INVALID"
                     !parsed.isValid() -> "LICENSE_EXPIRED"
                     else -> {
@@ -83,9 +84,10 @@ class LicensingPanel : ComponentContainer {
                         "LICENSE_SET"
                     }
                 }
-            statusCardLayout.show(statusCard, statusPanel)
+                statusCardLayout.show(statusCard, statusPanel)
+            }
         }
-    } }
+    }
 
     private fun buildStatus(valid: Boolean, message: String, plan: JLabel? = null) = panel {
         row {

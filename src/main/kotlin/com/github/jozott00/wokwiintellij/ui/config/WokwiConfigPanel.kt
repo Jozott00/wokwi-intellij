@@ -13,7 +13,7 @@ import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.BottomGap
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.util.preferredWidth
+import java.awt.Dimension
 import kotlin.io.path.pathString
 import kotlin.io.path.relativeTo
 
@@ -53,7 +53,7 @@ class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSett
             group("Settings") {
                 row("wokwi.toml path: ") {
                     textFieldWithBrowseButton { getRootRelativePathOf(it) }.apply {
-                        component.preferredWidth = 400
+                        component.preferredSize = Dimension(400, component.preferredSize.height)
                     }
                         .validationOnInput {
                             ValidationInfo("Hello world", it)
@@ -76,7 +76,7 @@ class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSett
 
                 row("diagram.json path: ") {
                     textFieldWithBrowseButton { getRootRelativePathOf(it) }.apply {
-                        component.preferredWidth = 400
+                        component.preferredSize = Dimension(400, component.preferredSize.height)
                     }
                         .onChanged { _ -> onChange() }
                         .bindText(model::wokwiDiagramPath)
