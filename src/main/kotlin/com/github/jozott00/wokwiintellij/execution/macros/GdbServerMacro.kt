@@ -1,6 +1,7 @@
 package com.github.jozott00.wokwiintellij.execution.macros
 
 import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
+import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.intellij.ide.macro.Macro
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -15,11 +16,17 @@ class GdbServerMacro : Macro() {
     override fun getDescription() = "Resolves to the Wokwi's GDB Server address"
 
     override fun expand(dataContext: DataContext): String? {
-        val project = CommonDataKeys.PROJECT.getData(dataContext) ?: return null
-        val config = runBlocking(Dispatchers.IO) { WokwiConfigProcessor.readConfig(project) } ?: return null
-        val wokwiService = project.service<WokwiSimulatorService>()
+        val project = CommonDataKeys.PROJECT.getData(dataContext) ?: throw ExecutionCancelledException()
+        val simulatorService = project.service<WokwiSimulatorService>()
 
-        val port = wokwiService.getRunningGDBPort() ?: config.gdbServerPort ?: return "localhost:<unknown-port>"
+        // only get config file if simulator currently running.
+        // prevents ui freezing on startup
+        if (!simulatorService.isSimulatorRunning()) return "<requires simulator startup>"
+
+//        val config = runBlocking(Dispatchers.IO) { WokwiConfigProcessor.readConfig(project) }
+//            ?: throw ExecutionCancelledException()
+//        val port = simulatorService.getRunningGDBPort() ?: config.gdbServerPort ?: return "localhost:<unknown-port>"
+        val port = simulatorService.getRunningGDBPort() ?: return "localhost:<unknown-port>"
 
         return "localhost:$port"
     }
