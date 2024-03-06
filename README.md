@@ -1,11 +1,13 @@
 <a name="readme-top"></a>
 
 <!-- PROJECT SHIELDS -->
+[![JetBrains Plugin Version][jetbrains-shield]][jetbrains-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![MIT License][license-shield]][license-url]
 [![Issues][issues-shield]][issues-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
+
 
 <!-- PROJECT LOGO -->
 <br />
@@ -34,6 +36,8 @@
     <a href="https://github.com/Jozott00/wokwi-intellij/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=%5BFEATURE-REQUEST%5D">Request Feature</a>
   </p>
 </div>
+
+
 
 <!-- ABOUT THE PROJECT -->
 
@@ -119,6 +123,9 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
+[jetbrains-shield]: https://img.shields.io/jetbrains/plugin/v/com.github.jozott00.wokwiintellij
+[jetbrains-url]: https://plugins.jetbrains.com/plugin/23826-wokwi-simulator
 
 [contributors-shield]: https://img.shields.io/github/contributors/jozott00/wokwi-intellij.svg
 
