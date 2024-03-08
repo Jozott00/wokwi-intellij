@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.10.1] - 2024-03-06
+
 ### Bugfix
 
 - UI Freezes on startup (when debug config selected)
@@ -37,8 +39,7 @@ most Intellij users.
 - wokwi.toml analysis support
 - Wokwi simulation debugging support
 
-[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.0...HEAD
-
+[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/Jozott00/wokwi-intellij/commits/v0.10.0
-
 [0.9.0]: https://github.com/Jozott00/wokwi-intellij/commits/v0.9.0
