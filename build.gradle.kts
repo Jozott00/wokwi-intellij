@@ -29,7 +29,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.beust:klaxon:5.6")
     implementation("com.akuleshov7:ktoml-core:0.5.1")
-    implementation("com.akuleshov7:ktoml-file:0.5.1")
+    implementation("com.akuleshov7:ktoml-file:0.5.2")
     implementation("io.arrow-kt:arrow-core:1.2.4")
 }
 
