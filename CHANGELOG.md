@@ -6,6 +6,12 @@
 
 ### Added
 
+- Support for IntelliJ Platform 2024.3.*
+
+## [0.10.2] - 2024-09-18
+
+### Added
+
 - Support for IntelliJ Platform 2024.2.*
 
 ## [0.10.1] - 2024-03-06
@@ -44,6 +50,8 @@ most Intellij users.
 - Wokwi simulation debugging support
 
 [Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.1...HEAD
+
+[0.10.2]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.1...v0.10.2
 
 [0.10.1]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.0...v0.10.1
 
