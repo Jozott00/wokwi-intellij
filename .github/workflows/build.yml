@@ -164,9 +164,7 @@ jobs:
 
       # Run Qodana inspections
       - name: Qodana - Code Inspection
-        uses: JetBrains/qodana-action@v2024.1.5
-        with:
-          cache-default-branch-only: true
+        uses: JetBrains/qodana-action@v2024.2.2
 
   # Run plugin structure verification along with IntelliJ Plugin Verifier
   verify:
