@@ -7,14 +7,16 @@ import org.jetbrains.annotations.PropertyKey
 @NonNls
 private const val BUNDLE = "messages.WokwiBundle"
 
-object WokwiBundle : DynamicBundle(BUNDLE) {
+internal object WokwiBundle {
+  private val INSTANCE = DynamicBundle(WokwiBundle::class.java, BUNDLE)
+//  private val INSTANCE = Dynamic
 
-    @JvmStatic
-    fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =
-        getMessage(key, *params)
+  @JvmStatic
+  fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =
+    INSTANCE.getMessage(key, *params)
 
-    @Suppress("unused")
-    @JvmStatic
-    fun messagePointer(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =
-        getLazyMessage(key, *params)
+  @Suppress("unused")
+  @JvmStatic
+  fun messagePointer(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =
+    INSTANCE.getLazyMessage(key, *params)
 }
