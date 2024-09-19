@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.10.3] - 2024-09-18
+
 ### Added
 
 - Support for IntelliJ Platform 2024.3.*
@@ -49,12 +51,9 @@ most Intellij users.
 - wokwi.toml analysis support
 - Wokwi simulation debugging support
 
-[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.1...HEAD
-
+[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.3...HEAD
+[0.10.3]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.1...v0.10.2
-
 [0.10.1]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.0...v0.10.1
-
-[0.10.0]: https://github.com/Jozott00/wokwi-intellij/commits/v0.10.0
-
+[0.10.0]: https://github.com/Jozott00/wokwi-intellij/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/Jozott00/wokwi-intellij/commits/v0.9.0
