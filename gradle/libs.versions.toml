@@ -1,6 +1,6 @@
 [versions]
 # libraries
-annotations = "25.0.0"
+annotations = "26.0.1"
 
 # plugins
 changelog = "2.2.1"
