@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.10.4] - 2025-02-14
+
 ### Added
 
 - Support for IntelliJ Platform 2025.1.*
@@ -16,7 +18,7 @@
 
 ### Chore
 
-- CI: Fix gradle-setup action by upgrading to v4 
+- CI: Fix gradle-setup action by upgrading to v4
 
 ## [0.10.2] - 2024-09-18
 
@@ -59,7 +61,8 @@ most Intellij users.
 - wokwi.toml analysis support
 - Wokwi simulation debugging support
 
-[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.3...HEAD
+[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.4...HEAD
+[0.10.4]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.0...v0.10.1
