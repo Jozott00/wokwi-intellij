@@ -14,6 +14,10 @@
 
 - Support for IntelliJ Platform 2024.3.*
 
+### Chore
+
+- CI: Fix gradle-setup action by upgrading to v4 
+
 ## [0.10.2] - 2024-09-18
 
 ### Added
