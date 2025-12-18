@@ -15,14 +15,16 @@ class ElfPathMacro : Macro() {
     override fun getDescription() = "Resolves to the ELF file path specified in the Wokwi configuration."
 
     override fun expand(dataContext: DataContext): String {
-        val project = CommonDataKeys.PROJECT.getData(dataContext) ?: throw ExecutionCancelledException()
+        val project = CommonDataKeys.PROJECT.getData(dataContext) ?: return "no-project"
 
-        val config = runBlocking {
+        if (project.isDisposed || !project.isInitialized) {
+            return "project-not-ready"
+        }
+
+        return runBlocking {
             project.wokwiCoroutineChildScope("ElfPathMacro").async(Dispatchers.IO) {
                 WokwiConfigProcessor.findElfFile(project)
             }.await()
-        }
-            ?: throw ExecutionCancelledException()
-        return config.path
+        }?.path ?: "no-elf-found"
     }
 }

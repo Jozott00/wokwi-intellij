@@ -5,23 +5,31 @@ package com.github.jozott00.wokwiintellij.ui.config
 import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
 import com.github.jozott00.wokwiintellij.utils.runInBackground
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.currentThreadCoroutineScope
 import com.intellij.openapi.ui.ComponentContainer
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.dsl.builder.RightGap
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.AsyncProcessIcon
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.awt.CardLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 
 
-class LicensingPanel : ComponentContainer {
+class LicensingPanel(val cs: CoroutineScope) : ComponentContainer {
 
     private val licensingService = ApplicationManager.getApplication().service<WokwiLicensingService>()
 
@@ -62,32 +70,31 @@ class LicensingPanel : ComponentContainer {
     }
 
     @Suppress("SameParameterValue")
-    private fun checkLicenseAvailability(recentlyChanged: Boolean = false) = runInBackground {
-        runBlocking(Dispatchers.IO) {
-            if (recentlyChanged) {
-                invokeLater { statusCardLayout.show(statusCard, "LOADING") }
-                delay(500)
+    private fun checkLicenseAvailability(recentlyChanged: Boolean = false) = cs.launch {
+        if (recentlyChanged) {
+            withContext(Dispatchers.EDT) { statusCardLayout.show(statusCard, "LOADING") }
+            delay(500)
+        }
+
+        val raw = licensingService.getLicense()
+            ?: return@launch withContext(Dispatchers.EDT) {
+                statusCardLayout.show(statusCard, "LICENSE_MISSING")
             }
 
-            val raw = licensingService.getLicense()
-                ?: return@runBlocking invokeLater {
-                    statusCardLayout.show(statusCard, "LICENSE_MISSING")
+        withContext(Dispatchers.EDT) {
+            val parsed = licensingService.parseLicense(raw)
+            val statusPanel = when {
+                parsed == null -> "LICENSE_INVALID"
+                !parsed.isValid() -> "LICENSE_EXPIRED"
+                else -> {
+                    licensePlanPanel.text = "(${parsed.plan ?: "Community"})"
+                    "LICENSE_SET"
                 }
-
-            invokeLater {
-                val parsed = licensingService.parseLicense(raw)
-                val statusPanel = when {
-                    parsed == null -> "LICENSE_INVALID"
-                    !parsed.isValid() -> "LICENSE_EXPIRED"
-                    else -> {
-                        licensePlanPanel.text = "(${parsed.plan ?: "Community"})"
-                        "LICENSE_SET"
-                    }
-                }
-                statusCardLayout.show(statusCard, statusPanel)
             }
+            statusCardLayout.show(statusCard, statusPanel)
         }
     }
+
 
     private fun buildStatus(valid: Boolean, message: String, plan: JLabel? = null) = panel {
         row {

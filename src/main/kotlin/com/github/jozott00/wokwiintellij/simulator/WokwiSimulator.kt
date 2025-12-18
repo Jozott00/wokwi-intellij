@@ -203,6 +203,8 @@ class WokwiSimulator(
    */
   override fun messageReceived(data: String): Boolean {
     val json = Json.parseToJsonElement(data).jsonObject
+    // sometimes we receive empty messages. we treat them as no-op.
+    if (json.isEmpty()) return true
 
     val type: String = json["command"]?.jsonPrimitive?.content ?: run {
       LOG.error("Malformed data received: $data", Throwable())
@@ -218,7 +220,7 @@ class WokwiSimulator(
       } // do nothing right now
       "gdbResponse" -> gdbResponseRecv(json)
       else -> {
-        LOG.warn("Unknown command: $type", Throwable())
+        LOG.warn("Unknown command: $type")
         LOG.debug("Unknown command data: $data")
         return false
       }
