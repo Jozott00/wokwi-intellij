@@ -13,12 +13,13 @@ import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.BottomGap
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
+import kotlinx.coroutines.CoroutineScope
 import java.awt.Dimension
 import kotlin.io.path.pathString
 import kotlin.io.path.relativeTo
 
 
-class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSettingsState) {
+class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSettingsState, private val cs: CoroutineScope) {
 
     var onChangeAction: (() -> Unit)? = null
 
@@ -45,7 +46,7 @@ class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSett
 
             group("License") {
                 row {
-                    cell(LicensingPanel().component)
+                    cell(LicensingPanel(cs).component)
                 }
 
             }
@@ -107,9 +108,10 @@ class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSett
 
 fun wokwiConfigPanel(
     project: Project,
+    cs: CoroutineScope,
     model: WokwiSettingsState,
-    build: WokwiConfigPanelBuilder.() -> Unit
+    build: WokwiConfigPanelBuilder.() -> Unit,
 ): DialogPanel {
-    return WokwiConfigPanelBuilder(project, model).apply(build).build()
+    return WokwiConfigPanelBuilder(project, model, cs).apply(build).build()
 }
 

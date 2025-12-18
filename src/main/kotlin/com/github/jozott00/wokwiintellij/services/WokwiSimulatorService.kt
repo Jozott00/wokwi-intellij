@@ -46,7 +46,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
      * @return A new [CoroutineScope] instance.
      */
     // TODO: implement this using cs.namedChildScope() once it is stable
-    fun childScope() = CoroutineScope(cs.coroutineContext + SupervisorJob())
+    fun childScope() = CoroutineScope(cs.coroutineContext + SupervisorJob(cs.coroutineContext[Job]))
 
     /**
      * Starts the Wokwi simulator with optional debugger support.

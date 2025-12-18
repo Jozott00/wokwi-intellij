@@ -13,6 +13,11 @@ class GdbServerMacro : Macro() {
 
     override fun expand(dataContext: DataContext): String {
         val project = CommonDataKeys.PROJECT.getData(dataContext) ?: throw ExecutionCancelledException()
+
+        if (project.isDisposed || !project.isInitialized) {
+            return "project-not-ready"
+        }
+
         val simulatorService = project.service<WokwiSimulatorService>()
 
         // only get config file if simulator currently running.

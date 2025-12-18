@@ -57,16 +57,12 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
                 task.waitForSimulatorToBeRunning()
                 result
             }
-            try {
-                val result = job.await()
+            val result = job.await()
 
-                // start run execution for additional log output
-                SimulatorRunUtils.startExecutionIfNotRunning(environment.project)
+            // start run execution for additional log output
+            SimulatorRunUtils.startExecutionIfNotRunning(environment.project)
 
-                result
-            } catch (e: CancellationException) {
-              false
-            }
+            result
         }
     }
 

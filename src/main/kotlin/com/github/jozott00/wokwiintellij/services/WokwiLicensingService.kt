@@ -1,6 +1,5 @@
 package com.github.jozott00.wokwiintellij.services
 
-import ai.grazie.utils.mpp.Base64
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
@@ -18,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.charset.StandardCharsets
 import java.util.*
+import kotlin.io.encoding.Base64
 
 
 @Service(Service.Level.APP)
@@ -78,7 +78,7 @@ class WokwiLicensingService(private val cs: CoroutineScope) {
             // Decoding the base64 input
             val decodedString = base64DblClickDecode(license)
             decoded = Base64.decode(decodedString)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return null
         }
 

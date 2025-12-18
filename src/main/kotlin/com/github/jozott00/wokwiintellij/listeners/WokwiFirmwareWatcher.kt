@@ -11,6 +11,8 @@ import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 class WokwiFirmwareWatcher(val project: Project) : BulkFileListener {
 
     override fun after(events: MutableList<out VFileEvent>) {
+        if (project.isDisposed || !project.isInitialized) return
+
         val configState = project.service<WokwiSettingsState>()
         val projectService = project.service<WokwiSimulatorService>()
 

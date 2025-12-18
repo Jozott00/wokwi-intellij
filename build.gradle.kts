@@ -10,7 +10,7 @@ plugins {
   alias(libs.plugins.changelog) // Gradle Changelog Plugin
   alias(libs.plugins.qodana) // Gradle Qodana Plugin
   alias(libs.plugins.kover) // Gradle Kover Plugin
-  kotlin("plugin.serialization") version "2.0.20"
+  alias(libs.plugins.kotlin.serialization)
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -50,7 +50,6 @@ dependencies {
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
 
-    instrumentationTools()
     pluginVerifier()
     zipSigner()
     testFramework(TestFrameworkType.Platform)
@@ -126,14 +125,12 @@ changelog {
 //}
 
 tasks {
-  tasks {
-    wrapper {
-      gradleVersion = providers.gradleProperty("gradleVersion").get()
-    }
+  wrapper {
+    gradleVersion = providers.gradleProperty("gradleVersion").get()
+  }
 
-    publishPlugin {
-      dependsOn(patchChangelog)
-    }
+  publishPlugin {
+    dependsOn(patchChangelog)
   }
 }
 
