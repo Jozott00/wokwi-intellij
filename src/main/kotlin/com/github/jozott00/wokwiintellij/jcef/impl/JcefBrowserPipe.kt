@@ -28,6 +28,8 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
 
     private val injectQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
 
+    private var _BROWSER_ : CefBrowser? = null;
+
     init {
         Disposer.register(parentDisposable, this)
         Disposer.register(this, injectQuery)
@@ -69,6 +71,7 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
 
         browser?.executeJavaScript(code, null, 0)
         browser?.executeJavaScript("window.dispatchEvent(new Event('IdeReady'));", null, 0)
+        _BROWSER_ = browser;
     }
 
     @Suppress("SameReturnValue")
@@ -81,7 +84,12 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
     private fun informSubscribers(type: String, data: String) {
         when (val subs = subscribers[type]) {
             null -> logger.warn("No subscribers for $type!\nAttached data: $data")
-            else -> subs.takeWhile { it.messageReceived(data) }
+            else -> {
+                subs.takeWhile {
+                    it.messageReceived(data)
+                };
+                /*if(data.contains("start")) _BROWSER_?.openDevTools();*/
+            }
         }
     }
 

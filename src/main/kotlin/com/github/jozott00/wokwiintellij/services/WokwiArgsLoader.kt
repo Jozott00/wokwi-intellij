@@ -28,10 +28,10 @@ class WokwiArgsLoader(val project: Project) {
         val license = loadLicense() ?: return null
         val diagram = readAction { config.diagram.readText() }
         val firmware = loadFirmware(config.firmware) ?: return null
+        val chips = config.chips;
 
-        val args = WokwiArgs(license, diagram, firmware)
-        return args
-
+        val args = WokwiArgs(license, diagram, firmware, chips = chips)
+        return args;
     }
 
     suspend fun loadFirmware(firmwareFile: VirtualFile): WokwiArgsFirmware? = withContext(Dispatchers.IO) {

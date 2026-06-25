@@ -2,6 +2,7 @@
 
 package com.github.jozott00.wokwiintellij.simulator.args
 
+import com.github.jozott00.wokwiintellij.simulator.WokwiCustomChip
 import com.intellij.openapi.vfs.VirtualFile
 
 
@@ -10,6 +11,7 @@ class WokwiArgs(
     val diagram: String,
     var firmware: WokwiArgsFirmware,
     var waitForDebugger: Boolean = false,
+    val chips : List<WokwiCustomChip>
 )
 
 @Suppress("unused")

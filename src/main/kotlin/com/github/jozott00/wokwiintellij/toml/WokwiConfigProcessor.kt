@@ -1,14 +1,15 @@
 package com.github.jozott00.wokwiintellij.toml
 
 import com.akuleshov7.ktoml.TomlInputConfig
-import com.akuleshov7.ktoml.exceptions.TomlDecodingException
 import com.akuleshov7.ktoml.file.TomlFileReader
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.extensions.findRelativeFiles
 import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
+import com.github.jozott00.wokwiintellij.simulator.WokwiCustomChip
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.utils.NotifyAction
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
+import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloonAsync
 import com.github.jozott00.wokwiintellij.utils.WokwiTemplates
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.EDT
@@ -20,13 +21,26 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.readBytes
+import com.intellij.openapi.vfs.readText
 import com.intellij.psi.PsiManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.serializer
+import kotlinx.serialization.json.Json
+import kotlin.io.encoding.Base64
 
+/**
+ * MSimulation configurations loader/handler.
+ */
 object WokwiConfigProcessor {
-
+    /**
+     * (METHOD) Reads and loads configurations and setup data for the new simulation.
+     * @param project OpenAPI project object.
+     * @param wokwiConfigPath wokwi.toml configuration file path.
+     * @param diagramPath diagram.json scene description file path.
+     * @return WokwiConfig? object with all configurations ready for simulation init.
+     */
     suspend fun loadConfig(project: Project, wokwiConfigPath: String, diagramPath: String): WokwiConfig? {
         val absoluteWokwiPath = findWokwiConfigPath(wokwiConfigPath, project) ?: return null
         val diagramFilePath = findWokwiDiagramPath(diagramPath, project) ?: return null
@@ -41,7 +55,7 @@ object WokwiConfigProcessor {
     suspend fun readConfig(project: Project): WokwiTomlTable? {
         val projectSettings = project.service<WokwiSettingsState>()
         val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath, project) ?: return null
-        return readConfig(configFile, project)
+        return readConfig(configFile, project)?.wokwi
     }
 
     suspend fun findElfFile(project: Project): VirtualFile? {
@@ -51,7 +65,13 @@ object WokwiConfigProcessor {
         return configFile.parent.findFileByRelativePath(tomlConfig.elf)
     }
 
-    private suspend fun readConfig(configFile: VirtualFile, project: Project): WokwiTomlTable? {
+    /**
+     * (METHOD) Reads and fetches simulation configurations from wokwi.toml.
+     * @param configFile wokwi.toml IO object (VirtualFile).
+     * @param project OpenAPI Project object.
+     * @return A WokwiTomlConfig? object with the retrieved configurations.
+     */
+    private suspend fun readConfig(configFile: VirtualFile, project: Project): WokwiTomlConfig? {
 
         if (!configFile.exists()) {
             notifyError("Configuration file `${configFile.path}` not found.")
@@ -69,30 +89,37 @@ object WokwiConfigProcessor {
                 allowNullValues = true
             )
         )
-
         lateinit var model: WokwiTomlConfig
         try {
-            model = fileReader.decodeFromFile(serializer(), configFile.path)
-        } catch (e: TomlDecodingException) {
+            model = fileReader.decodeFromFile(serializer(), configFile.path);
+        } catch (e: Exception) {
             notifyError(
-                "Check your wokwi.toml file and try again",
+                "Check your wokwi.toml file and try again. Full error message: ${e.message}",
                 getNotifyJumpToAction("Jump to config", project, configFile)
             )
-            return null
+            return null;
         }
 
-        return model.wokwi
+        return model;
     }
 
+    /**
+     * (METHOD) Loads and interprets setup files linked by the configuration file onto the new simulation.
+     * @param project Project object.
+     * @param tomlConfig Data from the wokwi toml table structure (from wokwi.toml).
+     * @param configFile wokwi.toml configuration VirtualFile.
+     * @param diagramFile diagram.json scene design VirtualFile.
+     * @return A WokwiConfig? object containing the structured retrieved information.
+     */
     private suspend fun loadConfig(
         project: Project,
-        tomlConfig: WokwiTomlTable,
+        tomlConfig: WokwiTomlConfig,
         configFile: VirtualFile,
         diagramFile: VirtualFile
     ): WokwiConfig? {
         val configDir = readAction { configFile.parent }
 
-        val elfFile = readAction { configDir.findFileByRelativePath(tomlConfig.elf) } ?: run {
+        val elfFile = readAction { configDir.findFileByRelativePath(tomlConfig.wokwi.elf) } ?: run {
             notifyError(
                 "Invalid ELF path. Is the project already built?",
                 getNotifyJumpToAction("Jump to config", project, configFile)
@@ -100,7 +127,7 @@ object WokwiConfigProcessor {
             return null
         }
 
-        val firmwareFile = readAction { configDir.findFileByRelativePath(tomlConfig.firmware) } ?: run {
+        val firmwareFile = readAction { configDir.findFileByRelativePath(tomlConfig.wokwi.firmware) } ?: run {
             notifyError(
                 "Invalid firmware path. Is the project already built?",
                 getNotifyJumpToAction("Jump to config", project, configFile)
@@ -108,16 +135,94 @@ object WokwiConfigProcessor {
             return null
         }
 
+        val chips = mutableListOf<WokwiCustomChip>();
+
+        for (chipConfig in tomlConfig.chip) {
+            val chipWasmFile = readAction { configDir.findFileByRelativePath(chipConfig.binary) } ?: run {
+                notifyError(
+                    "Invalid wasm path.",
+                    getNotifyJumpToAction("Jump to config", project, configFile)
+                )
+                return null
+            }
+
+            val chipBinaryBuffer = loadChipBIN(chipWasmFile) ?: return null
+
+            val chipJsonPath = chipConfig.binary.removeSuffix(".wasm") + ".json"
+            val chipJSONFile = readAction { configDir.findFileByRelativePath(chipJsonPath) } ?: run {
+                notifyError(
+                    "Invalid json path.",
+                    getNotifyJumpToAction("Jump to config", project, configFile)
+                )
+                return null
+            }
+
+            val chipJSONContent = readAction { chipJSONFile.readText() }
+            val chipJson = try {
+                Json.parseToJsonElement(chipJSONContent)
+            } catch (e: Exception) {
+                notifyError(
+                    "Invalid chip JSON `${chipJSONFile.path}`. Full error message: ${e.message}",
+                    getNotifyJumpToAction("Jump to config", project, chipJSONFile)
+                )
+                return null
+            }
+
+            chips.add(WokwiCustomChip (
+                name =  chipConfig.name,
+                binaryBase64 = encodeBase64(chipBinaryBuffer),
+                json = chipJson
+            ));
+        }
 
         return WokwiConfig(
-            version = tomlConfig.version.toString(),
+            version = tomlConfig.wokwi.version.toString(),
             elf = elfFile,
             firmware = firmwareFile,
             diagram = diagramFile,
-            gdbServerPort = tomlConfig.gdbServerPort
+            gdbServerPort = tomlConfig.wokwi.gdbServerPort,
+            chips = chips,
         )
     }
 
+    /**
+     * (METHOD) Loads custom chip binary data from the chip.wasm file.
+     * @param chipBinFile WebAssembly-compiled chip source-code VirtualFile.
+     * @return The chip's ByteArray? binary data buffer. Returns null if the file is not found.
+     */
+    suspend fun loadChipBIN(chipBinFile : VirtualFile): ByteArray? = withContext(Dispatchers.IO) {
+        if (!readAction { chipBinFile.exists() }) {
+            withContext(Dispatchers.EDT) {
+                notifyBalloonAsync(
+                    title = "Failed to load firmware",
+                    message = "File `${chipBinFile.path}` does not exist and therefore cannot be loaded for simulation.",
+                    NotificationType.ERROR
+                )
+            }
+            return@withContext null
+        }
+
+        val buffer = readAction { chipBinFile.readBytes() }
+        if (buffer.isEmpty()) {
+            withContext(Dispatchers.EDT) {
+                notifyBalloonAsync(
+                    title = "Failed to load custom chip",
+                    message = "File `${chipBinFile.path}` is empty and therefore cannot be loaded for simulation.",
+                    NotificationType.ERROR
+                )
+            }
+            return@withContext null
+        }
+
+        buffer
+    }
+
+    /**
+     * (METHOD) Converts a byteArray into a Base64 binary string.
+     * @param buffer The ByteArray buffer object.
+     * @return Base64-encoded binary string.
+     */
+    private fun encodeBase64(buffer: ByteArray): String = Base64.encode(buffer)
 
     private suspend fun notifyError(error: String, action: NotifyAction? = null) {
         withContext(Dispatchers.EDT) {
@@ -193,6 +298,4 @@ object WokwiConfigProcessor {
                 return@run first()
             }
         }
-
-
 }

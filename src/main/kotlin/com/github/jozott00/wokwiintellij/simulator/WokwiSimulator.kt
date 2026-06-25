@@ -17,7 +17,6 @@ import com.intellij.openapi.util.Key
 import com.intellij.util.containers.ContainerUtil
 import io.ktor.util.*
 import kotlinx.serialization.json.*
-import java.net.URL
 import javax.swing.JComponent
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -89,8 +88,10 @@ class WokwiSimulator(
       firmware = firmwareString,
       firmwareFormat = runArgs.firmware.format,
       license = runArgs.license,
-      waitForDebugger = runArgs.waitForDebugger
+      waitForDebugger = runArgs.waitForDebugger,
+      chips = Json.encodeToJsonElement(runArgs.chips)
     )
+
     browserPipe.send(PIPE_TOPIC, cmd)
     myEventMulticaster.onStarted(runArgs)
   }
@@ -212,7 +213,7 @@ class WokwiSimulator(
     }
 
     when (type) {
-      "start" -> startRecv()
+      "start" -> startRecv();
       "loadResource" -> loadResourceRecv(json)
       "uartData" -> uartDataRecv(json) // do nothing right now
       "wifiFrame", "wifiConnect" -> {
@@ -220,8 +221,10 @@ class WokwiSimulator(
       } // do nothing right now
       "gdbResponse" -> gdbResponseRecv(json)
       else -> {
-        LOG.warn("Unknown command: $type")
-        LOG.debug("Unknown command data: $data")
+        println("Unknown command: $type");
+        println("Unknown command data: $data");
+        /*LOG.warn("Unknown command: $type")
+        LOG.debug("Unknown command data: $data")*/
         return false
       }
     }
