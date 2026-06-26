@@ -1,6 +1,5 @@
 package com.github.jozott00.wokwiintellij.simulator
 
-
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
@@ -145,9 +144,10 @@ class WokwiSimulator(
   }
 
   /**
-   * When uart data is received from the simulation, it gets
+   * (METHOD) When uart data is received from the simulation, it gets
    * decoded to UTF8, converted to the correct content-type (by the [AnsiEscapeDecoder])
    * and then shared using the [myEventMulticaster].
+   * @param data UART JSON data returned by the board.
    */
   private fun uartDataRecv(data: JsonObject) {
     println(data);
@@ -168,6 +168,10 @@ class WokwiSimulator(
     }
   }
 
+  /**
+   * (METHOD) When chip output JSON data is received from the simulation, it then shared using the [myEventMulticaster].
+   * @param data JSON data returned by the chip.
+   */
   private fun chipOutputRecv(data: JsonObject) {
     println(data);
     try {
@@ -187,6 +191,7 @@ class WokwiSimulator(
   /**
    * Loads the requested resource (currently from the internet) and
    * sends it to the simulation.
+   * @param req Request JSON object.
    */
   private fun loadResourceRecv(req: JsonObject) {
     // TODO: Make this offline
@@ -241,12 +246,9 @@ class WokwiSimulator(
       else -> {
         println("Unknown command: $type");
         println("Unknown command data: $data");
-        /*LOG.warn("Unknown command: $type")
-        LOG.debug("Unknown command data: $data")*/
         return false
       }
     }
-
     return true
   }
 
@@ -329,5 +331,4 @@ class WokwiSimulator(
 
     }
   }
-
 }

@@ -31,7 +31,7 @@ import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
 
 /**
- * MSimulation configurations loader/handler.
+ * Simulation configurations loader/handler object.
  */
 object WokwiConfigProcessor {
     /**
@@ -224,6 +224,11 @@ object WokwiConfigProcessor {
      */
     private fun encodeBase64(buffer: ByteArray): String = Base64.encode(buffer)
 
+    /**
+     * (METHOD) Displays a visual error notification in the editor's bottom left corner, when Wokwi configurations fail to be loaded.
+     * @param error Error message string to be displayed.
+     * @param action Custom action button inside the notification dialog, associated with a given procedure (function). Defaults to null.
+     */
     private suspend fun notifyError(error: String, action: NotifyAction? = null) {
         withContext(Dispatchers.EDT) {
             WokwiNotifier.notifyBalloonAsync(

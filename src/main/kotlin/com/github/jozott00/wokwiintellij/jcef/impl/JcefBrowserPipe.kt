@@ -28,8 +28,6 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
 
     private val injectQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
 
-    private var _BROWSER_ : CefBrowser? = null;
-
     init {
         Disposer.register(parentDisposable, this)
         Disposer.register(this, injectQuery)
@@ -60,7 +58,6 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
 
     override fun dispose() {
         subscribers.clear()
-
     }
 
     // inject code to browser
@@ -71,7 +68,6 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
 
         browser?.executeJavaScript(code, null, 0)
         browser?.executeJavaScript("window.dispatchEvent(new Event('IdeReady'));", null, 0)
-        _BROWSER_ = browser;
     }
 
     @Suppress("SameReturnValue")
