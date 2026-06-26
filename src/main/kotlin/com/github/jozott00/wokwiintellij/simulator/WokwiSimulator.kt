@@ -163,7 +163,7 @@ class WokwiSimulator(
 
     val str = String(bytes, Charsets.UTF_8)
 
-    ansiEscapeDecoder.escapeText(str, ProcessOutputTypes.STDOUT) { t, contentType ->
+    ansiEscapeDecoder.escapeText("$str\n", ProcessOutputTypes.STDOUT) { t, contentType ->
       myEventMulticaster.onTextAvailable(t, contentType)
     }
   }
@@ -179,7 +179,7 @@ class WokwiSimulator(
       val chipMessage = data["message"].toString();
       val str = "$chipName: $chipMessage";
 
-      ansiEscapeDecoder.escapeText(str, ProcessOutputTypes.STDOUT) { t, contentType ->
+      ansiEscapeDecoder.escapeText("$str\n", ProcessOutputTypes.STDOUT) { t, contentType ->
         myEventMulticaster.onTextAvailable(t, contentType)
       }
     }

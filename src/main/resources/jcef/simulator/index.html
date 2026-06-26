@@ -64,7 +64,6 @@
             commPort.postMessage(prepareMessageForWokwi(data))
         }
 
-
         let sendMissedPkgs = () => {
             for (pkg of missed_cmds) {
                 console.log("Send missed package: ", pkg)
