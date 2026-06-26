@@ -88,7 +88,6 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
                 subs.takeWhile {
                     it.messageReceived(data)
                 };
-                /*if(data.contains("start")) _BROWSER_?.openDevTools();*/
             }
         }
     }

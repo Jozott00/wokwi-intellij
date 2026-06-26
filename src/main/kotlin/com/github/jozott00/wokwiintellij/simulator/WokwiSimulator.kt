@@ -150,6 +150,7 @@ class WokwiSimulator(
    * and then shared using the [myEventMulticaster].
    */
   private fun uartDataRecv(data: JsonObject) {
+    println(data);
     val bytes = data["bytes"]
       ?.jsonArray
       ?.map { it.jsonPrimitive.int.toByte() }
@@ -164,6 +165,22 @@ class WokwiSimulator(
 
     ansiEscapeDecoder.escapeText(str, ProcessOutputTypes.STDOUT) { t, contentType ->
       myEventMulticaster.onTextAvailable(t, contentType)
+    }
+  }
+
+  private fun chipOutputRecv(data: JsonObject) {
+    println(data);
+    try {
+      val chipName = data["chipName"].toString();
+      val chipMessage = data["message"].toString();
+      val str = "$chipName: $chipMessage";
+
+      ansiEscapeDecoder.escapeText(str, ProcessOutputTypes.STDOUT) { t, contentType ->
+        myEventMulticaster.onTextAvailable(t, contentType)
+      }
+    }
+    catch(ex: Exception) {
+      println(ex.message);
     }
   }
 
@@ -216,6 +233,7 @@ class WokwiSimulator(
       "start" -> startRecv();
       "loadResource" -> loadResourceRecv(json)
       "uartData" -> uartDataRecv(json) // do nothing right now
+      "chipOutput" -> chipOutputRecv(json)
       "wifiFrame", "wifiConnect" -> {
         TODO("Not yet implemented")
       } // do nothing right now
