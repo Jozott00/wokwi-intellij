@@ -12,7 +12,7 @@ import kotlinx.serialization.json.put
 @Suppress("unused")
 object Command {
     /**
-     * (METHOD) Builds a JSON command for simulation start request, packaging wokwi configuration data.
+     * Builds a JSON command for simulation start request, packaging wokwi configuration data.
      * @param diagram diagram.json file content string
      * @param firmware Compiled board firmware (Base64 string).
      * @param firmwareFormat Firmware compilation format.
@@ -36,7 +36,7 @@ object Command {
     )
 
     /**
-     * (METHOD) Builds a JSON command for editor start request, packaging wokwi configuration data.
+     * Builds a JSON command for editor start request, packaging wokwi configuration data.
      * @param diagram diagram.json file content string.
      * @param license Wokwi plugin access license data.
      */
@@ -51,7 +51,7 @@ object Command {
     )
 
     /**
-     * (METHOD) Builds a JSON command for resource data send, packaging resource's content in a buffer.
+     * Builds a JSON command for resource data send, packaging resource's content in a buffer.
      * @param buffer Resource's content in string buffer format.
      */
     fun resourceData(buffer: String): String = Json.encodeToString(
@@ -62,7 +62,7 @@ object Command {
     )
 
     /**
-     * (METHOD) Builds a JSON command for gdb communication, packaging the outgoing message in string format.
+     * Builds a JSON command for gdb communication, packaging the outgoing message in string format.
      * @param message Message content string.
      */
     fun gdbMessage(message: String): String = Json.encodeToString(
@@ -73,7 +73,7 @@ object Command {
     )
 
     /**
-     * (METHOD) Builds a JSON command for pausing the gdb server process.
+     * Builds a JSON command for pausing the gdb server process.
      */
     fun gdbBreak(): String = Json.encodeToString(
         buildJsonObject {

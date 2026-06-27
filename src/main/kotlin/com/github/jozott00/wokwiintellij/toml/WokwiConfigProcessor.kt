@@ -35,7 +35,7 @@ import kotlin.io.encoding.Base64
  */
 object WokwiConfigProcessor {
     /**
-     * (METHOD) Reads and loads configurations and setup data for the new simulation.
+     * Reads and loads configurations and setup data for the new simulation.
      * @param project OpenAPI project object.
      * @param wokwiConfigPath wokwi.toml configuration file path.
      * @param diagramPath diagram.json scene description file path.
@@ -66,7 +66,7 @@ object WokwiConfigProcessor {
     }
 
     /**
-     * (METHOD) Reads and fetches simulation configurations from wokwi.toml.
+     * Reads and fetches simulation configurations from wokwi.toml.
      * @param configFile wokwi.toml IO object (VirtualFile).
      * @param project OpenAPI Project object.
      * @return A WokwiTomlConfig? object with the retrieved configurations.
@@ -91,20 +91,20 @@ object WokwiConfigProcessor {
         )
         lateinit var model: WokwiTomlConfig
         try {
-            model = fileReader.decodeFromFile(serializer(), configFile.path);
+            model = fileReader.decodeFromFile(serializer(), configFile.path)
         } catch (e: Exception) {
             notifyError(
                 "Check your wokwi.toml file and try again. Full error message: ${e.message}",
                 getNotifyJumpToAction("Jump to config", project, configFile)
             )
-            return null;
+            return null
         }
 
-        return model;
+        return model
     }
 
     /**
-     * (METHOD) Loads and interprets setup files linked by the configuration file onto the new simulation.
+     * Loads and interprets setup files linked by the configuration file onto the new simulation.
      * @param project Project object.
      * @param tomlConfig Data from the wokwi toml table structure (from wokwi.toml).
      * @param configFile wokwi.toml configuration VirtualFile.
@@ -135,7 +135,7 @@ object WokwiConfigProcessor {
             return null
         }
 
-        val chips = mutableListOf<WokwiCustomChip>();
+        val chips = mutableListOf<WokwiCustomChip>()
 
         for (chipConfig in tomlConfig.chip) {
             val chipWasmFile = readAction { configDir.findFileByRelativePath(chipConfig.binary) } ?: run {
@@ -172,7 +172,7 @@ object WokwiConfigProcessor {
                 name =  chipConfig.name,
                 binaryBase64 = encodeBase64(chipBinaryBuffer),
                 json = chipJson
-            ));
+            ))
         }
 
         return WokwiConfig(
@@ -186,7 +186,7 @@ object WokwiConfigProcessor {
     }
 
     /**
-     * (METHOD) Loads custom chip binary data from the chip.wasm file.
+     * Loads custom chip binary data from the chip.wasm file.
      * @param chipBinFile WebAssembly-compiled chip source-code VirtualFile.
      * @return The chip's ByteArray? binary data buffer. Returns null if the file is not found.
      */
@@ -218,20 +218,20 @@ object WokwiConfigProcessor {
     }
 
     /**
-     * (METHOD) Converts a byteArray into a Base64 binary string.
+     * Converts a byteArray into a Base64 binary string.
      * @param buffer The ByteArray buffer object.
      * @return Base64-encoded binary string.
      */
     private fun encodeBase64(buffer: ByteArray): String = Base64.encode(buffer)
 
     /**
-     * (METHOD) Displays a visual error notification in the editor's bottom left corner, when Wokwi configurations fail to be loaded.
+     * Displays a visual error notification in the editor's bottom left corner, when Wokwi configurations fail to be loaded.
      * @param error Error message string to be displayed.
      * @param action Custom action button inside the notification dialog, associated with a given procedure (function). Defaults to null.
      */
     private suspend fun notifyError(error: String, action: NotifyAction? = null) {
         withContext(Dispatchers.EDT) {
-            WokwiNotifier.notifyBalloonAsync(
+            notifyBalloonAsync(
                 "Couldn't load Wokwi configuration",
                 error,
                 NotificationType.ERROR,

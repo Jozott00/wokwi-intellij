@@ -12,21 +12,21 @@ import com.intellij.openapi.vfs.VirtualFile
  * **/
 class FileHandlingUtils {
     /**
-     * (METHOD) Fetches content from a file, by it's absolute path.
+     * Fetches content from a file, by its absolute path.
      * @param filePath The file path string.
      * @return A 'VirtualFile' object containing file information and content. Can be null (in the case the file isn't found)
      **/
     fun fileRead(filePath : String) : VirtualFile? {
-        var target : File? = null;
+        var target : File? = null
         try {
-            target = File(filePath);
+            target = File(filePath)
         }
         catch (e: IOException) {
-            println(e.message);
+            println(e.message)
         }
 
-        if(target != null) return LocalFileSystem.getInstance().findFileByIoFile(target as File);
+        if(target != null) return LocalFileSystem.getInstance().findFileByIoFile(target)
 
-        return target;
+        return target
     }
 }

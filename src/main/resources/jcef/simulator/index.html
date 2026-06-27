@@ -73,7 +73,7 @@
         }
 
         let postToIntellij = (type, data) => {
-            var pkg = JSON.stringify({type: type, data: data})
+            let pkg = JSON.stringify({type: type, data: data})
             if (window.__WokwiIntellij.__postMessageToPipe === undefined) {
                 console.log("Pipe not yet setup, will store in queue", pkg)
                 missed_cmds.push(pkg)

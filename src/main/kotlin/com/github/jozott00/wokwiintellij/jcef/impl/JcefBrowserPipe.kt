@@ -83,7 +83,7 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
             else -> {
                 subs.takeWhile {
                     it.messageReceived(data)
-                };
+                }
             }
         }
     }

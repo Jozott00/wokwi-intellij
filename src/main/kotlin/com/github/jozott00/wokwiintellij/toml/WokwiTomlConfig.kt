@@ -3,7 +3,7 @@ package com.github.jozott00.wokwiintellij.toml
 import kotlinx.serialization.Serializable
 
 /**
- * (CLASS) Wokwi.toml serialized configurations.
+ * Wokwi.toml serialized configurations.
  */
 @Serializable
 data class WokwiTomlConfig(
@@ -12,7 +12,7 @@ data class WokwiTomlConfig(
 )
 
 /**
- * (CLASS) General simulation wokwi.toml configs data class.
+ * General simulation wokwi.toml configs data class.
  */
 @Serializable
 data class WokwiTomlTable(
@@ -22,7 +22,7 @@ data class WokwiTomlTable(
     val gdbServerPort: Int? = null
 )
 /**
- * (CLASS) Wokwi.toml custom chip configs data class.
+ * Wokwi.toml custom chip configs data class.
  */
 @Serializable
 data class CustomChipTomlTable(
