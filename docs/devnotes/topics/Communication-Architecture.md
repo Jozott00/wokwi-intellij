@@ -30,3 +30,13 @@ protocol payloads only. JCEF query injection, wrapper readiness events, and ifra
 
 The current JCEF implementation is `ui.jcef.JcefWokwiTransport`. It owns the injected JavaScript query bridge, routes
 wrapper `wokwi` messages to transport listeners, and handles wrapper `meta` messages such as `frameLoaded` internally.
+
+## Simulator Session Boundary
+
+`core.session.WokwiSession` owns simulator protocol state and dispatch. It subscribes to `WokwiTransport`, waits for the
+Wokwi readiness `start` message, sends typed startup/GDB/resource responses through `ProtocolCodec`, and emits session
+callbacks for UI-facing events such as started, running, UART bytes, malformed messages, and unknown commands.
+
+`services.WokwiSimulatorService` is currently the IntelliJ adapter/controller. It creates the JCEF view, maps
+`WokwiArgs` into the pure session start config, owns the GDB bridge and resource loader adapters, and adapts session
+events to IntelliJ console/tool-window listeners.
