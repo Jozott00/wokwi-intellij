@@ -1,12 +1,13 @@
 package com.github.jozott00.wokwiintellij.services
 
-import arrow.core.Either
 import com.github.jozott00.wokwiintellij.config.WokwiProjectConfigResolver
+import com.github.jozott00.wokwiintellij.core.firmware.EspIdfFirmwarePackager
+import com.github.jozott00.wokwiintellij.core.firmware.FirmwareFormatDetector
+import com.github.jozott00.wokwiintellij.core.firmware.FirmwarePackResult
 import com.github.jozott00.wokwiintellij.core.model.FirmwareImage
 import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloonAsync
-import com.github.jozott00.wokwiintellij.utils.simulation.FirmwareUtils
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
@@ -76,7 +77,7 @@ class SimulationConfigLoader(val project: Project) {
      * Loads and classifies the firmware image at [firmwarePath].
      *
      * For regular firmware files this reads the file bytes directly. For ESP-IDF `flasher_args.json` files it delegates
-     * to [FirmwareUtils] to pack the referenced images and returns all watched paths needed for automatic reloads.
+     * to [EspIdfFirmwarePackager] to pack the referenced images and returns all watched paths needed for automatic reloads.
      *
      * Returns `null` after reporting a user-facing error when the firmware cannot be read or packed.
      */
@@ -98,22 +99,26 @@ class SimulationConfigLoader(val project: Project) {
 
         val buffer = if (isFlasherArgsFile) {
             val packedResult =
-                when (val result = FirmwareUtils.packEspIdfFirmware(firmwareFile)) {
-                    is Either.Left -> {
-                        notifyBalloonAsync(result.value)
+                when (val result = EspIdfFirmwarePackager.pack(firmwareFile)) {
+                    is FirmwarePackResult.Failure -> {
+                        notifyBalloonAsync(
+                            title = result.error.title,
+                            message = result.error.message,
+                            type = NotificationType.ERROR
+                        )
                         return@withContext null
                     }
 
-                    is Either.Right -> result.value
+                    is FirmwarePackResult.Success -> result
                 }
 
             watchPaths.addAll(packedResult.watchPaths)
-            packedResult.img
+            packedResult.image
         } else {
             Files.readAllBytes(firmwareFile)
         }
 
-        val format = FirmwareUtils.determineFirmwareFormat(firmwareFile, buffer)
+        val format = FirmwareFormatDetector.detect(firmwareFile, buffer)
 
         FirmwareImage(
             buffer = buffer,

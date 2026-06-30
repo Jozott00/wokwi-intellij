@@ -1,11 +1,11 @@
-package com.github.jozott00.wokwiintellij.utils.simulation
+package com.github.jozott00.wokwiintellij.core.firmware
 
 import com.github.jozott00.wokwiintellij.core.model.FirmwareFormat
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class FirmwareUtilsTest {
+class FirmwareFormatDetectorTest {
 
     @Test
     fun `detects uf2 by block magic`() {
@@ -14,16 +14,16 @@ class FirmwareUtilsTest {
         byteArrayOf(0x9E.toByte(), 0x5D, 0x51, 0x57).copyInto(uf2, 4)
         byteArrayOf(0x0A, 0xB1.toByte(), 0x6F, 0x30).copyInto(uf2, 508)
 
-        assertEquals(FirmwareFormat.UF2, FirmwareUtils.determineFirmwareFormat(Path.of("/tmp/firmware.bin"), uf2))
+        assertEquals(FirmwareFormat.UF2, FirmwareFormatDetector.detect(Path.of("/tmp/firmware.bin"), uf2))
     }
 
     @Test
     fun `detects hex by extension`() {
-        assertEquals(FirmwareFormat.HEX, FirmwareUtils.determineFirmwareFormat(Path.of("/tmp/firmware.hex"), byteArrayOf(1, 2)))
+        assertEquals(FirmwareFormat.HEX, FirmwareFormatDetector.detect(Path.of("/tmp/firmware.hex"), byteArrayOf(1, 2)))
     }
 
     @Test
     fun `defaults to bin`() {
-        assertEquals(FirmwareFormat.BIN, FirmwareUtils.determineFirmwareFormat(Path.of("/tmp/firmware.elf"), byteArrayOf(1, 2)))
+        assertEquals(FirmwareFormat.BIN, FirmwareFormatDetector.detect(Path.of("/tmp/firmware.elf"), byteArrayOf(1, 2)))
     }
 }
