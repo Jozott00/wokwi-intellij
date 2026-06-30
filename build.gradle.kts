@@ -37,6 +37,7 @@ dependencies {
   implementation(libs.ktoml.core)
   implementation(libs.ktoml.file)
   implementation(libs.kotlinx.serialization.json)
+  testImplementation(libs.archunit)
   testImplementation(libs.kotlin.test.junit)
 
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
