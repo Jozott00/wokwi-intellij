@@ -21,10 +21,32 @@ class WokwiTomlParserTest {
             )
         )
 
-        assertEquals(1, result.config.version)
-        assertEquals("build/firmware.elf", result.config.elf)
-        assertEquals("build/firmware.bin", result.config.firmware)
-        assertEquals(3333, result.config.gdbServerPort)
+        assertEquals(1, result.config.wokwi.version)
+        assertEquals("build/firmware.elf", result.config.wokwi.elf)
+        assertEquals("build/firmware.bin", result.config.wokwi.firmware)
+        assertEquals(3333, result.config.wokwi.gdbServerPort)
+    }
+
+    @Test
+    fun `parses custom chip tables`() {
+        val result = assertIs<WokwiTomlParseResult.Success>(
+            WokwiTomlParser.parse(
+                """
+                [wokwi]
+                version = 1
+                elf = "build/firmware.elf"
+                firmware = "build/firmware.bin"
+
+                [[chip]]
+                name = "my-chip"
+                binary = "chips/my-chip.wasm"
+                """.trimIndent()
+            )
+        )
+
+        assertEquals(1, result.config.chip.size)
+        assertEquals("my-chip", result.config.chip.single().name)
+        assertEquals("chips/my-chip.wasm", result.config.chip.single().binary)
     }
 
     @Test

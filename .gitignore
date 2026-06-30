@@ -4,6 +4,7 @@
 .intellijPlatform
 .kotlin
 build
+.vs/
 
 .notes
 .run

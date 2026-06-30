@@ -119,6 +119,10 @@ class WokwiSession(
                 }
                 true
             }
+            is InboundMessage.ChipOutput -> {
+                listener.onChipOutput(message.chipName, message.message)
+                true
+            }
             is InboundMessage.GdbResponse -> {
                 gdbServer?.sendResponse(message.response)
                 true
@@ -147,6 +151,7 @@ class WokwiSession(
                 license = config.license,
                 pause = config.waitForDebugger,
                 gdbPort = config.gdbPort,
+                chips = config.customChips.takeIf { it.isNotEmpty() },
             )
         )
         transport.send(cmd)
@@ -198,6 +203,9 @@ class WokwiSession(
         /** Called when Wokwi emits UART bytes. */
         fun onUartData(bytes: ByteArray) {}
 
+        /** Called when Wokwi emits custom chip output. */
+        fun onChipOutput(chipName: String, message: String) {}
+
         /** Called when the local GDB server reports an infrastructure error. */
         fun onGdbError(error: Throwable) {}
 
@@ -239,4 +247,7 @@ data class WokwiSessionStartConfig(
 
     /** Local GDB server port to expose to Wokwi when debugger support is active. */
     val gdbPort: Int? = null,
+
+    /** Custom chip definitions to load before the simulation starts. */
+    val customChips: List<com.github.jozott00.wokwiintellij.core.model.CustomChip> = emptyList(),
 )

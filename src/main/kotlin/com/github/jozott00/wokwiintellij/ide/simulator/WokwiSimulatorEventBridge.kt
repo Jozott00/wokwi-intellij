@@ -75,6 +75,13 @@ class WokwiSimulatorEventBridge(
                 }
             }
 
+            override fun onChipOutput(chipName: String, message: String) {
+                val text = "$chipName: $message\n"
+                ansiEscapeDecoder.escapeText(text, ProcessOutputTypes.STDOUT) { decodedText, contentType ->
+                    notifySimulatorListeners { it.onTextAvailable(decodedText, contentType) }
+                }
+            }
+
             override fun onGdbError(error: Throwable) {
                 log.error("GDB server error", error)
             }

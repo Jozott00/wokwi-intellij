@@ -97,5 +97,6 @@ class WokwiSimulationRuntimeFactory(
             firmwareFormat = config.firmware.format.toString(),
             waitForDebugger = config.waitForDebugger,
             gdbPort = gdbPort,
+            customChips = config.customChips,
         )
 }

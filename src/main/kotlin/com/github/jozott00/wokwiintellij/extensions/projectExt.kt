@@ -12,7 +12,6 @@ import java.net.URI
 import java.nio.file.Path
 import kotlin.io.path.exists
 
-
 /**
  * Represents a disposable object for the Wokwi plugin in a project.
  *

@@ -3,31 +3,23 @@
 package com.github.jozott00.wokwiintellij.ui.config
 
 import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
-import com.github.jozott00.wokwiintellij.utils.runInBackground
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
-import com.intellij.openapi.progress.currentThreadCoroutineScope
 import com.intellij.openapi.ui.ComponentContainer
-import com.intellij.openapi.util.Disposer
 import com.intellij.ui.dsl.builder.RightGap
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.AsyncProcessIcon
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.awt.CardLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
-
 
 class LicensingPanel(val cs: CoroutineScope) : ComponentContainer {
 
