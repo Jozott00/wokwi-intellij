@@ -1,11 +1,23 @@
 package com.github.jozott00.wokwiintellij.core.session
 
+import com.github.jozott00.wokwiintellij.core.ports.GdbEvent
+import com.github.jozott00.wokwiintellij.core.ports.GdbServer
+import com.github.jozott00.wokwiintellij.core.ports.ResourceLoader
 import com.github.jozott00.wokwiintellij.core.ports.WokwiTransport
 import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
 import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
@@ -38,6 +50,21 @@ class WokwiSessionTest {
     }
 
     @Test
+    fun `start payload includes configured gdb port`() {
+        val transport = FakeTransport()
+        val session = createSession(
+            transport = transport,
+            gdbPort = 3333,
+        )
+
+        session.start()
+        assertTrue(transport.receive("""{"command":"start"}"""))
+
+        val payload = Json.parseToJsonElement(transport.sentMessages.single()).jsonObject
+        assertEquals(3333, payload["gdbPort"]!!.jsonPrimitive.int)
+    }
+
+    @Test
     fun `browser readiness before start is remembered`() {
         val transport = FakeTransport()
         val session = createSession(transport)
@@ -63,6 +90,7 @@ class WokwiSessionTest {
                 firmware = byteArrayOf(4, 5),
                 firmwareFormat = "hex",
                 waitForDebugger = false,
+                gdbPort = 4444,
             )
         )
         session.start()
@@ -73,6 +101,7 @@ class WokwiSessionTest {
         assertEquals("BAU=", payload["firmware"]?.jsonPrimitive?.contentOrNull)
         assertEquals("hex", payload["firmwareFormat"]?.jsonPrimitive?.contentOrNull)
         assertFalse(payload["pause"]!!.jsonPrimitive.boolean)
+        assertEquals(4444, payload["gdbPort"]!!.jsonPrimitive.int)
     }
 
     @Test
@@ -103,25 +132,41 @@ class WokwiSessionTest {
     }
 
     @Test
-    fun `forwards uart and gdb traffic`() {
+    fun `forwards gdb server events and wokwi gdb responses`() {
+        val transport = FakeTransport()
+        val gdbServer = FakeGdbServer()
+        createSession(
+            transport = transport,
+            gdbServer = gdbServer,
+        )
+
+        gdbServer.emit(GdbEvent.Connected)
+        gdbServer.emit(GdbEvent.Message("qSupported"))
+        gdbServer.emit(GdbEvent.Break)
+        drainCoroutines()
+        assertTrue(transport.receive("""{"command":"gdbResponse","response":"OK"}"""))
+
+        val gdbMessage = Json.parseToJsonElement(transport.sentMessages[0]).jsonObject
+        val secondMessage = Json.parseToJsonElement(transport.sentMessages[1]).jsonObject
+        val thirdMessage = Json.parseToJsonElement(transport.sentMessages[2]).jsonObject
+        assertEquals("gdbBreak", gdbMessage["command"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("gdbMessage", secondMessage["command"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("qSupported", secondMessage["message"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("gdbBreak", thirdMessage["command"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(listOf("OK"), gdbServer.responses)
+    }
+
+    @Test
+    fun `forwards uart traffic to listener`() {
         val transport = FakeTransport()
         val listener = RecordingListener()
-        val session = createSession(
+        createSession(
             transport = transport,
             listener = listener,
         )
 
-        session.sendGdbMessage("qSupported")
-        session.sendGdbBreak()
-        assertTrue(transport.receive("""{"command":"gdbResponse","response":"OK"}"""))
         assertTrue(transport.receive("""{"command":"uartData","bytes":[65,66,10]}"""))
 
-        val gdbMessage = Json.parseToJsonElement(transport.sentMessages[0]).jsonObject
-        val gdbBreak = Json.parseToJsonElement(transport.sentMessages[1]).jsonObject
-        assertEquals("gdbMessage", gdbMessage["command"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("qSupported", gdbMessage["message"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("gdbBreak", gdbBreak["command"]?.jsonPrimitive?.contentOrNull)
-        assertEquals(listOf("OK"), listener.gdbResponses)
         assertContentEquals("AB\n".encodeToByteArray(), listener.uartBytes.single())
     }
 
@@ -150,11 +195,30 @@ class WokwiSessionTest {
         assertEquals(0, transport.listenerCount)
     }
 
+    @Test
+    fun `dispose stops forwarding gdb server events`() {
+        val transport = FakeTransport()
+        val gdbServer = FakeGdbServer()
+        val session = createSession(
+            transport = transport,
+            gdbServer = gdbServer,
+        )
+
+        session.dispose()
+        gdbServer.emit(GdbEvent.Message("qSupported"))
+        drainCoroutines()
+
+        assertEquals(emptyList(), transport.sentMessages)
+    }
+
     private fun createSession(
         transport: FakeTransport,
         listener: RecordingListener = RecordingListener(),
-        resourceLoader: WokwiSession.ResourceLoader = WokwiSession.ResourceLoader { ByteArray(0) },
+        resourceLoader: ResourceLoader = ResourceLoader { ByteArray(0) },
+        gdbServer: GdbServer? = null,
+        gdbPort: Int? = null,
     ) = WokwiSession(
+        coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
         transport = transport,
         initialConfig = WokwiSessionStartConfig(
             license = "license-key",
@@ -162,16 +226,24 @@ class WokwiSessionTest {
             firmware = byteArrayOf(1, 2, 3),
             firmwareFormat = "bin",
             waitForDebugger = true,
+            gdbPort = gdbPort,
         ),
         resourceLoader = resourceLoader,
+        gdbServer = gdbServer,
         listener = listener,
     )
+
+    private fun drainCoroutines() {
+        runBlocking {
+            yield()
+        }
+    }
 
     private class RecordingListener : WokwiSession.Listener {
         val startedConfigs = mutableListOf<WokwiSessionStartConfig>()
         var runningCount = 0
         val uartBytes = mutableListOf<ByteArray>()
-        val gdbResponses = mutableListOf<String>()
+        val gdbErrors = mutableListOf<Throwable>()
         val malformedMessages = mutableListOf<InboundDecodeResult.Malformed>()
         val unknownMessages = mutableListOf<InboundMessage.Unknown>()
 
@@ -187,8 +259,8 @@ class WokwiSessionTest {
             uartBytes.add(bytes)
         }
 
-        override fun onGdbResponse(response: String) {
-            gdbResponses.add(response)
+        override fun onGdbError(error: Throwable) {
+            gdbErrors.add(error)
         }
 
         override fun onMalformedMessage(message: InboundDecodeResult.Malformed) {
@@ -225,6 +297,20 @@ class WokwiSessionTest {
 
         fun receive(message: String): Boolean {
             return listeners.all { it.messageReceived(message) }
+        }
+    }
+
+    private class FakeGdbServer : GdbServer {
+        private val channel = Channel<GdbEvent>(Channel.BUFFERED)
+        override val events: Flow<GdbEvent> = channel.receiveAsFlow()
+        val responses = mutableListOf<String>()
+
+        fun emit(event: GdbEvent) {
+            channel.trySend(event)
+        }
+
+        override fun sendResponse(response: String) {
+            responses.add(response)
         }
     }
 }

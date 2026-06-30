@@ -11,8 +11,7 @@ import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
 import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
 import com.github.jozott00.wokwiintellij.simulator.SimExitCode
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
-import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiSessionGdbBridge
-import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
+import com.github.jozott00.wokwiintellij.simulator.services.DefaultGdbServer
 import com.github.jozott00.wokwiintellij.simulator.services.UrlWokwiResourceLoader
 import com.github.jozott00.wokwiintellij.ui.jcef.JcefWokwiView
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
@@ -45,14 +44,13 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
     private var currentSession: WokwiSession? = null
     private var currentSimulationConfig: SimulationConfig? = null
     private var currentProcessHandler: WokwiProcessHandler? = null
-    private var gdbBridge: WokwiSessionGdbBridge? = null
 
     private val componentService by lazy { project.service<WokwiComponentService>() }
     private val simulationConfigLoader by lazy { project.service<SimulationConfigLoader>() }
     private val resourceLoader = UrlWokwiResourceLoader()
     private val ansiEscapeDecoder = AnsiEscapeDecoder()
     private val simulatorListeners: MutableList<WokwiSimulatorListener> = ContainerUtil.createLockFreeCopyOnWriteList()
-    private var gdbServer: WokwiGDBServer? = null
+    private var gdbServer: DefaultGdbServer? = null
 
     /**
      * Creates a new coroutine scope as a child of the service's main coroutine scope.
@@ -139,21 +137,17 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         Disposer.register(this, view)
 
         val session = WokwiSession(
+            coroutineScope = childScope(),
             transport = view.wokwiTransport,
-            initialConfig = simulationConfig.toSessionStartConfig(),
+            initialConfig = simulationConfig.toSessionStartConfig(gdbServer?.getCurrentServerPort()),
             resourceLoader = resourceLoader,
+            gdbServer = gdbServer,
             listener = createSessionListener(),
         )
 
         currentView = view
         currentSession = session
         currentSimulationConfig = simulationConfig
-
-        gdbBridge = gdbServer?.let { server ->
-            WokwiSessionGdbBridge(session, server).also { bridge ->
-                childScope().launch { bridge.connect() }
-            }
-        }
 
         withContext(Dispatchers.EDT) {
             componentService.simulatorToolWindowComponent.showSimulation(view.component)
@@ -190,8 +184,9 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         }
 
         if (shouldDebug && gdbServer == null) {
-            gdbServer = WokwiGDBServer(childScope(), project.wokwiDisposable).also {
-                it.listen(port)
+            gdbServer = DefaultGdbServer(childScope()).also { server ->
+                Disposer.register(project.wokwiDisposable, server)
+                server.listen(port)
             }
         }
     }
@@ -205,7 +200,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         val newFirmware = simulationConfigLoader.loadFirmware(it.firmware.rootPath) ?: return false
         val updatedSimulationConfig = it.copy(firmware = newFirmware)
         currentSimulationConfig = updatedSimulationConfig
-        currentSession?.updateStartConfig(updatedSimulationConfig.toSessionStartConfig())
+        currentSession?.updateStartConfig(updatedSimulationConfig.toSessionStartConfig(gdbServer?.getCurrentServerPort()))
         true
     } ?: false
 
@@ -279,7 +274,6 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         currentView = null
 
         currentSimulationConfig = null
-        gdbBridge = null
 
         if (clearListeners) {
             simulatorListeners.clear()
@@ -306,8 +300,8 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
                 }
             }
 
-            override fun onGdbResponse(response: String) {
-                gdbBridge?.sendResponse(response)
+            override fun onGdbError(error: Throwable) {
+                LOG.error("GDB server error", error)
             }
 
             override fun onMalformedMessage(message: InboundDecodeResult.Malformed) {
@@ -331,12 +325,13 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         }
     }
 
-    private fun SimulationConfig.toSessionStartConfig() = WokwiSessionStartConfig(
+    private fun SimulationConfig.toSessionStartConfig(gdbPort: Int?) = WokwiSessionStartConfig(
         license = license,
         diagram = diagram,
         firmware = firmware.buffer,
         firmwareFormat = firmware.format.toString(),
         waitForDebugger = waitForDebugger,
+        gdbPort = gdbPort,
     )
 
 

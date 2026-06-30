@@ -37,10 +37,15 @@ wrapper `wokwi` messages to transport listeners, and handles wrapper `meta` mess
 Wokwi readiness `start` message, sends typed startup/GDB/resource responses through `ProtocolCodec`, and emits session
 callbacks for UI-facing events such as started, running, UART bytes, malformed messages, and unknown commands.
 
+Local simulator infrastructure is exposed to the session through `core.ports`: `GdbServer` supplies debugger connection,
+break, message, and response forwarding, while `ResourceLoader` resolves Wokwi `loadResource` requests into bytes. This
+keeps GDB/resource protocol handling in the session and leaves socket, URL, IDE notification, and disposal details in
+adapter implementations. Concrete simulator-side adapters live under `simulator.services`, such as
+`DefaultGdbServer`.
+
 `services.WokwiSimulatorService` is currently the IntelliJ adapter/controller. It creates the JCEF view, asks
 `services.SimulationConfigLoader` for loaded startup data, maps the pure `SimulationConfig` into the session start
-config, owns the GDB bridge and resource loader adapters, and adapts session events to IntelliJ console/tool-window
-listeners.
+config, creates concrete GDB/resource adapters, and adapts session events to IntelliJ console/tool-window listeners.
 
 Project configuration loading stays outside `core`: `config.WokwiProjectConfigResolver` parses `wokwi.toml`, resolves
 project-relative firmware and diagram paths, and leaves browser/session runtime input as `core.model.SimulationConfig`.
