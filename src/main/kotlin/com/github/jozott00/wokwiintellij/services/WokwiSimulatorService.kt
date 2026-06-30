@@ -4,14 +4,23 @@ import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiProcessHa
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
 import com.github.jozott00.wokwiintellij.extensions.wokwiDisposable
+import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
+import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
+import com.github.jozott00.wokwiintellij.core.session.WokwiSession
+import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
 import com.github.jozott00.wokwiintellij.simulator.SimExitCode
-import com.github.jozott00.wokwiintellij.simulator.WokwiSimulator
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
+import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
+import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiSessionGdbBridge
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
+import com.github.jozott00.wokwiintellij.simulator.services.UrlWokwiResourceLoader
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
+import com.github.jozott00.wokwiintellij.ui.jcef.JcefWokwiView
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
+import com.intellij.execution.process.AnsiEscapeDecoder
+import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.EDT
@@ -19,7 +28,9 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefApp
+import com.intellij.util.containers.ContainerUtil
 import kotlinx.coroutines.*
 
 /**
@@ -32,12 +43,18 @@ import kotlinx.coroutines.*
 @Service(Service.Level.PROJECT)
 class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope) : Disposable {
 
-    private var simulator: WokwiSimulator? = null
+    private var currentView: JcefWokwiView? = null
+    private var currentSession: WokwiSession? = null
+    private var currentArgs: WokwiArgs? = null
     private var currentProcessHandler: WokwiProcessHandler? = null
+    private var gdbBridge: WokwiSessionGdbBridge? = null
 
     private val componentService by lazy { project.service<WokwiComponentService>() }
     private val settingsState by lazy { project.service<WokwiSettingsState>() }
     private val argsLoader by lazy { project.service<WokwiArgsLoader>() }
+    private val resourceLoader = UrlWokwiResourceLoader()
+    private val ansiEscapeDecoder = AnsiEscapeDecoder()
+    private val simulatorListeners: MutableList<WokwiSimulatorListener> = ContainerUtil.createLockFreeCopyOnWriteList()
     private var gdbServer: WokwiGDBServer? = null
 
     /**
@@ -81,14 +98,14 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
     ): Boolean {
         LOG.info("Start simulator...")
 
-        if (simulator == null || byDebugger) {
+        if (currentSession == null || byDebugger) {
             if (!createNewSimulator(byDebugger)) return false
         } else {
             if (!updateFirmware()) return false
         }
 
-        listener?.let { simulator?.addSimulatorListener(it) }
-        simulator?.start()
+        listener?.let { addSimulatorListener(it) }
+        currentSession?.start()
 
         return true
     }
@@ -112,7 +129,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         val args = argsLoader.load(config) ?: return false
         args.waitForDebugger = waitForDebugger
 
-        simulator?.disposeByDisposer()
+        disposeCurrentSimulator(clearListeners = true)
 
         if (!JBCefApp.isSupported()) {
             WokwiNotifier.notifyBalloonAsync(
@@ -128,12 +145,28 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
             config.gdbServerPort
         ) // configures gdbServer for new simulator instance
 
-        simulator = WokwiSimulator(args, project.wokwiDisposable).also {
-            gdbServer?.let { server -> childScope().launch { it.connectToGDBServer(server) } } // connect to server
+        val view = JcefWokwiView()
+        Disposer.register(this, view)
+
+        val session = WokwiSession(
+            transport = view.wokwiTransport,
+            initialConfig = args.toSessionStartConfig(),
+            resourceLoader = resourceLoader,
+            listener = createSessionListener(),
+        )
+
+        currentView = view
+        currentSession = session
+        currentArgs = args
+
+        gdbBridge = gdbServer?.let { server ->
+            WokwiSessionGdbBridge(session, server).also { bridge ->
+                childScope().launch { bridge.connect() }
+            }
         }
 
         withContext(Dispatchers.EDT) {
-            simulator?.let { componentService.simulatorToolWindowComponent.showSimulation(it.component) }
+            componentService.simulatorToolWindowComponent.showSimulation(view.component)
             ToolWindowUtils.setSimulatorIcon(project, true)
         }
 
@@ -178,10 +211,11 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
      *
      * @return `true` if the firmware was successfully updated, `false` otherwise.
      */
-    private suspend fun updateFirmware(): Boolean = simulator?.let {
-        val firmware = it.getFirmware().rootFile
+    private suspend fun updateFirmware(): Boolean = currentArgs?.let {
+        val firmware = it.firmware.rootFile
         val newFirmware = argsLoader.loadFirmware(firmware) ?: return false
-        it.setFirmware(newFirmware)
+        it.firmware = newFirmware
+        currentSession?.updateStartConfig(it.toSessionStartConfig())
         true
     } ?: false
 
@@ -192,8 +226,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
     fun stopSimulator() = cs.launch {
         LOG.info("Stop simulator...")
 
-        simulator?.disposeByDisposer()
-        simulator = null
+        disposeCurrentSimulator(clearListeners = true)
 
         gdbServer?.disposeByDisposer()
         gdbServer = null
@@ -214,7 +247,9 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
      */
     fun getRunningGDBPort(): Int? = gdbServer?.getCurrentServerPort()
 
-    override fun dispose() {}
+    override fun dispose() {
+        disposeCurrentSimulator(clearListeners = true)
+    }
 
     /**
      * Notifies the service that the firmware has been updated and restarts the simulator.
@@ -229,14 +264,90 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
      *
      * @return A list of firmware binary paths, or `null` if the simulator is not running.
      */
-    fun getWatchPaths(): List<String>? = simulator?.getFirmware()?.binaryPaths
+    fun getWatchPaths(): List<String>? = currentArgs?.firmware?.binaryPaths
 
     /**
      * Checks whether the Wokwi simulator is currently running.
      *
      * @return `true` if the simulator is running, `false` otherwise.
      */
-    fun isSimulatorRunning(): Boolean = simulator != null
+    fun isSimulatorRunning(): Boolean = currentSession != null
+
+    private fun addSimulatorListener(listener: WokwiSimulatorListener) {
+        simulatorListeners.add(listener)
+    }
+
+    private fun disposeCurrentSimulator(clearListeners: Boolean) {
+        if (currentSession != null) {
+            notifySimulatorListeners { it.onShutdown(SimExitCode.OK) }
+        }
+
+        currentSession?.dispose()
+        currentSession = null
+
+        currentView?.disposeByDisposer()
+        currentView = null
+
+        currentArgs = null
+        gdbBridge = null
+
+        if (clearListeners) {
+            simulatorListeners.clear()
+        }
+    }
+
+    private fun createSessionListener(): WokwiSession.Listener {
+        return object : WokwiSession.Listener {
+            override fun onStarted(config: WokwiSessionStartConfig) {
+                LOG.info("(Re)starting simulation...")
+                currentArgs?.let { notifySimulatorListeners { listener -> listener.onStarted(it) } }
+            }
+
+            override fun onRunning() {
+                notifySimulatorListeners { it.onRunning() }
+            }
+
+            override fun onUartData(bytes: ByteArray) {
+                if (bytes.isEmpty()) return
+
+                val text = String(bytes, Charsets.UTF_8)
+                ansiEscapeDecoder.escapeText(text, ProcessOutputTypes.STDOUT) { decodedText, contentType ->
+                    notifySimulatorListeners { it.onTextAvailable(decodedText, contentType) }
+                }
+            }
+
+            override fun onGdbResponse(response: String) {
+                gdbBridge?.sendResponse(response)
+            }
+
+            override fun onMalformedMessage(message: InboundDecodeResult.Malformed) {
+                LOG.error("Malformed Wokwi message: ${message.reason}\n${message.raw}", Throwable())
+            }
+
+            override fun onUnknownMessage(message: InboundMessage.Unknown) {
+                LOG.warn("Unknown command: ${message.command}")
+                LOG.debug("Unknown command data: ${message.raw}")
+            }
+
+            override fun onUnsupportedMessage(message: InboundMessage) {
+                LOG.warn("Unsupported Wokwi command: ${message.command}")
+            }
+        }
+    }
+
+    private fun notifySimulatorListeners(event: (WokwiSimulatorListener) -> Unit) {
+        for (listener in simulatorListeners) {
+            event(listener)
+        }
+    }
+
+    private fun WokwiArgs.toSessionStartConfig() = WokwiSessionStartConfig(
+        license = license,
+        diagram = diagram,
+        firmware = firmware.buffer,
+        firmwareFormat = firmware.format.toString(),
+        waitForDebugger = waitForDebugger,
+    )
 
 
     companion object {

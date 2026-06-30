@@ -1,7 +1,6 @@
 package com.github.jozott00.wokwiintellij.ui.jcef
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.ui.ComponentContainer
@@ -21,7 +20,7 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JProgressBar
 
-class SimulatorJCEFHtmlPanel(parentDisposable: Disposable) : ComponentContainer {
+class JcefWokwiView : ComponentContainer {
 
     private val browser = JCEFHtmlPanel(true, null, null)
     private val contentCardLayout = CardLayout()
@@ -35,7 +34,6 @@ class SimulatorJCEFHtmlPanel(parentDisposable: Disposable) : ComponentContainer 
 
 
     init {
-        Disposer.register(parentDisposable, this)
         Disposer.register(this, browser)
         Disposer.register(this, wokwiTransport)
 
@@ -75,7 +73,7 @@ class SimulatorJCEFHtmlPanel(parentDisposable: Disposable) : ComponentContainer 
     }
 
 
-    private class LoadHandler(val panel: SimulatorJCEFHtmlPanel) : CefLoadHandlerAdapter() {
+    private class LoadHandler(val panel: JcefWokwiView) : CefLoadHandlerAdapter() {
         override fun onLoadError(
             browser: CefBrowser?,
             frame: CefFrame?,
