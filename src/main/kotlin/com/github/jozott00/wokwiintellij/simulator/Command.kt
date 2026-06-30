@@ -1,62 +1,37 @@
 package com.github.jozott00.wokwiintellij.simulator
 
-import com.beust.klaxon.json
+import com.github.jozott00.wokwiintellij.core.protocol.GdbBreakPayload
+import com.github.jozott00.wokwiintellij.core.protocol.GdbMessagePayload
+import com.github.jozott00.wokwiintellij.core.protocol.ResourceDataPayload
+import com.github.jozott00.wokwiintellij.core.protocol.SimulatorStartPayload
+import com.github.jozott00.wokwiintellij.core.protocol.WokwiProtocolCodec
 import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
 
 @Suppress("unused")
 object Command {
 
     fun start(diagram: String, firmware: String, firmwareFormat: FirmwareFormat, license: String, waitForDebugger: Boolean): String {
-        return json {
-            obj(
-                "command" to "start",
-                "diagram" to diagram,
-                "license" to license,
-                "firmware" to firmware,
-                "firmwareFormat" to firmwareFormat.toString(),
-                "firmwareB64" to true,
-                "pause" to waitForDebugger,
-                "useGateway" to false, // private gateways not yet supported
-                "disableSerialMonitor" to true,
+        return WokwiProtocolCodec.encode(
+            SimulatorStartPayload(
+                diagram = diagram,
+                firmware = firmware,
+                firmwareFormat = firmwareFormat.toString(),
+                license = license,
+                pause = waitForDebugger,
             )
-        }.toJsonString()
+        )
     }
 
-    fun editor(diagram: String, license: String) = json {
-        obj(
-            "command" to "editor",
-            "diagram" to diagram,
-            "license" to license,
-            "chips" to array(),
-            "readonly" to false,
-        )
-    }.toJsonString()
-
-
     fun resourceData(buffer: String): String {
-        return json {
-            obj(
-                "command" to "resourceData",
-                "buffer" to buffer,
-            )
-        }.toJsonString()
+        return WokwiProtocolCodec.encode(ResourceDataPayload(buffer = buffer))
     }
 
     fun gdbMessage(message: String): String {
-        return json {
-            obj(
-                "command" to "gdbMessage",
-                "message" to message,
-            )
-        }.toJsonString()
+        return WokwiProtocolCodec.encode(GdbMessagePayload(message = message))
     }
 
     fun gdbBreak(): String {
-        return json {
-            obj(
-                "command" to "gdbBreak",
-            )
-        }.toJsonString()
+        return WokwiProtocolCodec.encode(GdbBreakPayload())
     }
 
 }
