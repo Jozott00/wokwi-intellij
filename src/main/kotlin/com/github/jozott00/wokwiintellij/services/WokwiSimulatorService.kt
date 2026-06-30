@@ -8,14 +8,12 @@ import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
 import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
+import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
 import com.github.jozott00.wokwiintellij.simulator.SimExitCode
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
-import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiSessionGdbBridge
 import com.github.jozott00.wokwiintellij.simulator.gdb.WokwiGDBServer
 import com.github.jozott00.wokwiintellij.simulator.services.UrlWokwiResourceLoader
-import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
-import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.github.jozott00.wokwiintellij.ui.jcef.JcefWokwiView
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
@@ -45,13 +43,12 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
 
     private var currentView: JcefWokwiView? = null
     private var currentSession: WokwiSession? = null
-    private var currentArgs: WokwiArgs? = null
+    private var currentSimulationConfig: SimulationConfig? = null
     private var currentProcessHandler: WokwiProcessHandler? = null
     private var gdbBridge: WokwiSessionGdbBridge? = null
 
     private val componentService by lazy { project.service<WokwiComponentService>() }
-    private val settingsState by lazy { project.service<WokwiSettingsState>() }
-    private val argsLoader by lazy { project.service<WokwiArgsLoader>() }
+    private val simulationConfigLoader by lazy { project.service<SimulationConfigLoader>() }
     private val resourceLoader = UrlWokwiResourceLoader()
     private val ansiEscapeDecoder = AnsiEscapeDecoder()
     private val simulatorListeners: MutableList<WokwiSimulatorListener> = ContainerUtil.createLockFreeCopyOnWriteList()
@@ -119,15 +116,8 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
      */
     private suspend fun createNewSimulator(waitForDebugger: Boolean = false): Boolean {
 
-        val config =
-            WokwiConfigProcessor.loadConfig(
-                project,
-                settingsState.wokwiConfigPath,
-                settingsState.wokwiDiagramPath
-            ) ?: return false
-
-        val args = argsLoader.load(config) ?: return false
-        args.waitForDebugger = waitForDebugger
+        val loadedConfig = simulationConfigLoader.load(waitForDebugger) ?: return false
+        val simulationConfig = loadedConfig.simulationConfig
 
         disposeCurrentSimulator(clearListeners = true)
 
@@ -142,7 +132,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
 
         configGDBServer(
             waitForDebugger,
-            config.gdbServerPort
+            loadedConfig.gdbServerPort
         ) // configures gdbServer for new simulator instance
 
         val view = JcefWokwiView()
@@ -150,14 +140,14 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
 
         val session = WokwiSession(
             transport = view.wokwiTransport,
-            initialConfig = args.toSessionStartConfig(),
+            initialConfig = simulationConfig.toSessionStartConfig(),
             resourceLoader = resourceLoader,
             listener = createSessionListener(),
         )
 
         currentView = view
         currentSession = session
-        currentArgs = args
+        currentSimulationConfig = simulationConfig
 
         gdbBridge = gdbServer?.let { server ->
             WokwiSessionGdbBridge(session, server).also { bridge ->
@@ -211,11 +201,11 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
      *
      * @return `true` if the firmware was successfully updated, `false` otherwise.
      */
-    private suspend fun updateFirmware(): Boolean = currentArgs?.let {
-        val firmware = it.firmware.rootFile
-        val newFirmware = argsLoader.loadFirmware(firmware) ?: return false
-        it.firmware = newFirmware
-        currentSession?.updateStartConfig(it.toSessionStartConfig())
+    private suspend fun updateFirmware(): Boolean = currentSimulationConfig?.let {
+        val newFirmware = simulationConfigLoader.loadFirmware(it.firmware.rootPath) ?: return false
+        val updatedSimulationConfig = it.copy(firmware = newFirmware)
+        currentSimulationConfig = updatedSimulationConfig
+        currentSession?.updateStartConfig(updatedSimulationConfig.toSessionStartConfig())
         true
     } ?: false
 
@@ -264,7 +254,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
      *
      * @return A list of firmware binary paths, or `null` if the simulator is not running.
      */
-    fun getWatchPaths(): List<String>? = currentArgs?.firmware?.binaryPaths
+    fun getWatchPaths() = currentSimulationConfig?.firmware?.watchPaths
 
     /**
      * Checks whether the Wokwi simulator is currently running.
@@ -288,7 +278,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         currentView?.disposeByDisposer()
         currentView = null
 
-        currentArgs = null
+        currentSimulationConfig = null
         gdbBridge = null
 
         if (clearListeners) {
@@ -300,7 +290,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         return object : WokwiSession.Listener {
             override fun onStarted(config: WokwiSessionStartConfig) {
                 LOG.info("(Re)starting simulation...")
-                currentArgs?.let { notifySimulatorListeners { listener -> listener.onStarted(it) } }
+                currentSimulationConfig?.let { notifySimulatorListeners { listener -> listener.onStarted(it) } }
             }
 
             override fun onRunning() {
@@ -341,7 +331,7 @@ class WokwiSimulatorService(val project: Project, private val cs: CoroutineScope
         }
     }
 
-    private fun WokwiArgs.toSessionStartConfig() = WokwiSessionStartConfig(
+    private fun SimulationConfig.toSessionStartConfig() = WokwiSessionStartConfig(
         license = license,
         diagram = diagram,
         firmware = firmware.buffer,

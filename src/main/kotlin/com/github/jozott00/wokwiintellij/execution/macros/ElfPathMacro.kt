@@ -1,7 +1,7 @@
 package com.github.jozott00.wokwiintellij.execution.macros
 
+import com.github.jozott00.wokwiintellij.config.WokwiProjectConfigResolver
 import com.github.jozott00.wokwiintellij.extensions.wokwiCoroutineChildScope
-import com.github.jozott00.wokwiintellij.toml.WokwiConfigProcessor
 import com.intellij.ide.macro.Macro
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
@@ -23,7 +23,7 @@ class ElfPathMacro : Macro() {
 
         return runBlocking {
             project.wokwiCoroutineChildScope("ElfPathMacro").async(Dispatchers.IO) {
-                WokwiConfigProcessor.findElfFile(project)
+                WokwiProjectConfigResolver(project).findElfFile()
             }.await()
         }?.path ?: "no-elf-found"
     }

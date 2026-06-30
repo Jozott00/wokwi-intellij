@@ -37,6 +37,10 @@ wrapper `wokwi` messages to transport listeners, and handles wrapper `meta` mess
 Wokwi readiness `start` message, sends typed startup/GDB/resource responses through `ProtocolCodec`, and emits session
 callbacks for UI-facing events such as started, running, UART bytes, malformed messages, and unknown commands.
 
-`services.WokwiSimulatorService` is currently the IntelliJ adapter/controller. It creates the JCEF view, maps
-`WokwiArgs` into the pure session start config, owns the GDB bridge and resource loader adapters, and adapts session
-events to IntelliJ console/tool-window listeners.
+`services.WokwiSimulatorService` is currently the IntelliJ adapter/controller. It creates the JCEF view, asks
+`services.SimulationConfigLoader` for loaded startup data, maps the pure `SimulationConfig` into the session start
+config, owns the GDB bridge and resource loader adapters, and adapts session events to IntelliJ console/tool-window
+listeners.
+
+Project configuration loading stays outside `core`: `config.WokwiProjectConfigResolver` parses `wokwi.toml`, resolves
+project-relative firmware and diagram paths, and leaves browser/session runtime input as `core.model.SimulationConfig`.
