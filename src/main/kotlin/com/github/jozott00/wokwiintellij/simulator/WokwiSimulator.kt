@@ -1,6 +1,9 @@
 package com.github.jozott00.wokwiintellij.simulator
 
-
+import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
+import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
+import com.github.jozott00.wokwiintellij.core.protocol.OutboundMessage
+import com.github.jozott00.wokwiintellij.core.protocol.ProtocolCodec
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
@@ -16,8 +19,6 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.util.containers.ContainerUtil
 import io.ktor.util.*
-import kotlinx.serialization.json.*
-import java.net.URL
 import javax.swing.JComponent
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -84,12 +85,14 @@ class WokwiSimulator(
     @OptIn(ExperimentalEncodingApi::class)
     val firmwareString = Base64.encode(runArgs.firmware.buffer)
 
-    val cmd = Command.start(
-      diagram = runArgs.diagram,
-      firmware = firmwareString,
-      firmwareFormat = runArgs.firmware.format,
-      license = runArgs.license,
-      waitForDebugger = runArgs.waitForDebugger
+    val cmd = ProtocolCodec.encode(
+      OutboundMessage.SimulatorStart(
+        diagram = runArgs.diagram,
+        firmware = firmwareString,
+        firmwareFormat = runArgs.firmware.format.toString(),
+        license = runArgs.license,
+        pause = runArgs.waitForDebugger,
+      )
     )
     browserPipe.send(PIPE_TOPIC, cmd)
     myEventMulticaster.onStarted(runArgs)
@@ -126,10 +129,14 @@ class WokwiSimulator(
         is GDBServerEvent.Connected -> {}
         is GDBServerEvent.Error -> LOG.error("Error: ${event.error}")
         is GDBServerEvent.Message -> {
-          browserPipe.send(PIPE_TOPIC, Command.gdbMessage(event.message))
+          val cmd = ProtocolCodec.encode(OutboundMessage.Gdb(message = event.message))
+          browserPipe.send(PIPE_TOPIC, cmd)
         }
 
-        is GDBServerEvent.Break -> browserPipe.send(PIPE_TOPIC, Command.gdbBreak())
+        is GDBServerEvent.Break -> {
+          val cmd = ProtocolCodec.encode(OutboundMessage.GdbBreak())
+          browserPipe.send(PIPE_TOPIC, cmd)
+        }
       }
     }
   }
@@ -148,15 +155,8 @@ class WokwiSimulator(
    * decoded to UTF8, converted to the correct content-type (by the [AnsiEscapeDecoder])
    * and then shared using the [myEventMulticaster].
    */
-  private fun uartDataRecv(data: JsonObject) {
-    val bytes = data["bytes"]
-      ?.jsonArray
-      ?.map { it.jsonPrimitive.int.toByte() }
-      ?.toByteArray() ?: run {
-      LOG.error("Malformed data received: No bytes: $data")
-      return
-    }
-
+  private fun uartDataRecv(message: InboundMessage.UartData) {
+    val bytes = message.toByteArray()
     if (bytes.isEmpty()) return
 
     val str = String(bytes, Charsets.UTF_8)
@@ -170,15 +170,11 @@ class WokwiSimulator(
    * Loads the requested resource (currently from the internet) and
    * sends it to the simulation.
    */
-  private fun loadResourceRecv(req: JsonObject) {
+  private fun loadResourceRecv(message: InboundMessage.LoadResource) {
     // TODO: Make this offline
-    val urlString = req["url"]?.jsonPrimitive?.content ?: run {
-      LOG.error("Malformed data received: No url: $req")
-      return
-    }
-    val url = java.net.URI(urlString).toURL()
+    val url = java.net.URI(message.url).toURL()
     val resource = url.readBytes().encodeBase64()
-    val cmd = Command.resourceData(resource)
+    val cmd = ProtocolCodec.encode(OutboundMessage.ResourceData(buffer = resource))
     browserPipe.send(PIPE_TOPIC, cmd)
 
     checkSimulationStartedRunning()
@@ -187,12 +183,8 @@ class WokwiSimulator(
   /**
    * Sends the received GDB response to the gdbServer.
    */
-  private fun gdbResponseRecv(req: JsonObject) {
-    val response = req["response"]?.jsonPrimitive?.content ?: run {
-      LOG.error("Malformed data received: No response field: $req")
-      return
-    }
-    gdbServer?.sendResponse(response)
+  private fun gdbResponseRecv(message: InboundMessage.GdbResponse) {
+    gdbServer?.sendResponse(message.response)
   }
 
   /**
@@ -202,26 +194,28 @@ class WokwiSimulator(
    * @return `true` if the message was processed successfully, `false` otherwise.
    */
   override fun messageReceived(data: String): Boolean {
-    val json = Json.parseToJsonElement(data).jsonObject
-    // sometimes we receive empty messages. we treat them as no-op.
-    if (json.isEmpty()) return true
-
-    val type: String = json["command"]?.jsonPrimitive?.content ?: run {
-      LOG.error("Malformed data received: $data", Throwable())
-      return false
+    when (val result = ProtocolCodec.decode(data)) {
+      InboundDecodeResult.Empty -> return true
+      is InboundDecodeResult.Malformed -> {
+        LOG.error("Malformed Wokwi message: ${result.reason}\n${result.raw}", Throwable())
+        return false
+      }
+      is InboundDecodeResult.Decoded -> return handleIncomingMessage(result.message)
     }
+  }
 
-    when (type) {
-      "start" -> startRecv()
-      "loadResource" -> loadResourceRecv(json)
-      "uartData" -> uartDataRecv(json) // do nothing right now
-      "wifiFrame", "wifiConnect" -> {
+  private fun handleIncomingMessage(message: InboundMessage): Boolean {
+    when (message) {
+      is InboundMessage.Ready -> startRecv()
+      is InboundMessage.LoadResource -> loadResourceRecv(message)
+      is InboundMessage.UartData -> uartDataRecv(message)
+      is InboundMessage.WifiConnect, is InboundMessage.WifiFrame -> {
         TODO("Not yet implemented")
-      } // do nothing right now
-      "gdbResponse" -> gdbResponseRecv(json)
-      else -> {
-        LOG.warn("Unknown command: $type")
-        LOG.debug("Unknown command data: $data")
+      }
+      is InboundMessage.GdbResponse -> gdbResponseRecv(message)
+      is InboundMessage.Unknown -> {
+        LOG.warn("Unknown command: ${message.command}")
+        LOG.debug("Unknown command data: ${message.raw}")
         return false
       }
     }
