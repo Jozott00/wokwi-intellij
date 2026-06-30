@@ -162,7 +162,7 @@ class WokwiSimulator(
 
     val str = String(bytes, Charsets.UTF_8)
 
-    ansiEscapeDecoder.escapeText("$str\n", ProcessOutputTypes.STDOUT) { t, contentType ->
+    ansiEscapeDecoder.escapeText(str, ProcessOutputTypes.STDOUT) { t, contentType ->
       myEventMulticaster.onTextAvailable(t, contentType)
     }
   }
@@ -172,17 +172,12 @@ class WokwiSimulator(
    * @param data JSON data returned by the chip.
    */
   private fun chipOutputRecv(data: JsonObject) {
-    try {
-      val chipName = data["chipName"].toString()
-      val chipMessage = data["message"].toString()
-      val str = "$chipName: $chipMessage"
+    val chipName = data["chipName"].toString()
+    val chipMessage = data["message"].toString()
+    val str = "$chipName: $chipMessage"
 
-      ansiEscapeDecoder.escapeText("$str\n", ProcessOutputTypes.STDOUT) { t, contentType ->
-        myEventMulticaster.onTextAvailable(t, contentType)
-      }
-    }
-    catch(ex: Exception) {
-      println(ex.message)
+    ansiEscapeDecoder.escapeText("$str\n", ProcessOutputTypes.STDOUT) { t, contentType ->
+      myEventMulticaster.onTextAvailable(t, contentType)
     }
   }
 
@@ -242,8 +237,8 @@ class WokwiSimulator(
       } // do nothing right now
       "gdbResponse" -> gdbResponseRecv(json)
       else -> {
-        println("Unknown command: $type")
-        println("Unknown command data: $data")
+        LOG.warn("Unknown command: $type")
+        LOG.debug("Unknown command data: $data")
         return false
       }
     }
