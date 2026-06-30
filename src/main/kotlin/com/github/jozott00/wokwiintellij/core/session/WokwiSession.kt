@@ -1,10 +1,19 @@
 package com.github.jozott00.wokwiintellij.core.session
 
+import com.github.jozott00.wokwiintellij.core.ports.GdbEvent
+import com.github.jozott00.wokwiintellij.core.ports.GdbServer
+import com.github.jozott00.wokwiintellij.core.ports.ResourceLoader
 import com.github.jozott00.wokwiintellij.core.ports.WokwiTransport
 import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
 import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
 import com.github.jozott00.wokwiintellij.core.protocol.OutboundMessage
 import com.github.jozott00.wokwiintellij.core.protocol.ProtocolCodec
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import java.util.Base64
 
 /**
@@ -15,20 +24,26 @@ import java.util.Base64
  * to resource requests, and reports session output through [Listener].
  *
  * This class intentionally avoids IntelliJ, Swing, and JCEF APIs. Platform code supplies those concerns through
- * [WokwiTransport], [ResourceLoader], and [Listener].
+ * [WokwiTransport], [ResourceLoader], [GdbServer], and [Listener].
  *
+ * @param coroutineScope parent scope used for session-owned background collection jobs.
  * @param transport raw message transport connected to the Wokwi browser wrapper.
  * @param initialConfig startup payload data used when the session is first started.
  * @param resourceLoader callback used to resolve Wokwi `loadResource` requests into bytes.
+ * @param gdbServer optional local GDB server connected to Wokwi through this session.
  * @param listener receives observable session events and diagnostics.
  */
 class WokwiSession(
+    coroutineScope: CoroutineScope,
     private val transport: WokwiTransport,
     initialConfig: WokwiSessionStartConfig,
     private val resourceLoader: ResourceLoader,
+    private val gdbServer: GdbServer? = null,
     private val listener: Listener = Listener.NOOP,
 ) : WokwiTransport.Listener {
 
+    private val sessionJob = SupervisorJob(coroutineScope.coroutineContext[Job])
+    private val sessionScope = CoroutineScope(coroutineScope.coroutineContext + sessionJob)
     private var config = initialConfig
     private var browserReady = false
     private var startInvoked = false
@@ -36,6 +51,9 @@ class WokwiSession(
 
     init {
         transport.subscribe(this)
+        gdbServer?.events
+            ?.onEach(::handleGdbEvent)
+            ?.launchIn(sessionScope)
     }
 
     /**
@@ -57,25 +75,12 @@ class WokwiSession(
     }
 
     /**
-     * Sends one remote GDB protocol command to Wokwi.
-     */
-    fun sendGdbMessage(message: String) {
-        transport.send(ProtocolCodec.encode(OutboundMessage.Gdb(message = message)))
-    }
-
-    /**
-     * Requests a debugger break/pause in Wokwi.
-     */
-    fun sendGdbBreak() {
-        transport.send(ProtocolCodec.encode(OutboundMessage.GdbBreak()))
-    }
-
-    /**
      * Detaches this session from the transport.
      *
      * The transport itself remains owned by the caller.
      */
     fun dispose() {
+        sessionJob.cancel()
         transport.removeSubscriber(this)
     }
 
@@ -115,7 +120,7 @@ class WokwiSession(
                 true
             }
             is InboundMessage.GdbResponse -> {
-                listener.onGdbResponse(message.response)
+                gdbServer?.sendResponse(message.response)
                 true
             }
             is InboundMessage.WifiConnect, is InboundMessage.WifiFrame -> {
@@ -141,6 +146,7 @@ class WokwiSession(
                 firmwareFormat = config.firmwareFormat,
                 license = config.license,
                 pause = config.waitForDebugger,
+                gdbPort = config.gdbPort,
             )
         )
         transport.send(cmd)
@@ -162,14 +168,21 @@ class WokwiSession(
         }
     }
 
-    /**
-     * Resolves resources requested by Wokwi while starting or running the simulation.
-     */
-    fun interface ResourceLoader {
-        /**
-         * Returns raw bytes for [message]. The session handles transport encoding before replying to Wokwi.
-         */
-        fun load(message: InboundMessage.LoadResource): ByteArray
+    private fun handleGdbEvent(event: GdbEvent) {
+        when (event) {
+            is GdbEvent.Connected -> sendGdbBreak()
+            is GdbEvent.Error -> listener.onGdbError(event.error)
+            is GdbEvent.Message -> sendGdbMessage(event.message)
+            is GdbEvent.Break -> sendGdbBreak()
+        }
+    }
+
+    private fun sendGdbMessage(message: String) {
+        transport.send(ProtocolCodec.encode(OutboundMessage.Gdb(message = message)))
+    }
+
+    private fun sendGdbBreak() {
+        transport.send(ProtocolCodec.encode(OutboundMessage.GdbBreak()))
     }
 
     /**
@@ -185,8 +198,8 @@ class WokwiSession(
         /** Called when Wokwi emits UART bytes. */
         fun onUartData(bytes: ByteArray) {}
 
-        /** Called when Wokwi replies to a forwarded GDB command. */
-        fun onGdbResponse(response: String) {}
+        /** Called when the local GDB server reports an infrastructure error. */
+        fun onGdbError(error: Throwable) {}
 
         /** Called when inbound JSON cannot be decoded into a valid protocol message. */
         fun onMalformedMessage(message: InboundDecodeResult.Malformed) {}
@@ -223,4 +236,7 @@ data class WokwiSessionStartConfig(
 
     /** Starts Wokwi paused so a debugger can attach before execution. */
     val waitForDebugger: Boolean,
+
+    /** Local GDB server port to expose to Wokwi when debugger support is active. */
+    val gdbPort: Int? = null,
 )

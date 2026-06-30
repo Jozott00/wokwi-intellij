@@ -1,11 +1,12 @@
-package com.github.jozott00.wokwiintellij.simulator.gdb
+package com.github.jozott00.wokwiintellij.simulator.services
 
+import com.github.jozott00.wokwiintellij.core.ports.GdbEvent
+import com.github.jozott00.wokwiintellij.core.ports.GdbServer
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.utils.runCloseable
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.util.Disposer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -21,110 +22,127 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
 
-
-sealed class GDBServerEvent {
-    data object Connected : GDBServerEvent()
-    data class Error(val error: Throwable) : GDBServerEvent()
-    data class Message(val message: String) : GDBServerEvent()
-    data object Break : GDBServerEvent()
-}
-
-interface GDBServerCommunicator {
-    fun getMessageFlow(): Flow<GDBServerEvent>
-    fun sendResponse(response: String)
-}
-
-
-class WokwiGDBServer(private val cs: CoroutineScope, parentDisposable: Disposable) : GDBServerCommunicator, Disposable {
-    init {
-        Disposer.register(parentDisposable, this)
-    }
-
+/**
+ * Default socket-backed implementation of the session-facing [GdbServer] port.
+ *
+ * The server listens for local debugger TCP connections, turns debugger-side remote GDB protocol activity into
+ * [GdbEvent] values, and writes Wokwi responses back to the active debugger connection. Wokwi protocol forwarding
+ * remains owned by `core.session.WokwiSession`.
+ *
+ * @param cs coroutine scope used for socket accept/read/write work and user-facing error notifications.
+ */
+class DefaultGdbServer(private val cs: CoroutineScope) : GdbServer, Disposable {
     private var serverSocket: ServerSocket? = null
-    private var currentMessageProcessor: MessageProcessor? = null
-    private var eventChannel = Channel<GDBServerEvent> { Channel.BUFFERED }
+    private var currentConnection: GdbClientConnection? = null
+    private var eventChannel = Channel<GdbEvent>(Channel.BUFFERED)
 
+    override val events: Flow<GdbEvent>
+        get() = eventChannel.receiveAsFlow()
 
     /**
      * Listens for incoming connections on the specified port and handles them.
      *
      * @param port The port number to listen on. If null, a random port will be used.
      */
-    fun listen(port: Int?) = cs.launch(Dispatchers.IO) {
-        try {
-            ServerSocket(port ?: 0).use { socket ->
-                serverSocket = socket
-
-                LOG.info("GDB Server listening on port $port")
-
-                while (true) {
-                    val clientSocket = try {
-                        socket.runCloseable { it.accept() }
-                    } catch (e: SocketException) {
-                        break
-                    }
-                    currentMessageProcessor?.close()
-                    currentMessageProcessor = null
-                    handleConnection(clientSocket)
-                }
-            }
+    fun listen(port: Int?) {
+        val socket = try {
+            ServerSocket(port ?: 0)
         } catch (e: Exception) {
             LOG.warn(e)
-            WokwiNotifier.notifyBalloonAsync(
-                "Couldn't start GDB server",
-                "Failed to create server socket: ${e.message}",
-                NotificationType.ERROR
-            )
+            eventChannel.trySend(GdbEvent.Error(e))
+            cs.launch {
+                WokwiNotifier.notifyBalloonAsync(
+                    "Couldn't start GDB server",
+                    "Failed to create server socket: ${e.message}",
+                    NotificationType.ERROR
+                )
+            }
+            return
+        }
+
+        serverSocket = socket
+        LOG.info("GDB Server listening on port ${socket.localPort}")
+
+        cs.launch(Dispatchers.IO) {
+            acceptConnections(socket)
         }
     }
 
+    private suspend fun acceptConnections(socket: ServerSocket) = socket.use {
+        while (true) {
+            val clientSocket = try {
+                socket.runCloseable { it.accept() }
+            } catch (e: SocketException) {
+                break
+            }
+            currentConnection?.close()
+            currentConnection = null
+            handleConnection(clientSocket)
+        }
+    }
 
+    /**
+     * Returns the bound local TCP port after [listen] succeeds.
+     */
     fun getCurrentServerPort() = serverSocket?.localPort
 
+    /**
+     * Returns whether the local server socket is currently open.
+     */
     fun isRunning() = serverSocket?.isClosed?.not() ?: false
 
     private suspend fun handleConnection(socket: Socket) {
-        currentMessageProcessor = MessageProcessor(socket, eventChannel)
-        currentMessageProcessor?.process()
+        currentConnection = GdbClientConnection(socket, eventChannel)
+        currentConnection?.process()
     }
 
     override fun sendResponse(response: String) = cs.launch(Dispatchers.IO) {
-        currentMessageProcessor?.writeResponse(response)
+        currentConnection?.writeResponse(response)
     }.let { }
 
+    /**
+     * Closes the active debugger connection and server socket.
+     */
     override fun dispose() {
-        currentMessageProcessor?.close()
-        currentMessageProcessor = null
+        currentConnection?.close()
+        currentConnection = null
 
         serverSocket?.close()
         serverSocket = null
     }
 
-
-    override fun getMessageFlow(): Flow<GDBServerEvent> {
-        return eventChannel.receiveAsFlow()
-    }
-
+    /**
+     * Replaces the event channel when reusing a running server for a new simulator session.
+     */
     fun resetEventChannel() {
         eventChannel.close()
-        eventChannel = Channel { Channel.BUFFERED }
+        eventChannel = Channel(Channel.BUFFERED)
     }
 
     companion object {
-        val LOG = logger<WokwiGDBServer>()
+        val LOG = logger<DefaultGdbServer>()
     }
 }
 
-private class MessageProcessor(private val socket: Socket, private val eventChannel: Channel<GDBServerEvent>) :
+/**
+ * Handles one debugger TCP connection using the remote GDB protocol framing.
+ *
+ * This class validates `$message#checksum` packets, emits packet bodies as [GdbEvent.Message], emits
+ * [GdbEvent.Break] for Ctrl-C, and writes Wokwi response packets back to the debugger socket.
+ */
+private class GdbClientConnection(private val socket: Socket, private val eventChannel: Channel<GdbEvent>) :
     Closeable {
 
     private val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
     private val writer = PrintWriter(socket.getOutputStream(), true)
 
+    /**
+     * Reads debugger input until the socket closes, emitting validated GDB protocol events.
+     */
     suspend fun process() = socket.use {
         writer.println("+")
 
-        dispatchEvent(GDBServerEvent.Connected)
+        dispatchEvent(GdbEvent.Connected)
 
         var buf = ""
         while (true) {
@@ -137,7 +155,7 @@ private class MessageProcessor(private val socket: Socket, private val eventChan
                 break
             if (data == 3) {
                 LOG.debug("Received break")
-                dispatchEvent(GDBServerEvent.Break)
+                dispatchEvent(GdbEvent.Break)
                 continue
             }
             buf += data.toChar()
@@ -155,20 +173,22 @@ private class MessageProcessor(private val socket: Socket, private val eventChan
                     if (checkDetach(message))
                         return@use
 
-                    dispatchEvent(GDBServerEvent.Message(message))
+                    dispatchEvent(GdbEvent.Message(message))
                 }
             }
         }
     }
 
+    /**
+     * Writes a remote GDB protocol response received from Wokwi to the debugger socket.
+     */
     fun writeResponse(response: String) {
         writer.println(response)
     }
 
-    private suspend fun dispatchEvent(event: GDBServerEvent) = withContext(Dispatchers.IO) {
+    private suspend fun dispatchEvent(event: GdbEvent) = withContext(Dispatchers.IO) {
         eventChannel.send(event)
     }
-
 
     private fun shouldContinueProcessingMessage(buf: String): Boolean {
         val dollar = buf.indexOf('$')
@@ -206,9 +226,12 @@ private class MessageProcessor(private val socket: Socket, private val eventChan
     }
 
     companion object {
-        val LOG = logger<WokwiGDBServer>()
+        val LOG = logger<GdbClientConnection>()
     }
 
+    /**
+     * Closes the debugger socket if it is still open.
+     */
     override fun close() {
         if (!socket.isClosed)
             socket.close()
