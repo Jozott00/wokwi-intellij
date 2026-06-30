@@ -53,9 +53,9 @@ wrapper page, which forwards those messages to the Wokwi iframe.
 
 ## Startup Flow
 
-When starting with debugger support, `WokwiSimulatorService` loads the project simulation config and configures
-`DefaultGdbServer` before creating the session. The server binds synchronously, so the actual bound port is available
-before the simulator start payload is sent.
+When starting with debugger support, `ide.simulator.WokwiSessionController` loads the project simulation config and asks
+`WokwiGdbServerManager` to configure `DefaultGdbServer` before creating the session. The server binds synchronously, so
+the actual bound port is available before the simulator start payload is sent.
 
 `WokwiSessionStartConfig.gdbPort` is included in the Wokwi `start` payload. This preserves the VS Code-compatible
 startup shape and tells Wokwi that debugger integration is active for the session.
@@ -66,7 +66,7 @@ The debugger-side run configuration uses the `WokwiGdbServer` macro to resolve t
 localhost:<gdbServerPort>
 ```
 
-If a random port is used, the macro reads the bound port from `WokwiSimulatorService.getRunningGDBPort()`.
+If a random port is used, the macro reads the bound port from `WokwiSessionController.getRunningGDBPort()`.
 
 ## Why This Bridge Exists
 
@@ -83,8 +83,9 @@ This keeps each layer narrow:
 
 ## Lifecycle
 
-`WokwiSimulatorService` owns concrete adapter lifecycle. It creates `DefaultGdbServer`, registers it with the project
-disposable, and disposes it when debugging stops or the simulator service shuts down.
+`WokwiGdbServerManager` owns concrete GDB adapter lifecycle for `WokwiSessionController`. It creates
+`DefaultGdbServer`, registers it with the project disposable, and disposes it when debugging stops or the simulator
+controller shuts down.
 
 `WokwiSession` owns only its subscription to `GdbServer.events`. Disposing a session cancels that collection and
 unsubscribes from the browser transport. It does not close the local GDB server directly; server disposal remains a

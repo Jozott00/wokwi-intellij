@@ -1,7 +1,7 @@
 package com.github.jozott00.wokwiintellij.actions
 
 
-import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
+import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -14,14 +14,14 @@ class WokwiStopAction : AnAction() {
     }
 
     override fun update(e: AnActionEvent) {
-        val s = e.project?.service<WokwiSimulatorService>() ?: return
+        val s = e.project?.service<WokwiSessionController>() ?: return
         val p = e.presentation
 
         p.isEnabled = s.isSimulatorRunning()
     }
 
     override fun actionPerformed(event: AnActionEvent) {
-        val s = event.project?.service<WokwiSimulatorService>()
+        val s = event.project?.service<WokwiSessionController>()
         s?.stopSimulator()
 
     }

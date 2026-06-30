@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.execution.profileStates
 
-import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
+import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.CommandLineState
 import com.intellij.execution.process.ProcessHandler
@@ -11,7 +11,7 @@ import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.components.service
 
 class WokwiSimulatorRunnerState(myEnvironment: ExecutionEnvironment) : CommandLineState(myEnvironment) {
-    private val projectService = myEnvironment.project.service<WokwiSimulatorService>()
+    private val projectService = myEnvironment.project.service<WokwiSessionController>()
     private val am = ActionManager.getInstance()
     override fun startProcess() = projectService.startSimulator(false)
 
@@ -27,4 +27,3 @@ class WokwiSimulatorRunnerState(myEnvironment: ExecutionEnvironment) : CommandLi
     }
 
 }
-

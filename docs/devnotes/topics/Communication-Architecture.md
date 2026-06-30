@@ -43,9 +43,10 @@ keeps GDB/resource protocol handling in the session and leaves socket, URL, IDE 
 adapter implementations. Concrete simulator-side adapters live under `simulator.services`, such as
 `DefaultGdbServer`.
 
-`services.WokwiSimulatorService` is currently the IntelliJ adapter/controller. It creates the JCEF view, asks
-`services.SimulationConfigLoader` for loaded startup data, maps the pure `SimulationConfig` into the session start
-config, creates concrete GDB/resource adapters, and adapts session events to IntelliJ console/tool-window listeners.
+`ide.simulator.WokwiSessionController` is the IntelliJ adapter/controller. It creates the JCEF view through a runtime
+factory, asks `services.SimulationConfigLoader` for loaded startup data, maps the pure `SimulationConfig` into the
+session start config, coordinates concrete GDB/resource adapters, and adapts session events to IntelliJ
+console/tool-window listeners. Actions, run configurations, macros, and file watchers use this controller directly.
 
 Project configuration loading stays outside `core`: `config.WokwiProjectConfigResolver` parses `wokwi.toml`, resolves
 project-relative firmware and diagram paths, and leaves browser/session runtime input as `core.model.SimulationConfig`.

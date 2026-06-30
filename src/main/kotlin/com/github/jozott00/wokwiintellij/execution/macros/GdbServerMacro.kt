@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.execution.macros
 
-import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
+import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.intellij.ide.macro.Macro
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
@@ -18,7 +18,7 @@ class GdbServerMacro : Macro() {
             return "project-not-ready"
         }
 
-        val simulatorService = project.service<WokwiSimulatorService>()
+        val simulatorService = project.service<WokwiSessionController>()
 
         // only get config file if simulator currently running.
         // prevents ui freezing on startup
