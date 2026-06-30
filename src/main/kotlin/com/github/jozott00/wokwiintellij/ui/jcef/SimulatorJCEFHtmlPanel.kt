@@ -1,8 +1,5 @@
 package com.github.jozott00.wokwiintellij.ui.jcef
 
-import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
-import com.github.jozott00.wokwiintellij.jcef.addLoadHandler
-import com.github.jozott00.wokwiintellij.jcef.impl.JcefBrowserPipe
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.invokeLater
@@ -14,9 +11,6 @@ import com.intellij.ui.dsl.builder.BottomGap
 import com.intellij.ui.dsl.builder.TopGap
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.jcef.JCEFHtmlPanel
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandler
@@ -30,23 +24,22 @@ import javax.swing.JProgressBar
 class SimulatorJCEFHtmlPanel(parentDisposable: Disposable) : ComponentContainer {
 
     private val browser = JCEFHtmlPanel(true, null, null)
-    val browserPipe: BrowserPipe = JcefBrowserPipe(browser, this)
-
-    private val loadHandler = LoadHandler(this)
-
     private val contentCardLayout = CardLayout()
     private val contentCard = JPanel(contentCardLayout).also {
         it.add("LOADING", buildLoadingPanel())
         it.add("BROWSER", browser.component)
+    }
+    val wokwiTransport = JcefWokwiTransport(browser) {
+        invokeLater { contentCardLayout.show(contentCard, "BROWSER") }
     }
 
 
     init {
         Disposer.register(parentDisposable, this)
         Disposer.register(this, browser)
+        Disposer.register(this, wokwiTransport)
 
-        browser.addLoadHandler(loadHandler, this)
-        browserPipe.subscribe("meta", loadHandler)
+        browser.addLoadHandler(LoadHandler(this), this)
 
         val resource = ResourceLoader.loadInternalResource(this.javaClass, "/jcef/simulator/index.html", "text/html")
         browser.loadHTML(resource?.content?.toString(Charsets.UTF_8) ?: "<h3>Not Found</h3>")
@@ -82,7 +75,7 @@ class SimulatorJCEFHtmlPanel(parentDisposable: Disposable) : ComponentContainer 
     }
 
 
-    private class LoadHandler(val panel: SimulatorJCEFHtmlPanel) : CefLoadHandlerAdapter(), BrowserPipe.Subscriber {
+    private class LoadHandler(val panel: SimulatorJCEFHtmlPanel) : CefLoadHandlerAdapter() {
         override fun onLoadError(
             browser: CefBrowser?,
             frame: CefFrame?,
@@ -102,28 +95,6 @@ class SimulatorJCEFHtmlPanel(parentDisposable: Disposable) : ComponentContainer 
                 panel.contentCard.add(createErrorPanel(errorDescription))
             }
 
-        }
-
-        override fun messageReceived(data: String): Boolean {
-            val json = Json.parseToJsonElement(data).jsonObject
-
-            val type: String = json["msg"]?.jsonPrimitive?.content ?: run {
-                thisLogger().error("Malformed data received: $data", Throwable())
-                return false
-            }
-
-            when (type) {
-                "frameLoaded" -> {
-                    invokeLater { panel.contentCardLayout.show(panel.contentCard, "BROWSER") }
-                }
-
-                else -> {
-                    thisLogger().error("Meta message '$type' not supported.", Throwable())
-                    return false
-                }
-            }
-
-            return true
         }
 
         fun createErrorPanel(errorText: String) = panel {

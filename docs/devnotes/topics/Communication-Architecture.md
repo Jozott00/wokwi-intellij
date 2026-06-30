@@ -22,3 +22,11 @@ sequenceDiagram
 The url of the Wcode simulator is `https://wokwi.com/vscode/wcode?v=<version>`
 
 E.g. `https://wokwi.com/vscode/wcode?v=2.4.0&g=10277ff&u=385442252248670209`
+
+## Backend Transport Boundary
+
+Simulator/session code talks to the browser through `core.ports.WokwiTransport`. This transport carries raw Wokwi
+protocol payloads only. JCEF query injection, wrapper readiness events, and iframe details stay in the JCEF/UI layer.
+
+The current JCEF implementation is `ui.jcef.JcefWokwiTransport`. It owns the injected JavaScript query bridge, routes
+wrapper `wokwi` messages to transport listeners, and handles wrapper `meta` messages such as `frameLoaded` internally.

@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.jcef
+package com.github.jozott00.wokwiintellij.ui.jcef
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.Disposer
@@ -17,7 +17,7 @@ internal fun JBCefBrowser.executeJavaScript(@Language("JavaScript") code: String
 internal fun JBCefClient.addRequestHandler(
     handler: CefRequestHandler,
     browser: CefBrowser,
-    parentDisposable: Disposable
+    parentDisposable: Disposable,
 ) {
     Disposer.register(parentDisposable) { removeRequestHandler(handler, browser) }
     addRequestHandler(handler, browser)
@@ -26,7 +26,7 @@ internal fun JBCefClient.addRequestHandler(
 internal fun JBCefClient.addLoadHandler(
     handler: CefLoadHandler,
     browser: CefBrowser,
-    parentDisposable: Disposable
+    parentDisposable: Disposable,
 ) {
     Disposer.register(parentDisposable) { removeLoadHandler(handler, browser) }
     addLoadHandler(handler, browser)

@@ -1,10 +1,10 @@
 package com.github.jozott00.wokwiintellij.simulator
 
+import com.github.jozott00.wokwiintellij.core.ports.WokwiTransport
 import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
 import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
 import com.github.jozott00.wokwiintellij.core.protocol.OutboundMessage
 import com.github.jozott00.wokwiintellij.core.protocol.ProtocolCodec
-import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
 import com.github.jozott00.wokwiintellij.simulator.gdb.GDBServerCommunicator
@@ -28,7 +28,7 @@ private val LOG = logger<WokwiSimulator>()
 /**
  * Represents the Wokwi simulator, encapsulating the simulation's lifecycle, communication, and interaction
  * with the embedded web browser component. It implements the [Simulator], [ComponentContainer], and
- * [BrowserPipe.Subscriber] interfaces to provide comprehensive control and feedback mechanisms for the simulation.
+ * [WokwiTransport.Listener] interfaces to provide comprehensive control and feedback mechanisms for the simulation.
  *
  * @property runArgs The arguments to run the simulation with, including firmware and diagram information.
  * @param parentDisposable The parent disposable for managing the lifecycle of this instance.
@@ -39,13 +39,13 @@ class WokwiSimulator(
 ) : Disposable,
   Simulator,
   ComponentContainer,
-  BrowserPipe.Subscriber {
+  WokwiTransport.Listener {
 
   private var browserReady = false
   private var startInvoked = false
 
   private val browser = SimulatorJCEFHtmlPanel(this)
-  private val browserPipe = browser.browserPipe
+  private val transport = browser.wokwiTransport
 
   private val myEventMulticaster = createEventMulticaster()
   private val myListeners: MutableList<WokwiSimulatorListener> = ContainerUtil.createLockFreeCopyOnWriteList()
@@ -57,7 +57,7 @@ class WokwiSimulator(
 
   init {
     Disposer.register(parentDisposable, this)
-    browserPipe.subscribe(PIPE_TOPIC, this, this)
+    transport.subscribe(this)
   }
 
   /**
@@ -94,7 +94,7 @@ class WokwiSimulator(
         pause = runArgs.waitForDebugger,
       )
     )
-    browserPipe.send(PIPE_TOPIC, cmd)
+    transport.send(cmd)
     myEventMulticaster.onStarted(runArgs)
   }
 
@@ -130,12 +130,12 @@ class WokwiSimulator(
         is GDBServerEvent.Error -> LOG.error("Error: ${event.error}")
         is GDBServerEvent.Message -> {
           val cmd = ProtocolCodec.encode(OutboundMessage.Gdb(message = event.message))
-          browserPipe.send(PIPE_TOPIC, cmd)
+          transport.send(cmd)
         }
 
         is GDBServerEvent.Break -> {
           val cmd = ProtocolCodec.encode(OutboundMessage.GdbBreak())
-          browserPipe.send(PIPE_TOPIC, cmd)
+          transport.send(cmd)
         }
       }
     }
@@ -175,7 +175,7 @@ class WokwiSimulator(
     val url = java.net.URI(message.url).toURL()
     val resource = url.readBytes().encodeBase64()
     val cmd = ProtocolCodec.encode(OutboundMessage.ResourceData(buffer = resource))
-    browserPipe.send(PIPE_TOPIC, cmd)
+    transport.send(cmd)
 
     checkSimulationStartedRunning()
   }
@@ -190,11 +190,11 @@ class WokwiSimulator(
   /**
    * Receives messages from the browser component and handles them according to their type.
    *
-   * @param data The message data received.
+   * @param message The message data received.
    * @return `true` if the message was processed successfully, `false` otherwise.
    */
-  override fun messageReceived(data: String): Boolean {
-    when (val result = ProtocolCodec.decode(data)) {
+  override fun messageReceived(message: String): Boolean {
+    when (val result = ProtocolCodec.decode(message)) {
       InboundDecodeResult.Empty -> return true
       is InboundDecodeResult.Malformed -> {
         LOG.error("Malformed Wokwi message: ${result.reason}\n${result.raw}", Throwable())
@@ -235,10 +235,6 @@ class WokwiSimulator(
     }
   }
 
-  companion object {
-    private const val PIPE_TOPIC = "wokwi"
-  }
-
   /**
    * Adds a listener to be notified of simulator events.
    *
@@ -252,6 +248,7 @@ class WokwiSimulator(
    * Disposes of the resources used by this simulator instance, notifying listeners of the shutdown.
    */
   override fun dispose() {
+    transport.removeSubscriber(this)
     createEventMulticaster().onShutdown(SimExitCode.OK)
     myListeners.clear()
   }
