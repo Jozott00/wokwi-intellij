@@ -1,6 +1,7 @@
 [versions]
 # libraries
 arrow = "2.2.3"
+archunit = "1.4.2"
 ktoml = "0.7.1"
 kotlinxSerialization = "1.11.0"
 
@@ -13,6 +14,7 @@ qodana = "2026.1.3"
 
 [libraries]
 arrow-core = { group = "io.arrow-kt", name = "arrow-core", version.ref = "arrow" }
+archunit = { group = "com.tngtech.archunit", name = "archunit", version.ref = "archunit" }
 ktoml-core = { group = "com.akuleshov7", name = "ktoml-core", version.ref = "ktoml" }
 ktoml-file = { group = "com.akuleshov7", name = "ktoml-file", version.ref = "ktoml" }
 kotlin-test-junit = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit", version.ref = "kotlin" }
