@@ -24,9 +24,6 @@ class GdbServerMacro : Macro() {
         // prevents ui freezing on startup
         if (!simulatorService.isSimulatorRunning()) return "<requires simulator startup>"
 
-//        val config = runBlocking(Dispatchers.IO) { WokwiConfigProcessor.readConfig(project) }
-//            ?: throw ExecutionCancelledException()
-//        val port = simulatorService.getRunningGDBPort() ?: config.gdbServerPort ?: return "localhost:<unknown-port>"
         val port = simulatorService.getRunningGDBPort() ?: return "localhost:<unknown-port>"
 
         return "localhost:$port"

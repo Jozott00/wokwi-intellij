@@ -2,8 +2,6 @@ package com.github.jozott00.wokwiintellij.ide.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiBundle
 import com.github.jozott00.wokwiintellij.WokwiConstants
-import com.github.jozott00.wokwiintellij.toml.findTable
-import com.github.jozott00.wokwiintellij.toml.findValue
 import com.intellij.codeInsight.template.TemplateManager
 import com.intellij.codeInsight.template.impl.TextExpression
 import com.intellij.codeInspection.InspectionManager

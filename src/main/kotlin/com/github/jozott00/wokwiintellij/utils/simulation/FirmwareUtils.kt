@@ -6,19 +6,17 @@ import arrow.core.right
 import com.github.jozott00.wokwiintellij.exceptions.GenericError
 import com.github.jozott00.wokwiintellij.exceptions.catchIllArg
 import com.github.jozott00.wokwiintellij.extensions.hexStringToByteArray
-import com.github.jozott00.wokwiintellij.simulator.args.FirmwareFormat
-import com.intellij.openapi.application.readAction
+import com.github.jozott00.wokwiintellij.core.model.FirmwareFormat
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.readBytes
-import com.intellij.openapi.vfs.readText
 import io.ktor.util.collections.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.nio.file.Files
+import java.nio.file.Path
 
 object FirmwareUtils {
 
@@ -27,29 +25,31 @@ object FirmwareUtils {
 
     private val jsonParser = Json { ignoreUnknownKeys = true }
 
-    suspend fun packEspIdfFirmware(flasherArgs: VirtualFile): Either<GenericError, EspIdfPackResult> = withContext(Dispatchers.IO) {
-        LOG.info("Packing ESP-IDF image from flasher-args '${flasherArgs.path}'")
+    suspend fun packEspIdfFirmware(flasherArgs: Path): Either<GenericError, EspIdfPackResult> = withContext(Dispatchers.IO) {
+        LOG.info("Packing ESP-IDF image from flasher-args '$flasherArgs'")
         fun buildErrorResult(message: String) = GenericError("Failed to build image from flasher_args.json", message).left()
 
-        val flasherArgsString = readAction { flasherArgs.readText() }
+        val flasherArgsString = Files.readString(flasherArgs)
         val flasherJson =  catchIllArg { jsonParser.decodeFromString<FlasherJson>(flasherArgsString) }
             .getOrElse {
                 thisLogger().warn(it)
                 return@withContext buildErrorResult("Unable to parse content of flasher_args.json") }
 
 
-        val partPaths = ConcurrentSet<String>()
+        val partPaths = ConcurrentSet<Path>()
 
         // list of (offset, data)
         val firmwareParts = flasherJson.flashFiles.entries.map {e ->
             val offset = e.key.removePrefix("0x").toIntOrNull(16)
                 ?: return@withContext buildErrorResult("Offset '${e.key}' is invalid")
 
-            val partFile = flasherArgs.parent.findFileByRelativePath(e.value)
-                ?: return@withContext buildErrorResult("Firmware part '${e.value}' could not be found.")
+            val partFile = flasherArgs.parent.resolve(e.value).normalize()
+            if (!Files.exists(partFile)) {
+                return@withContext buildErrorResult("Firmware part '${e.value}' could not be found.")
+            }
 
-            val data = readAction { partFile.readBytes() }
-            partPaths.add(partFile.path)
+            val data = Files.readAllBytes(partFile)
+            partPaths.add(partFile)
             Pair(offset, data)
         }
 
@@ -65,12 +65,12 @@ object FirmwareUtils {
         EspIdfPackResult(firmwareData, partPaths.toList()).right()
     }
 
-    fun determineFirmwareFormat(file: VirtualFile, content: ByteArray): FirmwareFormat {
+    fun determineFirmwareFormat(filePath: Path, content: ByteArray): FirmwareFormat {
         val isUf2 = content.size >= 512 && isUf2Block(content.sliceArray(0 until 512))
         if (isUf2)
             return FirmwareFormat.UF2
 
-        val fileExtension = file.extension?.lowercase()
+        val fileExtension = filePath.fileName.toString().substringAfterLast('.', "").lowercase()
         val format = when (fileExtension) {
             "hex" -> FirmwareFormat.HEX
             else -> FirmwareFormat.BIN
@@ -101,7 +101,7 @@ object FirmwareUtils {
 
     class EspIdfPackResult(
         val img: ByteArray,
-        val binaryPaths: List<String>
+        val watchPaths: List<Path>
     )
 }
 

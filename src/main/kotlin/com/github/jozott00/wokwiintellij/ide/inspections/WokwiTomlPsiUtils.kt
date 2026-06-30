@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.toml
+package com.github.jozott00.wokwiintellij.ide.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.intellij.psi.PsiFile

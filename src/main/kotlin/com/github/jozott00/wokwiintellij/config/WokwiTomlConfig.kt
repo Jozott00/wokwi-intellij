@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.toml
+package com.github.jozott00.wokwiintellij.config
 
 import kotlinx.serialization.Serializable
 

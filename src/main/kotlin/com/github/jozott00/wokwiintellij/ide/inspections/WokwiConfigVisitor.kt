@@ -1,6 +1,5 @@
 package com.github.jozott00.wokwiintellij.ide.inspections
 
-import com.github.jozott00.wokwiintellij.toml.stringValue
 import org.toml.lang.psi.TomlKeyValue
 import org.toml.lang.psi.TomlTable
 import org.toml.lang.psi.TomlVisitor

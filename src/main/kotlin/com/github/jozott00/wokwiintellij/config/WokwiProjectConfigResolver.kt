@@ -1,11 +1,10 @@
-package com.github.jozott00.wokwiintellij.toml
+package com.github.jozott00.wokwiintellij.config
 
 import com.akuleshov7.ktoml.TomlInputConfig
 import com.akuleshov7.ktoml.exceptions.TomlDecodingException
 import com.akuleshov7.ktoml.file.TomlFileReader
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.extensions.findRelativeFiles
-import com.github.jozott00.wokwiintellij.simulator.WokwiConfig
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.utils.NotifyAction
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
@@ -24,41 +23,81 @@ import com.intellij.psi.PsiManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.serializer
+import java.nio.file.Path
 
-object WokwiConfigProcessor {
+/**
+ * Project paths and startup-only values resolved from `wokwi.toml` and plugin settings.
+ *
+ * This object is an IntelliJ-side intermediate result. It deliberately does not live in `core` and is not passed to the
+ * browser/session layer.
+ */
+data class ResolvedWokwiProjectConfig(
+    val firmwarePath: Path,
+    val diagramPath: Path,
+    val gdbServerPort: Int?,
+)
 
-    suspend fun loadConfig(project: Project, wokwiConfigPath: String, diagramPath: String): WokwiConfig? {
-        val absoluteWokwiPath = findWokwiConfigPath(wokwiConfigPath, project) ?: return null
-        val diagramFilePath = findWokwiDiagramPath(diagramPath, project) ?: return null
+/**
+ * Resolves Wokwi project configuration from IntelliJ project state.
+ *
+ * The resolver owns TOML parsing and project-relative path lookup for `wokwi.toml`, firmware, ELF, and `diagram.json`.
+ * It reports user-facing configuration errors directly because failures are caused by project setup and usually need
+ * editor navigation or file creation actions.
+ */
+class WokwiProjectConfigResolver(private val project: Project) {
+
+    /**
+     * Resolves the configured Wokwi files into normalized local paths.
+     *
+     * The ELF path is validated even though it is not returned, because an invalid ELF entry usually means the project
+     * has not been built and the simulator should not start.
+     *
+     * @param wokwiConfigPath project-relative path or search pattern for `wokwi.toml`.
+     * @param diagramPath project-relative path or search pattern for `diagram.json`.
+     * @return resolved project configuration, or `null` after reporting a user-facing error.
+     */
+    suspend fun resolve(wokwiConfigPath: String, diagramPath: String): ResolvedWokwiProjectConfig? {
+        val absoluteWokwiPath = findWokwiConfigPath(wokwiConfigPath) ?: return null
+        val diagramFilePath = findWokwiDiagramPath(diagramPath) ?: return null
         val tomlConfig = withContext(Dispatchers.IO) {
-            readConfig(absoluteWokwiPath, project)
+            readConfig(absoluteWokwiPath)
         } ?: return null
         return withContext(Dispatchers.IO) {
-            loadConfig(project, tomlConfig, absoluteWokwiPath, diagramFilePath)
+            resolveConfig(tomlConfig, absoluteWokwiPath, diagramFilePath)
         }
     }
 
-    suspend fun readConfig(project: Project): WokwiTomlTable? {
+    /**
+     * Reads the configured `wokwi.toml` file and returns its `[wokwi]` table.
+     *
+     * This is used by IDE features that need raw TOML settings without loading the full simulator runtime payload.
+     */
+    suspend fun readConfig(): WokwiTomlTable? {
         val projectSettings = project.service<WokwiSettingsState>()
-        val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath, project) ?: return null
-        return readConfig(configFile, project)
+        val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath) ?: return null
+        return readConfig(configFile)
     }
 
-    suspend fun findElfFile(project: Project): VirtualFile? {
+    /**
+     * Resolves the ELF file referenced by the configured `wokwi.toml`.
+     *
+     * The debugger run-configuration macro uses this to expand the ELF path without starting the simulator.
+     */
+    suspend fun findElfFile(): VirtualFile? {
         val projectSettings = project.service<WokwiSettingsState>()
-        val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath, project) ?: return null
-        val tomlConfig = readConfig(project) ?: return null
+        val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath) ?: return null
+        val tomlConfig = readConfig(configFile) ?: return null
         return configFile.parent.findFileByRelativePath(tomlConfig.elf)
     }
 
-    private suspend fun readConfig(configFile: VirtualFile, project: Project): WokwiTomlTable? {
+    private suspend fun readConfig(configFile: VirtualFile): WokwiTomlTable? {
 
         if (!configFile.exists()) {
             notifyError("Configuration file `${configFile.path}` not found.")
             return null
         }
 
-        if (configFile.name != "wokwi.toml") {
+        if (configFile.name != WokwiConstants.WOKWI_CONFIG_FILE) {
             notifyError("Wokwi configuration file must be called `wokwi.toml` but is actually `${configFile.name}`")
             return null
         }
@@ -76,7 +115,7 @@ object WokwiConfigProcessor {
         } catch (e: TomlDecodingException) {
             notifyError(
                 "Check your wokwi.toml file and try again",
-                getNotifyJumpToAction("Jump to config", project, configFile)
+                getNotifyJumpToAction("Jump to config", configFile)
             )
             return null
         }
@@ -84,18 +123,17 @@ object WokwiConfigProcessor {
         return model.wokwi
     }
 
-    private suspend fun loadConfig(
-        project: Project,
+    private suspend fun resolveConfig(
         tomlConfig: WokwiTomlTable,
         configFile: VirtualFile,
         diagramFile: VirtualFile
-    ): WokwiConfig? {
+    ): ResolvedWokwiProjectConfig? {
         val configDir = readAction { configFile.parent }
 
-        val elfFile = readAction { configDir.findFileByRelativePath(tomlConfig.elf) } ?: run {
+        readAction { configDir.findFileByRelativePath(tomlConfig.elf) } ?: run {
             notifyError(
                 "Invalid ELF path. Is the project already built?",
-                getNotifyJumpToAction("Jump to config", project, configFile)
+                getNotifyJumpToAction("Jump to config", configFile)
             )
             return null
         }
@@ -103,17 +141,15 @@ object WokwiConfigProcessor {
         val firmwareFile = readAction { configDir.findFileByRelativePath(tomlConfig.firmware) } ?: run {
             notifyError(
                 "Invalid firmware path. Is the project already built?",
-                getNotifyJumpToAction("Jump to config", project, configFile)
+                getNotifyJumpToAction("Jump to config", configFile)
             )
             return null
         }
 
 
-        return WokwiConfig(
-            version = tomlConfig.version.toString(),
-            elf = elfFile,
-            firmware = firmwareFile,
-            diagram = diagramFile,
+        return ResolvedWokwiProjectConfig(
+            firmwarePath = Path.of(firmwareFile.path).normalize(),
+            diagramPath = Path.of(diagramFile.path).normalize(),
             gdbServerPort = tomlConfig.gdbServerPort
         )
     }
@@ -131,12 +167,12 @@ object WokwiConfigProcessor {
     }
 
     @Suppress("SameParameterValue")
-    private fun getNotifyJumpToAction(text: String, project: Project, file: VirtualFile) = NotifyAction(text) { _, _ ->
+    private fun getNotifyJumpToAction(text: String, file: VirtualFile) = NotifyAction(text) { _, _ ->
         val descriptor = OpenFileDescriptor(project, file)
         FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
     }
 
-    private suspend fun findWokwiConfigPath(wokwiConfigPath: String, project: Project): VirtualFile? =
+    private suspend fun findWokwiConfigPath(wokwiConfigPath: String): VirtualFile? =
         withContext(Dispatchers.IO) {
             readAction {
                 project
@@ -159,7 +195,7 @@ object WokwiConfigProcessor {
             return@run first()
         }
 
-    private suspend fun findWokwiDiagramPath(wokwiDiagramPath: String, project: Project): VirtualFile? =
+    private suspend fun findWokwiDiagramPath(wokwiDiagramPath: String): VirtualFile? =
         withContext(Dispatchers.IO) {
             readAction {
                 project
