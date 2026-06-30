@@ -1,11 +1,10 @@
-package com.github.jozott00.wokwiintellij.config
+package com.github.jozott00.wokwiintellij.core.config
 
 import kotlinx.serialization.Serializable
 
-
 @Serializable
 data class WokwiTomlConfig(
-    val wokwi: WokwiTomlTable
+    val wokwi: WokwiTomlTable,
 )
 
 @Serializable
@@ -13,5 +12,5 @@ data class WokwiTomlTable(
     val version: Int,
     val elf: String,
     val firmware: String,
-    val gdbServerPort: Int? = null
+    val gdbServerPort: Int? = null,
 )

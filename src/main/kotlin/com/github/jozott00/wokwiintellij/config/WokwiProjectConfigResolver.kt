@@ -1,9 +1,12 @@
 package com.github.jozott00.wokwiintellij.config
 
-import com.akuleshov7.ktoml.TomlInputConfig
-import com.akuleshov7.ktoml.exceptions.TomlDecodingException
-import com.akuleshov7.ktoml.file.TomlFileReader
 import com.github.jozott00.wokwiintellij.WokwiConstants
+import com.github.jozott00.wokwiintellij.core.config.WokwiConfigResolveError
+import com.github.jozott00.wokwiintellij.core.config.WokwiConfigResolveResult
+import com.github.jozott00.wokwiintellij.core.config.WokwiConfigResolver
+import com.github.jozott00.wokwiintellij.core.config.WokwiTomlParseResult
+import com.github.jozott00.wokwiintellij.core.config.WokwiTomlParser
+import com.github.jozott00.wokwiintellij.core.config.WokwiTomlTable
 import com.github.jozott00.wokwiintellij.extensions.findRelativeFiles
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.utils.NotifyAction
@@ -22,7 +25,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.serializer
+import java.nio.file.Files
 import java.nio.file.Path
 
 /**
@@ -40,9 +43,8 @@ data class ResolvedWokwiProjectConfig(
 /**
  * Resolves Wokwi project configuration from IntelliJ project state.
  *
- * The resolver owns TOML parsing and project-relative path lookup for `wokwi.toml`, firmware, ELF, and `diagram.json`.
- * It reports user-facing configuration errors directly because failures are caused by project setup and usually need
- * editor navigation or file creation actions.
+ * This IntelliJ adapter owns project file discovery, editor navigation, and user-facing error reporting. Pure TOML
+ * parsing and path resolution live in `core/config`.
  */
 class WokwiProjectConfigResolver(private val project: Project) {
 
@@ -102,25 +104,17 @@ class WokwiProjectConfigResolver(private val project: Project) {
             return null
         }
 
-        val fileReader = TomlFileReader(
-            inputConfig = TomlInputConfig(
-                ignoreUnknownNames = true,
-                allowNullValues = true
-            )
-        )
+        return when (val result = WokwiTomlParser.parse(Files.readString(Path.of(configFile.path)))) {
+            is WokwiTomlParseResult.Failure -> {
+                notifyError(
+                    "Check your wokwi.toml file and try again",
+                    getNotifyJumpToAction("Jump to config", configFile)
+                )
+                null
+            }
 
-        lateinit var model: WokwiTomlConfig
-        try {
-            model = fileReader.decodeFromFile(serializer(), configFile.path)
-        } catch (e: TomlDecodingException) {
-            notifyError(
-                "Check your wokwi.toml file and try again",
-                getNotifyJumpToAction("Jump to config", configFile)
-            )
-            return null
+            is WokwiTomlParseResult.Success -> result.config
         }
-
-        return model.wokwi
     }
 
     private suspend fun resolveConfig(
@@ -128,30 +122,24 @@ class WokwiProjectConfigResolver(private val project: Project) {
         configFile: VirtualFile,
         diagramFile: VirtualFile
     ): ResolvedWokwiProjectConfig? {
-        val configDir = readAction { configFile.parent }
-
-        readAction { configDir.findFileByRelativePath(tomlConfig.elf) } ?: run {
-            notifyError(
-                "Invalid ELF path. Is the project already built?",
-                getNotifyJumpToAction("Jump to config", configFile)
+        return when (
+            val result = WokwiConfigResolver.resolve(
+                configFile = Path.of(configFile.path),
+                diagramFile = Path.of(diagramFile.path),
+                config = tomlConfig,
             )
-            return null
-        }
-
-        val firmwareFile = readAction { configDir.findFileByRelativePath(tomlConfig.firmware) } ?: run {
-            notifyError(
-                "Invalid firmware path. Is the project already built?",
-                getNotifyJumpToAction("Jump to config", configFile)
+        ) {
+            is WokwiConfigResolveResult.Success -> ResolvedWokwiProjectConfig(
+                firmwarePath = result.config.firmwarePath,
+                diagramPath = result.config.diagramPath,
+                gdbServerPort = result.config.gdbServerPort,
             )
-            return null
+
+            is WokwiConfigResolveResult.Failure -> {
+                notifyError(resolveErrorMessage(result.error), getNotifyJumpToAction("Jump to config", configFile))
+                null
+            }
         }
-
-
-        return ResolvedWokwiProjectConfig(
-            firmwarePath = Path.of(firmwareFile.path).normalize(),
-            diagramPath = Path.of(diagramFile.path).normalize(),
-            gdbServerPort = tomlConfig.gdbServerPort
-        )
     }
 
 
@@ -165,6 +153,13 @@ class WokwiProjectConfigResolver(private val project: Project) {
             )
         }
     }
+
+    private fun resolveErrorMessage(error: WokwiConfigResolveError): String =
+        when (error) {
+            WokwiConfigResolveError.InvalidElfPath -> "Invalid ELF path. Is the project already built?"
+            WokwiConfigResolveError.InvalidFirmwarePath -> "Invalid firmware path. Is the project already built?"
+            WokwiConfigResolveError.InvalidDiagramPath -> "Invalid diagram path."
+        }
 
     @Suppress("SameParameterValue")
     private fun getNotifyJumpToAction(text: String, file: VirtualFile) = NotifyAction(text) { _, _ ->
