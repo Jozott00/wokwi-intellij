@@ -33,12 +33,10 @@ repositories {
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
-  implementation("org.java-websocket:Java-WebSocket:1.5.7")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-  implementation("com.beust:klaxon:5.6")
-  implementation("com.akuleshov7:ktoml-core:0.5.2")
-  implementation("com.akuleshov7:ktoml-file:0.5.2")
-  implementation("io.arrow-kt:arrow-core:1.2.4")
+  implementation(libs.arrow.core)
+  implementation(libs.ktoml.core)
+  implementation(libs.ktoml.file)
+  implementation(libs.kotlinx.serialization.json)
 
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
   intellijPlatform {
