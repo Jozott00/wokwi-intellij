@@ -58,7 +58,6 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
 
     override fun dispose() {
         subscribers.clear()
-
     }
 
     // inject code to browser
@@ -81,7 +80,11 @@ class JcefBrowserPipe(private val browser: JBCefBrowser, parentDisposable: Dispo
     private fun informSubscribers(type: String, data: String) {
         when (val subs = subscribers[type]) {
             null -> logger.warn("No subscribers for $type!\nAttached data: $data")
-            else -> subs.takeWhile { it.messageReceived(data) }
+            else -> {
+                subs.takeWhile {
+                    it.messageReceived(data)
+                }
+            }
         }
     }
 

@@ -1,6 +1,5 @@
 package com.github.jozott00.wokwiintellij.simulator
 
-
 import com.github.jozott00.wokwiintellij.jcef.BrowserPipe
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgs
 import com.github.jozott00.wokwiintellij.simulator.args.WokwiArgsFirmware
@@ -17,7 +16,6 @@ import com.intellij.openapi.util.Key
 import com.intellij.util.containers.ContainerUtil
 import io.ktor.util.*
 import kotlinx.serialization.json.*
-import java.net.URL
 import javax.swing.JComponent
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -89,8 +87,10 @@ class WokwiSimulator(
       firmware = firmwareString,
       firmwareFormat = runArgs.firmware.format,
       license = runArgs.license,
-      waitForDebugger = runArgs.waitForDebugger
+      waitForDebugger = runArgs.waitForDebugger,
+      chips = Json.encodeToJsonElement(runArgs.chips)
     )
+
     browserPipe.send(PIPE_TOPIC, cmd)
     myEventMulticaster.onStarted(runArgs)
   }
@@ -147,6 +147,7 @@ class WokwiSimulator(
    * When uart data is received from the simulation, it gets
    * decoded to UTF8, converted to the correct content-type (by the [AnsiEscapeDecoder])
    * and then shared using the [myEventMulticaster].
+   * @param data UART JSON data returned by the board.
    */
   private fun uartDataRecv(data: JsonObject) {
     val bytes = data["bytes"]
@@ -167,8 +168,23 @@ class WokwiSimulator(
   }
 
   /**
+   * When chip output JSON data is received from the simulation, it then shared using the [myEventMulticaster].
+   * @param data JSON data returned by the chip.
+   */
+  private fun chipOutputRecv(data: JsonObject) {
+    val chipName = data["chipName"].toString()
+    val chipMessage = data["message"].toString()
+    val str = "$chipName: $chipMessage"
+
+    ansiEscapeDecoder.escapeText("$str\n", ProcessOutputTypes.STDOUT) { t, contentType ->
+      myEventMulticaster.onTextAvailable(t, contentType)
+    }
+  }
+
+  /**
    * Loads the requested resource (currently from the internet) and
    * sends it to the simulation.
+   * @param req Request JSON object.
    */
   private fun loadResourceRecv(req: JsonObject) {
     // TODO: Make this offline
@@ -215,6 +231,7 @@ class WokwiSimulator(
       "start" -> startRecv()
       "loadResource" -> loadResourceRecv(json)
       "uartData" -> uartDataRecv(json) // do nothing right now
+      "chipOutput" -> chipOutputRecv(json)
       "wifiFrame", "wifiConnect" -> {
         TODO("Not yet implemented")
       } // do nothing right now
@@ -225,7 +242,6 @@ class WokwiSimulator(
         return false
       }
     }
-
     return true
   }
 
@@ -305,8 +321,6 @@ class WokwiSimulator(
           m(l)
         }
       }
-
     }
   }
-
 }

@@ -1,88 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <title>Full-Width and Full-Height Iframe</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
+    <head>
+        <title>Full-Width and Full-Height Iframe</title>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+        </style>
+    </head>
+    <body>
+        <iframe id="wcode-frame" src="https://wokwi.com/vscode/wcode?v=3.6.0" onload="onIFrameLoad()"></iframe>
+    </body>
+    <script>
+
+        // wokwi communication channel
+        let commPort = null;
+        let missed_cmds = [];
+
+        if (window.__WokwiIntellij === undefined) {
+            window.__WokwiIntellij = {};
         }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-    </style>
-</head>
-<body>
-<iframe id="wcode-frame" src="https://wokwi.com/vscode/wcode?v=2.4.0" onload="onIFrameLoad()"></iframe>
-</body>
-<script>
-
-    // wokwi communication channel
-    let commPort = null;
-    let missed_cmds = [];
-
-    if (window.__WokwiIntellij === undefined) {
-        window.__WokwiIntellij = {};
-    }
-
-    window.__WokwiIntellij.__receiveMessageFromPipe = (type, data) => {
-        console.log("GOT MESSAGE: ", type, data)
-        commPort.postMessage(data)
-    }
-
-
-    let sendMissedPkgs = () => {
-        for (pkg of missed_cmds) {
-            console.log("Send missed package: ", pkg)
-            window.__WokwiIntellij.__postMessageToPipe(pkg)
-        }
-        missed_cmds = []
-    }
-
-    let postToIntellij = (type, data) => {
-        var pkg = JSON.stringify({type: type, data: data})
-        if (window.__WokwiIntellij.__postMessageToPipe === undefined) {
-            console.log("Pipe not yet setup, will store in queue", pkg)
-            missed_cmds.push(pkg)
-        } else {
-            window.__WokwiIntellij.__postMessageToPipe(pkg)
-        }
-    }
-
-    window.addEventListener("message", (event) => {
-        console.log("Message incoming: ", event)
-        if (event.origin !== "https://wokwi.com") {
-            return;
+        function decodeBase64ToUint8Array(base64) {
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes;
         }
 
-        // store and setup wcode messaging channel
-        if (event.data.command === "start") {
-            commPort = event.data.port
-            commPort.onmessage = (event) => postToIntellij("wokwi", event.data)
-            commPort.onmessageerror = event => {
-                console.error("Message Error on Wcode Port", event)
+        function prepareMessageForWokwi(data) {
+            if (data?.command !== "start" || !Array.isArray(data.chips)) {
+                return data;
+            }
+
+            data.chips = data.chips.map(chip => {
+                if (!chip.binaryBase64) {
+                    return chip;
+                }
+
+                const {binaryBase64, ...chipSettings} = chip;
+                return {
+                    ...chipSettings,
+                    binary: decodeBase64ToUint8Array(binaryBase64),
+                };
+            });
+
+            return data;
+        }
+
+        window.__WokwiIntellij.__receiveMessageFromPipe = (type, data) => {
+            console.log("GOT MESSAGE: ", type, data)
+            commPort.postMessage(prepareMessageForWokwi(data))
+        }
+
+        let sendMissedPkgs = () => {
+            for (pkg of missed_cmds) {
+                console.log("Send missed package: ", pkg)
+                window.__WokwiIntellij.__postMessageToPipe(pkg)
+            }
+            missed_cmds = []
+        }
+
+        let postToIntellij = (type, data) => {
+            let pkg = JSON.stringify({type: type, data: data})
+            if (window.__WokwiIntellij.__postMessageToPipe === undefined) {
+                console.log("Pipe not yet setup, will store in queue", pkg)
+                missed_cmds.push(pkg)
+            } else {
+                window.__WokwiIntellij.__postMessageToPipe(pkg)
             }
         }
 
-        postToIntellij("wokwi", event.data)
+        window.addEventListener("message", (event) => {
+            console.log("Message incoming: ", event)
+            if (event.origin !== "https://wokwi.com") {
+                return;
+            }
 
-    });
+            // store and setup wcode messaging channel
+            if (event.data.command === "start") {
+                commPort = event.data.port
+                commPort.onmessage = (event) => postToIntellij("wokwi", event.data)
+                commPort.onmessageerror = event => {
+                    console.error("Message Error on Wcode Port", event)
+                }
+            }
 
+            postToIntellij("wokwi", event.data)
+        });
 
-    window.addEventListener("IdeReady", () => {
-        console.log("IDE is ready, send all missed packages")
-        sendMissedPkgs()
-    })
+        window.addEventListener("IdeReady", () => {
+            console.log("IDE is ready, send all missed packages")
+            sendMissedPkgs()
+        })
 
-    function onIFrameLoad() {
-        postToIntellij("meta", {msg: "frameLoaded"})
-    }
-
-</script>
-
+        function onIFrameLoad() {
+            postToIntellij("meta", {msg: "frameLoaded"})
+        }
+    </script>
 </html>
