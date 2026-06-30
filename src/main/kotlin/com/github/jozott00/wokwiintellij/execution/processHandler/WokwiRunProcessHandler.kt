@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.execution.processHandler
 
-import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
+import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.github.jozott00.wokwiintellij.simulator.SimExitCode
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -9,7 +9,7 @@ import java.io.OutputStream
 
 class WokwiRunProcessHandler(project: Project): WokwiProcessHandler() {
 
-    private val projectService: WokwiSimulatorService = project.service()
+    private val projectService: WokwiSessionController = project.service()
 
     override fun destroyProcessImpl() {
         projectService.stopSimulator()
