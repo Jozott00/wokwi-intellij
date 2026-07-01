@@ -209,6 +209,19 @@ class WokwiSessionTest {
     }
 
     @Test
+    fun `switch to base64 request is accepted and reported without resending start payload`() {
+        val transport = FakeTransport()
+        val listener = RecordingListener()
+        createSession(transport, listener)
+
+        assertTrue(transport.receive("""{"command":"switchToBase64"}"""))
+
+        assertEquals(1, listener.switchToBase64Requests)
+        assertEquals(emptyList(), listener.unknownMessages)
+        assertEquals(emptyList(), transport.sentMessages)
+    }
+
+    @Test
     fun `dispose removes transport listener`() {
         val transport = FakeTransport()
         val session = createSession(transport)
@@ -270,6 +283,7 @@ class WokwiSessionTest {
         val gdbErrors = mutableListOf<GdbEvent.Error>()
         val malformedMessages = mutableListOf<InboundDecodeResult.Malformed>()
         val unknownMessages = mutableListOf<InboundMessage.Unknown>()
+        var switchToBase64Requests = 0
 
         override fun onStarted(config: WokwiSessionStartConfig) {
             startedConfigs.add(config)
@@ -285,6 +299,10 @@ class WokwiSessionTest {
 
         override fun onGdbError(error: GdbEvent.Error) {
             gdbErrors.add(error)
+        }
+
+        override fun onSwitchToBase64Requested() {
+            switchToBase64Requests++
         }
 
         override fun onMalformedMessage(message: InboundDecodeResult.Malformed) {

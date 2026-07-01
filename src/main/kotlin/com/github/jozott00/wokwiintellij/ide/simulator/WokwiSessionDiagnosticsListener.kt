@@ -31,6 +31,10 @@ class WokwiSessionDiagnosticsListener(
         )
     }
 
+    override fun onSwitchToBase64Requested() {
+        log.info("Wokwi requested base64 payloads; IntelliJ already sends firmware and resources as base64.")
+    }
+
     override fun onMalformedMessage(message: InboundDecodeResult.Malformed) {
         log.error("Malformed Wokwi message: ${message.reason}\n${message.raw}", Throwable())
     }

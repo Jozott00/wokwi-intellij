@@ -45,6 +45,8 @@ VS Code-origin checks; it recognizes the Wokwi handshake by message shape (`comm
 `core.session.WokwiSession` owns simulator protocol state and dispatch. It subscribes to `WokwiTransport`, waits for the
 Wokwi readiness `start` message, sends typed startup/GDB/resource responses through `ProtocolCodec`, and emits session
 callbacks for UI-facing events such as started, running, UART bytes, malformed messages, and unknown commands.
+The IntelliJ JCEF bridge intentionally sends firmware and resource bytes as base64, so Wokwi's `switchToBase64`
+request is recognized and logged as informational rather than causing a binary/base64 mode switch.
 
 Local simulator infrastructure is exposed to the session through `core.ports`: `GdbServer` supplies debugger connection,
 break, message, and response forwarding, while `ResourceLoader` resolves Wokwi `loadResource` requests into bytes. This
