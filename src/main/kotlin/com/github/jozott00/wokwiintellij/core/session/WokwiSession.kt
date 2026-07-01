@@ -119,6 +119,10 @@ class WokwiSession(
                 }
                 true
             }
+            is InboundMessage.ChipOutput -> {
+                listener.onChipOutput(message.chipName, message.message)
+                true
+            }
             is InboundMessage.GdbResponse -> {
                 gdbServer?.sendResponse(message.response)
                 true
@@ -147,6 +151,7 @@ class WokwiSession(
                 license = config.license,
                 pause = config.waitForDebugger,
                 gdbPort = config.gdbPort,
+                chips = config.customChips.takeIf { it.isNotEmpty() },
             )
         )
         transport.send(cmd)
@@ -171,7 +176,7 @@ class WokwiSession(
     private fun handleGdbEvent(event: GdbEvent) {
         when (event) {
             is GdbEvent.Connected -> sendGdbBreak()
-            is GdbEvent.Error -> listener.onGdbError(event.error)
+            is GdbEvent.Error -> listener.onGdbError(event)
             is GdbEvent.Message -> sendGdbMessage(event.message)
             is GdbEvent.Break -> sendGdbBreak()
         }
@@ -198,8 +203,11 @@ class WokwiSession(
         /** Called when Wokwi emits UART bytes. */
         fun onUartData(bytes: ByteArray) {}
 
+        /** Called when Wokwi emits custom chip output. */
+        fun onChipOutput(chipName: String, message: String) {}
+
         /** Called when the local GDB server reports an infrastructure error. */
-        fun onGdbError(error: Throwable) {}
+        fun onGdbError(error: GdbEvent.Error) {}
 
         /** Called when inbound JSON cannot be decoded into a valid protocol message. */
         fun onMalformedMessage(message: InboundDecodeResult.Malformed) {}
@@ -239,4 +247,7 @@ data class WokwiSessionStartConfig(
 
     /** Local GDB server port to expose to Wokwi when debugger support is active. */
     val gdbPort: Int? = null,
+
+    /** Custom chip definitions to load before the simulation starts. */
+    val customChips: List<com.github.jozott00.wokwiintellij.core.model.CustomChip> = emptyList(),
 )

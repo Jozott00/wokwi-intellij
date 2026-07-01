@@ -26,6 +26,9 @@ sealed interface InboundMessage {
         /** UART bytes emitted by the running simulation. */
         const val UART_DATA = "uartData"
 
+        /** Console output emitted by a custom chip. */
+        const val CHIP_OUTPUT = "chipOutput"
+
         /** Request to create or connect the IDE-mediated WiFi gateway. */
         const val WIFI_CONNECT = "wifiConnect"
 
@@ -84,6 +87,16 @@ sealed interface InboundMessage {
     ) : InboundMessage {
         fun toByteArray(): ByteArray = bytes.map { it.toByte() }.toByteArray()
     }
+
+    /**
+     * Console output emitted by a custom chip.
+     */
+    @Serializable
+    data class ChipOutput(
+        override val command: String = Command.CHIP_OUTPUT,
+        val chipName: String,
+        val message: String,
+    ) : InboundMessage
 
     /**
      * Request to initialize the IDE-mediated WiFi gateway.

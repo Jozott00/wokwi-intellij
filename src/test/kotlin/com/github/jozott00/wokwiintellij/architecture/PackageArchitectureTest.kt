@@ -26,4 +26,24 @@ class PackageArchitectureTest {
             )
             .check(productionClasses)
     }
+
+    @Test
+    fun `simulator services do not depend on IntelliJ UI or browser APIs`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses()
+            .that()
+            .resideInAPackage("..simulator.services..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.intellij..",
+                "javax.swing..",
+                "java.awt..",
+                "org.cef..",
+            )
+            .check(productionClasses)
+    }
 }

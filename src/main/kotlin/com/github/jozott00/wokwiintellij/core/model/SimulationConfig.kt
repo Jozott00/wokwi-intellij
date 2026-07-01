@@ -1,5 +1,7 @@
 package com.github.jozott00.wokwiintellij.core.model
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import java.nio.file.Path
 
 data class SimulationConfig(
@@ -7,6 +9,7 @@ data class SimulationConfig(
     val diagram: String,
     val firmware: FirmwareImage,
     val waitForDebugger: Boolean = false,
+    val customChips: List<CustomChip> = emptyList(),
 )
 
 data class FirmwareImage(
@@ -25,3 +28,10 @@ enum class FirmwareFormat {
 
     override fun toString() = name.lowercase()
 }
+
+@Serializable
+data class CustomChip(
+    val name: String,
+    val binaryBase64: String,
+    val json: JsonElement,
+)

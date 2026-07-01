@@ -1,8 +1,8 @@
 package com.github.jozott00.wokwiintellij.core.protocol
 
+import com.github.jozott00.wokwiintellij.core.model.CustomChip
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlinx.serialization.json.JsonObject
 
 /**
  * Outbound message sent from the IntelliJ backend to the Wokwi iframe through the browser wrapper.
@@ -72,7 +72,7 @@ interface OutboundMessage {
         val gdbPort: Int? = null,
 
         /** Custom chip definitions to load before the simulation starts. */
-        val chips: List<JsonObject>? = null,
+        val chips: List<CustomChip>? = null,
 
         /** Requests that Wokwi hide personal information in the simulator UI. */
         val hidePersonalInfo: Boolean? = null,

@@ -4,6 +4,8 @@ import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.core.config.WokwiConfigResolveError
 import com.github.jozott00.wokwiintellij.core.config.WokwiConfigResolveResult
 import com.github.jozott00.wokwiintellij.core.config.WokwiConfigResolver
+import com.github.jozott00.wokwiintellij.core.config.WokwiResolvedCustomChip
+import com.github.jozott00.wokwiintellij.core.config.WokwiTomlConfig
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlParseResult
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlParser
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlTable
@@ -38,6 +40,7 @@ data class ResolvedWokwiProjectConfig(
     val firmwarePath: Path,
     val diagramPath: Path,
     val gdbServerPort: Int?,
+    val customChips: List<WokwiResolvedCustomChip> = emptyList(),
 )
 
 /**
@@ -62,7 +65,7 @@ class WokwiProjectConfigResolver(private val project: Project) {
         val absoluteWokwiPath = findWokwiConfigPath(wokwiConfigPath) ?: return null
         val diagramFilePath = findWokwiDiagramPath(diagramPath) ?: return null
         val tomlConfig = withContext(Dispatchers.IO) {
-            readConfig(absoluteWokwiPath)
+            readTomlConfig(absoluteWokwiPath)
         } ?: return null
         return withContext(Dispatchers.IO) {
             resolveConfig(tomlConfig, absoluteWokwiPath, diagramFilePath)
@@ -77,7 +80,7 @@ class WokwiProjectConfigResolver(private val project: Project) {
     suspend fun readConfig(): WokwiTomlTable? {
         val projectSettings = project.service<WokwiSettingsState>()
         val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath) ?: return null
-        return readConfig(configFile)
+        return readTomlConfig(configFile)?.wokwi
     }
 
     /**
@@ -88,12 +91,11 @@ class WokwiProjectConfigResolver(private val project: Project) {
     suspend fun findElfFile(): VirtualFile? {
         val projectSettings = project.service<WokwiSettingsState>()
         val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath) ?: return null
-        val tomlConfig = readConfig(configFile) ?: return null
-        return configFile.parent.findFileByRelativePath(tomlConfig.elf)
+        val tomlConfig = readTomlConfig(configFile) ?: return null
+        return configFile.parent.findFileByRelativePath(tomlConfig.wokwi.elf)
     }
 
-    private suspend fun readConfig(configFile: VirtualFile): WokwiTomlTable? {
-
+    private suspend fun readTomlConfig(configFile: VirtualFile): WokwiTomlConfig? {
         if (!configFile.exists()) {
             notifyError("Configuration file `${configFile.path}` not found.")
             return null
@@ -107,7 +109,7 @@ class WokwiProjectConfigResolver(private val project: Project) {
         return when (val result = WokwiTomlParser.parse(Files.readString(Path.of(configFile.path)))) {
             is WokwiTomlParseResult.Failure -> {
                 notifyError(
-                    "Check your wokwi.toml file and try again",
+                    "Check your wokwi.toml file and try again. Full error message: ${result.message}",
                     getNotifyJumpToAction("Jump to config", configFile)
                 )
                 null
@@ -118,7 +120,7 @@ class WokwiProjectConfigResolver(private val project: Project) {
     }
 
     private suspend fun resolveConfig(
-        tomlConfig: WokwiTomlTable,
+        tomlConfig: WokwiTomlConfig,
         configFile: VirtualFile,
         diagramFile: VirtualFile
     ): ResolvedWokwiProjectConfig? {
@@ -133,6 +135,7 @@ class WokwiProjectConfigResolver(private val project: Project) {
                 firmwarePath = result.config.firmwarePath,
                 diagramPath = result.config.diagramPath,
                 gdbServerPort = result.config.gdbServerPort,
+                customChips = result.config.customChips,
             )
 
             is WokwiConfigResolveResult.Failure -> {
@@ -141,7 +144,6 @@ class WokwiProjectConfigResolver(private val project: Project) {
             }
         }
     }
-
 
     private suspend fun notifyError(error: String, action: NotifyAction? = null) {
         withContext(Dispatchers.EDT) {
@@ -159,6 +161,8 @@ class WokwiProjectConfigResolver(private val project: Project) {
             WokwiConfigResolveError.InvalidElfPath -> "Invalid ELF path. Is the project already built?"
             WokwiConfigResolveError.InvalidFirmwarePath -> "Invalid firmware path. Is the project already built?"
             WokwiConfigResolveError.InvalidDiagramPath -> "Invalid diagram path."
+            WokwiConfigResolveError.InvalidCustomChipBinaryPath -> "Invalid custom chip WASM path."
+            WokwiConfigResolveError.InvalidCustomChipJsonPath -> "Invalid custom chip JSON path."
         }
 
     @Suppress("SameParameterValue")
@@ -224,6 +228,4 @@ class WokwiProjectConfigResolver(private val project: Project) {
                 return@run first()
             }
         }
-
-
 }

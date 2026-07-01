@@ -109,6 +109,7 @@ object ProtocolCodec {
                 inboundJson.decodeFromJsonElement<InboundMessage.LoadResource>(payload)
             }
             InboundMessage.Command.UART_DATA -> inboundJson.decodeFromJsonElement<InboundMessage.UartData>(payload)
+            InboundMessage.Command.CHIP_OUTPUT -> inboundJson.decodeFromJsonElement<InboundMessage.ChipOutput>(payload)
             InboundMessage.Command.WIFI_CONNECT -> {
                 inboundJson.decodeFromJsonElement<InboundMessage.WifiConnect>(payload)
             }

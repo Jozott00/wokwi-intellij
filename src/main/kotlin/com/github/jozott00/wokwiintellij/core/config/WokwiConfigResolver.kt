@@ -8,12 +8,21 @@ object WokwiConfigResolver {
     fun resolve(
         configFile: Path,
         diagramFile: Path,
-        config: WokwiTomlTable,
+        config: WokwiTomlConfig,
     ): WokwiConfigResolveResult {
         val configDir = configFile.parent ?: Path.of(".")
-        val elfPath = configDir.resolve(config.elf).normalize()
-        val firmwarePath = configDir.resolve(config.firmware).normalize()
+        val elfPath = configDir.resolve(config.wokwi.elf).normalize()
+        val firmwarePath = configDir.resolve(config.wokwi.firmware).normalize()
         val resolvedDiagramPath = diagramFile.normalize()
+        val customChips = config.chip.map { chip ->
+            val binaryPath = configDir.resolve(chip.binary).normalize()
+            val jsonPath = configDir.resolve(chip.binary.removeSuffix(".wasm") + ".json").normalize()
+            WokwiResolvedCustomChip(
+                name = chip.name,
+                binaryPath = binaryPath,
+                jsonPath = jsonPath,
+            )
+        }
 
         if (!Files.exists(elfPath)) {
             return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidElfPath)
@@ -27,12 +36,23 @@ object WokwiConfigResolver {
             return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidDiagramPath)
         }
 
+        customChips.forEach { chip ->
+            if (!Files.exists(chip.binaryPath)) {
+                return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidCustomChipBinaryPath)
+            }
+
+            if (!Files.exists(chip.jsonPath)) {
+                return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidCustomChipJsonPath)
+            }
+        }
+
         return WokwiConfigResolveResult.Success(
             WokwiResolvedConfig(
                 firmwarePath = firmwarePath,
                 elfPath = elfPath,
                 diagramPath = resolvedDiagramPath,
-                gdbServerPort = config.gdbServerPort,
+                gdbServerPort = config.wokwi.gdbServerPort,
+                customChips = customChips,
             )
         )
     }
@@ -48,10 +68,19 @@ data class WokwiResolvedConfig(
     val elfPath: Path,
     val diagramPath: Path,
     val gdbServerPort: Int?,
+    val customChips: List<WokwiResolvedCustomChip> = emptyList(),
+)
+
+data class WokwiResolvedCustomChip(
+    val name: String,
+    val binaryPath: Path,
+    val jsonPath: Path,
 )
 
 enum class WokwiConfigResolveError {
     InvalidElfPath,
     InvalidFirmwarePath,
     InvalidDiagramPath,
+    InvalidCustomChipBinaryPath,
+    InvalidCustomChipJsonPath,
 }
