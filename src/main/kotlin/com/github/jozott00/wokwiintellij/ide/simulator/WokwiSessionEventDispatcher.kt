@@ -35,6 +35,10 @@ class WokwiSessionEventDispatcher {
             notifySubscribers { it.onGdbError(error) }
         }
 
+        override fun onSwitchToBase64Requested() {
+            notifySubscribers { it.onSwitchToBase64Requested() }
+        }
+
         override fun onMalformedMessage(message: InboundDecodeResult.Malformed) {
             notifySubscribers { it.onMalformedMessage(message) }
         }

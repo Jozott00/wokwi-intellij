@@ -108,6 +108,10 @@ class WokwiSession(
                 startInternal()
                 true
             }
+            is InboundMessage.SwitchToBase64 -> {
+                listener.onSwitchToBase64Requested()
+                true
+            }
             is InboundMessage.LoadResource -> {
                 loadResource(message)
                 true
@@ -208,6 +212,9 @@ class WokwiSession(
 
         /** Called when the local GDB server reports an infrastructure error. */
         fun onGdbError(error: GdbEvent.Error) {}
+
+        /** Called if Wokwi asks for base64 payloads even though the IntelliJ bridge already sends base64. */
+        fun onSwitchToBase64Requested() {}
 
         /** Called when inbound JSON cannot be decoded into a valid protocol message. */
         fun onMalformedMessage(message: InboundDecodeResult.Malformed) {}

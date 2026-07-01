@@ -20,6 +20,9 @@ sealed interface InboundMessage {
         /** Wokwi iframe readiness signal. The IDE should respond with a simulator start payload. */
         const val START = "start"
 
+        /** Requests a base64 resend after Wokwi could not use a binary firmware payload. */
+        const val SWITCH_TO_BASE64 = "switchToBase64"
+
         /** Request for the IDE to load a simulator resource and reply with `resourceData`. */
         const val LOAD_RESOURCE = "loadResource"
 
@@ -49,6 +52,18 @@ sealed interface InboundMessage {
     @Serializable
     data class Ready(
         override val command: String = Command.START,
+    ) : InboundMessage
+
+    /**
+     * Request to switch startup/resource payloads to base64.
+     *
+     * The IntelliJ JCEF bridge already sends firmware and resource bytes as base64, so this message is expected to be
+     * rare and does not require a state transition. The session still models it explicitly so it can be logged without
+     * being treated as an unknown command.
+     */
+    @Serializable
+    data class SwitchToBase64(
+        override val command: String = Command.SWITCH_TO_BASE64,
     ) : InboundMessage
 
     /**

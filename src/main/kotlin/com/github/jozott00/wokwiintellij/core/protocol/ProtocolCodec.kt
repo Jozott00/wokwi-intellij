@@ -105,6 +105,9 @@ object ProtocolCodec {
     private fun decodeKnownOrUnknown(command: String, payload: JsonObject): InboundMessage =
         when (command) {
             InboundMessage.Command.START -> inboundJson.decodeFromJsonElement<InboundMessage.Ready>(payload)
+            InboundMessage.Command.SWITCH_TO_BASE64 -> {
+                inboundJson.decodeFromJsonElement<InboundMessage.SwitchToBase64>(payload)
+            }
             InboundMessage.Command.LOAD_RESOURCE -> {
                 inboundJson.decodeFromJsonElement<InboundMessage.LoadResource>(payload)
             }

@@ -67,10 +67,14 @@ class ProtocolCodecTest {
     @Test
     fun `decodes known inbound messages`() {
         val ready = ProtocolCodec.decode("""{"command":"start"}""")
+        val switchToBase64 = ProtocolCodec.decode("""{"command":"switchToBase64"}""")
         val uart = ProtocolCodec.decode("""{"command":"uartData","bytes":[65,66,10]}""")
 
         assertIs<InboundDecodeResult.Decoded>(ready)
         assertIs<InboundMessage.Ready>(ready.message)
+
+        assertIs<InboundDecodeResult.Decoded>(switchToBase64)
+        assertIs<InboundMessage.SwitchToBase64>(switchToBase64.message)
 
         assertIs<InboundDecodeResult.Decoded>(uart)
         val uartMessage = assertIs<InboundMessage.UartData>(uart.message)
