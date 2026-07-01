@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.core.config
 
-import java.nio.file.Files
+import com.github.jozott00.wokwiintellij.TestProjectFiles
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -9,16 +9,11 @@ class WokwiConfigResolverTest {
 
     @Test
     fun `resolves project-relative firmware elf and diagram paths`() {
-        val projectDir = Files.createTempDirectory("wokwi-config-resolver-test")
-        val buildDir = Files.createDirectories(projectDir.resolve("build"))
-        val configFile = projectDir.resolve("wokwi.toml")
-        val diagramFile = projectDir.resolve("diagram.json")
-        val elfFile = buildDir.resolve("firmware.elf")
-        val firmwareFile = buildDir.resolve("firmware.bin")
-        Files.createFile(configFile)
-        Files.createFile(diagramFile)
-        Files.createFile(elfFile)
-        Files.createFile(firmwareFile)
+        val projectFiles = TestProjectFiles()
+        val configFile = projectFiles.addFile("wokwi.toml")
+        val diagramFile = projectFiles.addFile("diagram.json")
+        val elfFile = projectFiles.addFile("build/firmware.elf")
+        val firmwareFile = projectFiles.addFile("build/firmware.bin")
 
         val result = assertIs<WokwiConfigResolveResult.Success>(
             WokwiConfigResolver.resolve(
@@ -30,6 +25,7 @@ class WokwiConfigResolverTest {
                     firmware = "build/firmware.bin",
                     gdbServerPort = 3333,
                 ).toConfig(),
+                projectFiles = projectFiles,
             )
         )
 
@@ -41,11 +37,9 @@ class WokwiConfigResolverTest {
 
     @Test
     fun `reports invalid elf path before firmware path`() {
-        val projectDir = Files.createTempDirectory("wokwi-config-resolver-test")
-        val configFile = projectDir.resolve("wokwi.toml")
-        val diagramFile = projectDir.resolve("diagram.json")
-        Files.createFile(configFile)
-        Files.createFile(diagramFile)
+        val projectFiles = TestProjectFiles()
+        val configFile = projectFiles.addFile("wokwi.toml")
+        val diagramFile = projectFiles.addFile("diagram.json")
 
         val result = assertIs<WokwiConfigResolveResult.Failure>(
             WokwiConfigResolver.resolve(
@@ -56,6 +50,7 @@ class WokwiConfigResolverTest {
                     elf = "missing.elf",
                     firmware = "missing.bin",
                 ).toConfig(),
+                projectFiles = projectFiles,
             )
         )
 
@@ -64,13 +59,10 @@ class WokwiConfigResolverTest {
 
     @Test
     fun `reports invalid firmware path after elf is valid`() {
-        val projectDir = Files.createTempDirectory("wokwi-config-resolver-test")
-        val configFile = projectDir.resolve("wokwi.toml")
-        val diagramFile = projectDir.resolve("diagram.json")
-        val elfFile = projectDir.resolve("firmware.elf")
-        Files.createFile(configFile)
-        Files.createFile(diagramFile)
-        Files.createFile(elfFile)
+        val projectFiles = TestProjectFiles()
+        val configFile = projectFiles.addFile("wokwi.toml")
+        val diagramFile = projectFiles.addFile("diagram.json")
+        projectFiles.addFile("firmware.elf")
 
         val result = assertIs<WokwiConfigResolveResult.Failure>(
             WokwiConfigResolver.resolve(
@@ -81,6 +73,7 @@ class WokwiConfigResolverTest {
                     elf = "firmware.elf",
                     firmware = "missing.bin",
                 ).toConfig(),
+                projectFiles = projectFiles,
             )
         )
 
@@ -89,23 +82,21 @@ class WokwiConfigResolverTest {
 
     @Test
     fun `reports invalid diagram path after elf and firmware are valid`() {
-        val projectDir = Files.createTempDirectory("wokwi-config-resolver-test")
-        val configFile = projectDir.resolve("wokwi.toml")
-        val elfFile = projectDir.resolve("firmware.elf")
-        val firmwareFile = projectDir.resolve("firmware.bin")
-        Files.createFile(configFile)
-        Files.createFile(elfFile)
-        Files.createFile(firmwareFile)
+        val projectFiles = TestProjectFiles()
+        val configFile = projectFiles.addFile("wokwi.toml")
+        projectFiles.addFile("firmware.elf")
+        projectFiles.addFile("firmware.bin")
 
         val result = assertIs<WokwiConfigResolveResult.Failure>(
             WokwiConfigResolver.resolve(
                 configFile = configFile,
-                diagramFile = projectDir.resolve("missing-diagram.json"),
+                diagramFile = projectFiles.path("missing-diagram.json"),
                 config = WokwiTomlTable(
                     version = 1,
                     elf = "firmware.elf",
                     firmware = "firmware.bin",
                 ).toConfig(),
+                projectFiles = projectFiles,
             )
         )
 
@@ -114,20 +105,13 @@ class WokwiConfigResolverTest {
 
     @Test
     fun `resolves custom chip binary and json paths`() {
-        val projectDir = Files.createTempDirectory("wokwi-config-resolver-test")
-        val chipsDir = Files.createDirectories(projectDir.resolve("chips"))
-        val configFile = projectDir.resolve("wokwi.toml")
-        val diagramFile = projectDir.resolve("diagram.json")
-        val elfFile = projectDir.resolve("firmware.elf")
-        val firmwareFile = projectDir.resolve("firmware.bin")
-        val chipBinary = chipsDir.resolve("my-chip.wasm")
-        val chipJson = chipsDir.resolve("my-chip.json")
-        Files.createFile(configFile)
-        Files.createFile(diagramFile)
-        Files.createFile(elfFile)
-        Files.createFile(firmwareFile)
-        Files.createFile(chipBinary)
-        Files.createFile(chipJson)
+        val projectFiles = TestProjectFiles()
+        val configFile = projectFiles.addFile("wokwi.toml")
+        val diagramFile = projectFiles.addFile("diagram.json")
+        projectFiles.addFile("firmware.elf")
+        projectFiles.addFile("firmware.bin")
+        val chipBinary = projectFiles.addFile("chips/my-chip.wasm")
+        val chipJson = projectFiles.addFile("chips/my-chip.json")
 
         val result = assertIs<WokwiConfigResolveResult.Success>(
             WokwiConfigResolver.resolve(
@@ -146,6 +130,7 @@ class WokwiConfigResolverTest {
                         )
                     ),
                 ),
+                projectFiles = projectFiles,
             )
         )
 

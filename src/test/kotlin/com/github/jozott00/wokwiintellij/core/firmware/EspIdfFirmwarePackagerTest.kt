@@ -1,8 +1,6 @@
 package com.github.jozott00.wokwiintellij.core.firmware
 
-import java.nio.file.Files
-import kotlin.io.path.writeBytes
-import kotlin.io.path.writeText
+import com.github.jozott00.wokwiintellij.TestProjectFiles
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -12,14 +10,9 @@ class EspIdfFirmwarePackagerTest {
 
     @Test
     fun `packs flash files into image by offset`() {
-        val tempDir = Files.createTempDirectory("esp-idf-packager-test")
-        val flasherArgs = tempDir.resolve("flasher_args.json")
-        val bootloader = tempDir.resolve("bootloader.bin")
-        val app = tempDir.resolve("app.bin")
-
-        bootloader.writeBytes(byteArrayOf(1, 2))
-        app.writeBytes(byteArrayOf(3, 4, 5))
-        flasherArgs.writeText(
+        val projectFiles = TestProjectFiles()
+        val flasherArgs = projectFiles.addFile(
+            "flasher_args.json",
             """
             {
               "flash_files": {
@@ -29,8 +22,10 @@ class EspIdfFirmwarePackagerTest {
             }
             """.trimIndent()
         )
+        val bootloader = projectFiles.addFile("bootloader.bin", byteArrayOf(1, 2))
+        val app = projectFiles.addFile("app.bin", byteArrayOf(3, 4, 5))
 
-        val result = assertIs<FirmwarePackResult.Success>(EspIdfFirmwarePackager.pack(flasherArgs))
+        val result = assertIs<FirmwarePackResult.Success>(EspIdfFirmwarePackager.pack(flasherArgs, projectFiles))
 
         assertContentEquals(byteArrayOf(1, 2, 0, 0, 3, 4, 5), result.image)
         assertEquals(listOf(bootloader, app), result.watchPaths)
@@ -38,11 +33,10 @@ class EspIdfFirmwarePackagerTest {
 
     @Test
     fun `reports invalid flasher args json`() {
-        val tempDir = Files.createTempDirectory("esp-idf-packager-test")
-        val flasherArgs = tempDir.resolve("flasher_args.json")
-        flasherArgs.writeText("{")
+        val projectFiles = TestProjectFiles()
+        val flasherArgs = projectFiles.addFile("flasher_args.json", "{")
 
-        val result = assertIs<FirmwarePackResult.Failure>(EspIdfFirmwarePackager.pack(flasherArgs))
+        val result = assertIs<FirmwarePackResult.Failure>(EspIdfFirmwarePackager.pack(flasherArgs, projectFiles))
 
         assertEquals("Failed to build image from flasher_args.json", result.error.title)
         assertEquals("Unable to parse content of flasher_args.json", result.error.message)
@@ -50,9 +44,9 @@ class EspIdfFirmwarePackagerTest {
 
     @Test
     fun `reports invalid flash offset`() {
-        val tempDir = Files.createTempDirectory("esp-idf-packager-test")
-        val flasherArgs = tempDir.resolve("flasher_args.json")
-        flasherArgs.writeText(
+        val projectFiles = TestProjectFiles()
+        val flasherArgs = projectFiles.addFile(
+            "flasher_args.json",
             """
             {
               "flash_files": {
@@ -62,16 +56,16 @@ class EspIdfFirmwarePackagerTest {
             """.trimIndent()
         )
 
-        val result = assertIs<FirmwarePackResult.Failure>(EspIdfFirmwarePackager.pack(flasherArgs))
+        val result = assertIs<FirmwarePackResult.Failure>(EspIdfFirmwarePackager.pack(flasherArgs, projectFiles))
 
         assertEquals("Offset 'wat' is invalid", result.error.message)
     }
 
     @Test
     fun `reports missing firmware part`() {
-        val tempDir = Files.createTempDirectory("esp-idf-packager-test")
-        val flasherArgs = tempDir.resolve("flasher_args.json")
-        flasherArgs.writeText(
+        val projectFiles = TestProjectFiles()
+        val flasherArgs = projectFiles.addFile(
+            "flasher_args.json",
             """
             {
               "flash_files": {
@@ -81,7 +75,7 @@ class EspIdfFirmwarePackagerTest {
             """.trimIndent()
         )
 
-        val result = assertIs<FirmwarePackResult.Failure>(EspIdfFirmwarePackager.pack(flasherArgs))
+        val result = assertIs<FirmwarePackResult.Failure>(EspIdfFirmwarePackager.pack(flasherArgs, projectFiles))
 
         assertEquals("Firmware part 'missing.bin' could not be found.", result.error.message)
     }

@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.core.config
 
-import java.nio.file.Files
+import com.github.jozott00.wokwiintellij.core.ports.ProjectFiles
 import java.nio.file.Path
 
 object WokwiConfigResolver {
@@ -9,6 +9,7 @@ object WokwiConfigResolver {
         configFile: Path,
         diagramFile: Path,
         config: WokwiTomlConfig,
+        projectFiles: ProjectFiles,
     ): WokwiConfigResolveResult {
         val configDir = configFile.parent ?: Path.of(".")
         val elfPath = configDir.resolve(config.wokwi.elf).normalize()
@@ -24,24 +25,24 @@ object WokwiConfigResolver {
             )
         }
 
-        if (!Files.exists(elfPath)) {
+        if (!projectFiles.exists(elfPath)) {
             return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidElfPath)
         }
 
-        if (!Files.exists(firmwarePath)) {
+        if (!projectFiles.exists(firmwarePath)) {
             return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidFirmwarePath)
         }
 
-        if (!Files.exists(resolvedDiagramPath)) {
+        if (!projectFiles.exists(resolvedDiagramPath)) {
             return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidDiagramPath)
         }
 
         customChips.forEach { chip ->
-            if (!Files.exists(chip.binaryPath)) {
+            if (!projectFiles.exists(chip.binaryPath)) {
                 return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidCustomChipBinaryPath)
             }
 
-            if (!Files.exists(chip.jsonPath)) {
+            if (!projectFiles.exists(chip.jsonPath)) {
                 return WokwiConfigResolveResult.Failure(WokwiConfigResolveError.InvalidCustomChipJsonPath)
             }
         }
