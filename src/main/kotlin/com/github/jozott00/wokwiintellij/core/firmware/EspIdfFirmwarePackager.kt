@@ -1,9 +1,9 @@
 package com.github.jozott00.wokwiintellij.core.firmware
 
+import com.github.jozott00.wokwiintellij.core.ports.ProjectFiles
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.nio.file.Files
 import java.nio.file.Path
 
 object EspIdfFirmwarePackager {
@@ -12,11 +12,11 @@ object EspIdfFirmwarePackager {
 
     private val jsonParser = Json { ignoreUnknownKeys = true }
 
-    fun pack(flasherArgs: Path): FirmwarePackResult {
+    fun pack(flasherArgs: Path, projectFiles: ProjectFiles): FirmwarePackResult {
         fun error(message: String) = FirmwarePackResult.Failure(FirmwarePackError(ERROR_TITLE, message))
 
         val flasherJson = try {
-            jsonParser.decodeFromString<FlasherJson>(Files.readString(flasherArgs))
+            jsonParser.decodeFromString<FlasherJson>(projectFiles.readString(flasherArgs))
         } catch (_: IllegalArgumentException) {
             return error("Unable to parse content of flasher_args.json")
         }
@@ -31,12 +31,12 @@ object EspIdfFirmwarePackager {
                 ?: return error("Offset '${entry.key}' is invalid")
 
             val partFile = flasherArgs.parent.resolve(entry.value).normalize()
-            if (!Files.exists(partFile)) {
+            if (!projectFiles.exists(partFile)) {
                 return error("Firmware part '${entry.value}' could not be found.")
             }
 
             partPaths.add(partFile)
-            FirmwarePart(offset, Files.readAllBytes(partFile))
+            FirmwarePart(offset, projectFiles.readBytes(partFile))
         }
 
         val firmwareSize = firmwareParts.maxOf { it.offset + it.data.size }

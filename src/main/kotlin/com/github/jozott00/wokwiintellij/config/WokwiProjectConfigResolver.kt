@@ -9,7 +9,9 @@ import com.github.jozott00.wokwiintellij.core.config.WokwiTomlConfig
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlParseResult
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlParser
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlTable
+import com.github.jozott00.wokwiintellij.core.ports.ProjectFiles
 import com.github.jozott00.wokwiintellij.extensions.findRelativeFiles
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJProjectFiles
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.utils.NotifyAction
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
@@ -27,7 +29,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.nio.file.Files
 import java.nio.file.Path
 
 /**
@@ -49,7 +50,10 @@ data class ResolvedWokwiProjectConfig(
  * This IntelliJ adapter owns project file discovery, editor navigation, and user-facing error reporting. Pure TOML
  * parsing and path resolution live in `core/config`.
  */
-class WokwiProjectConfigResolver(private val project: Project) {
+class WokwiProjectConfigResolver(
+    private val project: Project,
+    private val projectFiles: ProjectFiles = IntelliJProjectFiles,
+) {
 
     /**
      * Resolves the configured Wokwi files into normalized local paths.
@@ -106,7 +110,7 @@ class WokwiProjectConfigResolver(private val project: Project) {
             return null
         }
 
-        return when (val result = WokwiTomlParser.parse(Files.readString(Path.of(configFile.path)))) {
+        return when (val result = WokwiTomlParser.parse(projectFiles.readString(Path.of(configFile.path)))) {
             is WokwiTomlParseResult.Failure -> {
                 notifyError(
                     "Check your wokwi.toml file and try again. Full error message: ${result.message}",
@@ -129,6 +133,7 @@ class WokwiProjectConfigResolver(private val project: Project) {
                 configFile = Path.of(configFile.path),
                 diagramFile = Path.of(diagramFile.path),
                 config = tomlConfig,
+                projectFiles = projectFiles,
             )
         ) {
             is WokwiConfigResolveResult.Success -> ResolvedWokwiProjectConfig(

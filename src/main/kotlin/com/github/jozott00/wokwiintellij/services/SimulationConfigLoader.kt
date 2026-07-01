@@ -8,6 +8,8 @@ import com.github.jozott00.wokwiintellij.core.firmware.FirmwarePackResult
 import com.github.jozott00.wokwiintellij.core.model.CustomChip
 import com.github.jozott00.wokwiintellij.core.model.FirmwareImage
 import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
+import com.github.jozott00.wokwiintellij.core.ports.ProjectFiles
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJProjectFiles
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloonAsync
 import com.intellij.notification.NotificationType
@@ -18,7 +20,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 import kotlinx.serialization.SerializationException
@@ -47,7 +48,8 @@ class SimulationConfigLoader(val project: Project) {
 
     private var licensingService = ApplicationManager.getApplication().service<WokwiLicensingService>()
     private val settingsState by lazy { project.service<WokwiSettingsState>() }
-    private val configResolver = WokwiProjectConfigResolver(project)
+    private val projectFiles: ProjectFiles = IntelliJProjectFiles
+    private val configResolver = WokwiProjectConfigResolver(project, projectFiles)
     private val json = Json {
         ignoreUnknownKeys = false
     }
@@ -67,7 +69,7 @@ class SimulationConfigLoader(val project: Project) {
         ) ?: return null
 
         val license = loadLicense() ?: return null
-        val diagram = withContext(Dispatchers.IO) { Files.readString(config.diagramPath) }
+        val diagram = withContext(Dispatchers.IO) { projectFiles.readString(config.diagramPath) }
         val firmware = loadFirmware(config.firmwarePath) ?: return null
         val customChips = loadCustomChips(config.customChips) ?: return null
 
@@ -93,7 +95,7 @@ class SimulationConfigLoader(val project: Project) {
      */
     suspend fun loadFirmware(firmwarePath: Path): FirmwareImage? = withContext(Dispatchers.IO) {
         val firmwareFile = firmwarePath.normalize()
-        if (!Files.exists(firmwareFile)) {
+        if (!projectFiles.exists(firmwareFile)) {
             withContext(Dispatchers.EDT) {
                 notifyBalloonAsync(
                     title = "Failed to load firmware",
@@ -109,7 +111,7 @@ class SimulationConfigLoader(val project: Project) {
 
         val buffer = if (isFlasherArgsFile) {
             val packedResult =
-                when (val result = EspIdfFirmwarePackager.pack(firmwareFile)) {
+                when (val result = EspIdfFirmwarePackager.pack(firmwareFile, projectFiles)) {
                     is FirmwarePackResult.Failure -> {
                         notifyBalloonAsync(
                             title = result.error.title,
@@ -125,7 +127,7 @@ class SimulationConfigLoader(val project: Project) {
             watchPaths.addAll(packedResult.watchPaths)
             packedResult.image
         } else {
-            Files.readAllBytes(firmwareFile)
+            projectFiles.readBytes(firmwareFile)
         }
 
         val format = FirmwareFormatDetector.detect(firmwareFile, buffer)
@@ -155,7 +157,7 @@ class SimulationConfigLoader(val project: Project) {
         }
 
     private suspend fun readCustomChipBinary(chip: WokwiResolvedCustomChip): ByteArray? {
-        if (!Files.exists(chip.binaryPath)) {
+        if (!projectFiles.exists(chip.binaryPath)) {
             notifyBalloonAsync(
                 title = "Failed to load custom chip",
                 message = "Custom chip WASM `${chip.binaryPath}` does not exist and therefore cannot be loaded for simulation.",
@@ -164,7 +166,7 @@ class SimulationConfigLoader(val project: Project) {
             return null
         }
 
-        val buffer = Files.readAllBytes(chip.binaryPath)
+        val buffer = projectFiles.readBytes(chip.binaryPath)
         if (buffer.isEmpty()) {
             notifyBalloonAsync(
                 title = "Failed to load custom chip",
@@ -179,7 +181,7 @@ class SimulationConfigLoader(val project: Project) {
 
     private suspend fun readCustomChipJson(chip: WokwiResolvedCustomChip) =
         try {
-            json.parseToJsonElement(Files.readString(chip.jsonPath))
+            json.parseToJsonElement(projectFiles.readString(chip.jsonPath))
         } catch (e: SerializationException) {
             notifyBalloonAsync(
                 title = "Failed to load custom chip",
