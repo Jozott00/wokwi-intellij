@@ -30,6 +30,15 @@ protocol payloads only. JCEF query injection, wrapper readiness events, and ifra
 
 The current JCEF implementation is `ui.jcef.JcefWokwiTransport`. It owns the injected JavaScript query bridge, routes
 wrapper `wokwi` messages to transport listeners, and handles wrapper `meta` messages such as `frameLoaded` internally.
+`ui.jcef.WokwiHtmlPageFactory` builds the wrapper HTML from resources in `resources/wokwi/wrapper`: `simulator.html`,
+`bridge.css`, and `bridge.js`. The factory generates the Wokwi iframe URL, including the extension/Wcode version and
+the license user id when available, instead of hardcoding those values in HTML.
+
+The wrapper JavaScript follows the VS Code extension's message-port model: it waits for Wokwi's `start` handshake,
+stores the transferred `MessagePort`, forwards IDE-to-Wokwi commands through that port, and forwards Wokwi-to-IDE
+messages back through the JCEF query bridge. Unlike the VS Code webview wrapper, the IntelliJ wrapper does not use
+VS Code-origin checks; it recognizes the Wokwi handshake by message shape (`command: "start"` plus a transferred
+`port`).
 
 ## Simulator Session Boundary
 

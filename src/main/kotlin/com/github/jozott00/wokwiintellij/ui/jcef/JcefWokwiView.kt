@@ -20,7 +20,10 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JProgressBar
 
-class JcefWokwiView : ComponentContainer {
+class JcefWokwiView(
+    htmlPageFactory: WokwiHtmlPageFactory = WokwiHtmlPageFactory(),
+    htmlOptions: WokwiHtmlPageFactory.Options = WokwiHtmlPageFactory.Options(),
+) : ComponentContainer {
 
     private val browser = JCEFHtmlPanel(true, null, null)
     private val contentCardLayout = CardLayout()
@@ -39,8 +42,7 @@ class JcefWokwiView : ComponentContainer {
 
         browser.addLoadHandler(LoadHandler(this), this)
 
-        val resource = ResourceLoader.loadInternalResource(this.javaClass, "/jcef/simulator/index.html", "text/html")
-        browser.loadHTML(resource?.content?.toString(Charsets.UTF_8) ?: "<h3>Not Found</h3>")
+        browser.loadHTML(htmlPageFactory.createPage(htmlOptions))
     }
 
 

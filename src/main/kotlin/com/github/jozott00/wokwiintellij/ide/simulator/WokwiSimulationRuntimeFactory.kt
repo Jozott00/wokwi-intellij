@@ -6,10 +6,13 @@ import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
 import com.github.jozott00.wokwiintellij.services.LoadedSimulationConfig
 import com.github.jozott00.wokwiintellij.services.SimulationConfigLoader
+import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
 import com.github.jozott00.wokwiintellij.simulator.services.DefaultGdbServer
+import com.github.jozott00.wokwiintellij.ui.jcef.WokwiHtmlPageFactory
 import com.github.jozott00.wokwiintellij.ui.jcef.JcefWokwiView
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefApp
 import kotlinx.coroutines.CoroutineScope
@@ -67,7 +70,13 @@ class WokwiSimulationRuntimeFactory(
         gdbServer: DefaultGdbServer?,
         listener: WokwiSession.Listener,
     ): WokwiSimulationRuntime {
-        val view = JcefWokwiView()
+        val view = JcefWokwiView(
+            htmlOptions = WokwiHtmlPageFactory.Options(
+                licenseUserId = owner.project.service<WokwiLicensingService>()
+                    .parseLicense(simulationConfig.license)
+                    ?.userId,
+            )
+        )
         Disposer.register(owner, view)
 
         val session = WokwiSession(
