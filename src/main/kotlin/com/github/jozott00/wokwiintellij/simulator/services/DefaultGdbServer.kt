@@ -2,11 +2,7 @@ package com.github.jozott00.wokwiintellij.simulator.services
 
 import com.github.jozott00.wokwiintellij.core.ports.GdbEvent
 import com.github.jozott00.wokwiintellij.core.ports.GdbServer
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.utils.runCloseable
-import com.intellij.notification.NotificationType
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.diagnostic.logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -21,6 +17,8 @@ import java.io.PrintWriter
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
+import java.util.logging.Level
+import java.util.logging.Logger
 
 /**
  * Default socket-backed implementation of the session-facing [GdbServer] port.
@@ -29,9 +27,9 @@ import java.net.SocketException
  * [GdbEvent] values, and writes Wokwi responses back to the active debugger connection. Wokwi protocol forwarding
  * remains owned by `core.session.WokwiSession`.
  *
- * @param cs coroutine scope used for socket accept/read/write work and user-facing error notifications.
+ * @param cs coroutine scope used for socket accept/read/write work.
  */
-class DefaultGdbServer(private val cs: CoroutineScope) : GdbServer, Disposable {
+class DefaultGdbServer(private val cs: CoroutineScope) : GdbServer, Closeable {
     private var serverSocket: ServerSocket? = null
     private var currentConnection: GdbClientConnection? = null
     private var eventChannel = Channel<GdbEvent>(Channel.BUFFERED)
@@ -48,20 +46,19 @@ class DefaultGdbServer(private val cs: CoroutineScope) : GdbServer, Disposable {
         val socket = try {
             ServerSocket(port ?: 0)
         } catch (e: Exception) {
-            LOG.warn(e)
-            eventChannel.trySend(GdbEvent.Error(e))
-            cs.launch {
-                WokwiNotifier.notifyBalloonAsync(
-                    "Couldn't start GDB server",
-                    "Failed to create server socket: ${e.message}",
-                    NotificationType.ERROR
+            LOG.log(Level.WARNING, "Failed to create GDB server socket", e)
+            eventChannel.trySend(
+                GdbEvent.Error(
+                    title = "Couldn't start GDB server",
+                    message = "Failed to create server socket: ${e.message}",
+                    cause = e,
                 )
-            }
+            )
             return
         }
 
         serverSocket = socket
-        LOG.info("GDB Server listening on port ${socket.localPort}")
+        LOG.info("GDB server listening on port ${socket.localPort}")
 
         cs.launch(Dispatchers.IO) {
             acceptConnections(socket)
@@ -103,7 +100,7 @@ class DefaultGdbServer(private val cs: CoroutineScope) : GdbServer, Disposable {
     /**
      * Closes the active debugger connection and server socket.
      */
-    override fun dispose() {
+    override fun close() {
         currentConnection?.close()
         currentConnection = null
 
@@ -120,7 +117,7 @@ class DefaultGdbServer(private val cs: CoroutineScope) : GdbServer, Disposable {
     }
 
     companion object {
-        val LOG = logger<DefaultGdbServer>()
+        private val LOG: Logger = Logger.getLogger(DefaultGdbServer::class.java.name)
     }
 }
 
@@ -154,7 +151,7 @@ private class GdbClientConnection(private val socket: Socket, private val eventC
             if (data == -1)
                 break
             if (data == 3) {
-                LOG.debug("Received break")
+                LOG.fine("Received break")
                 dispatchEvent(GdbEvent.Break)
                 continue
             }
@@ -166,7 +163,7 @@ private class GdbClientConnection(private val socket: Socket, private val eventC
 
                 if (calculateChecksum(message) != receivedChecksum) {
                     writer.println('-') // Negative acknowledgment
-                    LOG.warn("Warning: GDB checksum error in message: $message")
+                    LOG.warning("GDB checksum error in message: $message")
                 } else {
                     writer.println('+') // Positive acknowledgment
 
@@ -226,7 +223,7 @@ private class GdbClientConnection(private val socket: Socket, private val eventC
     }
 
     companion object {
-        val LOG = logger<GdbClientConnection>()
+        private val LOG: Logger = Logger.getLogger(GdbClientConnection::class.java.name)
     }
 
     /**

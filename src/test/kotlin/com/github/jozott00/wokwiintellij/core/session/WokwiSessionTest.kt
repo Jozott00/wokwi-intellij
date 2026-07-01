@@ -157,6 +157,30 @@ class WokwiSessionTest {
     }
 
     @Test
+    fun `forwards gdb server errors to listener`() {
+        val transport = FakeTransport()
+        val gdbServer = FakeGdbServer()
+        val listener = RecordingListener()
+        createSession(
+            transport = transport,
+            listener = listener,
+            gdbServer = gdbServer,
+        )
+
+        val cause = IllegalStateException("port unavailable")
+        val error = GdbEvent.Error(
+            title = "Custom GDB error",
+            message = "Cannot bind debugger port",
+            cause = cause,
+        )
+        gdbServer.emit(error)
+        drainCoroutines()
+
+        assertEquals(1, listener.gdbErrors.size)
+        assertEquals(error, listener.gdbErrors.single())
+    }
+
+    @Test
     fun `forwards uart traffic to listener`() {
         val transport = FakeTransport()
         val listener = RecordingListener()
@@ -243,7 +267,7 @@ class WokwiSessionTest {
         val startedConfigs = mutableListOf<WokwiSessionStartConfig>()
         var runningCount = 0
         val uartBytes = mutableListOf<ByteArray>()
-        val gdbErrors = mutableListOf<Throwable>()
+        val gdbErrors = mutableListOf<GdbEvent.Error>()
         val malformedMessages = mutableListOf<InboundDecodeResult.Malformed>()
         val unknownMessages = mutableListOf<InboundMessage.Unknown>()
 
@@ -259,7 +283,7 @@ class WokwiSessionTest {
             uartBytes.add(bytes)
         }
 
-        override fun onGdbError(error: Throwable) {
+        override fun onGdbError(error: GdbEvent.Error) {
             gdbErrors.add(error)
         }
 

@@ -176,7 +176,7 @@ class WokwiSession(
     private fun handleGdbEvent(event: GdbEvent) {
         when (event) {
             is GdbEvent.Connected -> sendGdbBreak()
-            is GdbEvent.Error -> listener.onGdbError(event.error)
+            is GdbEvent.Error -> listener.onGdbError(event)
             is GdbEvent.Message -> sendGdbMessage(event.message)
             is GdbEvent.Break -> sendGdbBreak()
         }
@@ -207,7 +207,7 @@ class WokwiSession(
         fun onChipOutput(chipName: String, message: String) {}
 
         /** Called when the local GDB server reports an infrastructure error. */
-        fun onGdbError(error: Throwable) {}
+        fun onGdbError(error: GdbEvent.Error) {}
 
         /** Called when inbound JSON cannot be decoded into a valid protocol message. */
         fun onMalformedMessage(message: InboundDecodeResult.Malformed) {}

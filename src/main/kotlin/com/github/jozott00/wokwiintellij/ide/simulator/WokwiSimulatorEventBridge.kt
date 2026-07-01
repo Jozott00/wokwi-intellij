@@ -1,14 +1,17 @@
 package com.github.jozott00.wokwiintellij.ide.simulator
 
 import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
+import com.github.jozott00.wokwiintellij.core.ports.GdbEvent
 import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
 import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
 import com.github.jozott00.wokwiintellij.simulator.SimExitCode
 import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
+import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.containers.ContainerUtil
 
@@ -82,8 +85,15 @@ class WokwiSimulatorEventBridge(
                 }
             }
 
-            override fun onGdbError(error: Throwable) {
-                log.error("GDB server error", error)
+            override fun onGdbError(error: GdbEvent.Error) {
+                error.cause?.let { cause ->
+                    log.error(error.message, cause)
+                } ?: log.error(error.message)
+                WokwiNotifier.notifyBalloon(
+                    error.title,
+                    error.message,
+                    NotificationType.ERROR,
+                )
             }
 
             override fun onMalformedMessage(message: InboundDecodeResult.Malformed) {

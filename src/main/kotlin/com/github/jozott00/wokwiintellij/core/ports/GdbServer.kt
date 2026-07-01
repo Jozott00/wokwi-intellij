@@ -32,7 +32,11 @@ sealed interface GdbEvent {
     /**
      * The local server failed or encountered an infrastructure-level error.
      */
-    data class Error(val error: Throwable) : GdbEvent
+    data class Error(
+        val title: String,
+        val message: String,
+        val cause: Throwable? = null,
+    ) : GdbEvent
 
     /**
      * A validated remote GDB protocol packet body from the debugger, without `$...#checksum` framing.

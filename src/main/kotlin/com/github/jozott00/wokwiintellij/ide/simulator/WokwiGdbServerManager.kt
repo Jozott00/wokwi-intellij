@@ -1,6 +1,7 @@
 package com.github.jozott00.wokwiintellij.ide.simulator
 
-import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
+import com.github.jozott00.wokwiintellij.extensions.DisposableRef
+import com.github.jozott00.wokwiintellij.extensions.asDisposableRef
 import com.github.jozott00.wokwiintellij.extensions.wokwiDisposable
 import com.github.jozott00.wokwiintellij.simulator.services.DefaultGdbServer
 import com.intellij.openapi.project.Project
@@ -20,10 +21,10 @@ class WokwiGdbServerManager(
     private val project: Project,
     private val childScope: () -> CoroutineScope,
 ) {
-    private var gdbServer: DefaultGdbServer? = null
+    private var gdbServer: DisposableRef<DefaultGdbServer>? = null
 
     val currentServer: DefaultGdbServer?
-        get() = gdbServer
+        get() = gdbServer?.value
 
     /**
      * Configures the GDB server for the next simulator runtime.
@@ -36,35 +37,34 @@ class WokwiGdbServerManager(
      * @return the server to attach to the session, or `null` for non-debug starts.
      */
     fun configure(shouldDebug: Boolean, port: Int?): DefaultGdbServer? {
-        gdbServer?.apply {
+        currentServer?.apply {
             if (!shouldDebug || !isRunning()) {
-                disposeByDisposer()
-                gdbServer = null
+                disposeServer()
             } else {
                 resetEventChannel()
             }
         }
 
         if (shouldDebug && gdbServer == null) {
-            gdbServer = DefaultGdbServer(childScope()).also { server ->
-                Disposer.register(project.wokwiDisposable, server)
-                server.listen(port)
+            gdbServer = DefaultGdbServer(childScope()).asDisposableRef().also { serverRef ->
+                Disposer.register(project.wokwiDisposable, serverRef)
+                serverRef.value.listen(port)
             }
         }
 
-        return gdbServer
+        return currentServer
     }
 
     /**
      * Returns the currently bound GDB port, if a server exists.
      */
-    fun runningPort(): Int? = gdbServer?.getCurrentServerPort()
+    fun runningPort(): Int? = currentServer?.getCurrentServerPort()
 
     /**
      * Disposes the current GDB server and clears this manager's reference to it.
      */
     fun disposeServer() {
-        gdbServer?.disposeByDisposer()
+        gdbServer?.let { Disposer.dispose(it) }
         gdbServer = null
     }
 }
