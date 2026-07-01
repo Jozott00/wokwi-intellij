@@ -6,20 +6,16 @@ import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.services.SimulationConfigLoader
 import com.github.jozott00.wokwiintellij.services.WokwiComponentService
 import com.github.jozott00.wokwiintellij.simulator.services.UrlWokwiResourceLoader
-import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.nio.file.Path
 
 /**
@@ -37,10 +33,10 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
     private var currentRuntime: WokwiSimulationRuntime? = null
     private var currentProcessHandler: WokwiProcessHandler? = null
 
-    private val componentService by lazy { project.service<WokwiComponentService>() }
     private val simulationConfigLoader by lazy { project.service<SimulationConfigLoader>() }
     private val gdbServerManager = WokwiGdbServerManager(project, ::childScope)
     private val eventDispatcher = WokwiSessionEventDispatcher()
+    private val lifecycleDispatcher = WokwiSimulationLifecycleDispatcher()
     private val runtimeFactory by lazy {
         WokwiSimulationRuntimeFactory(
             owner = this,
@@ -52,6 +48,7 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
 
     init {
         eventDispatcher.subscribePersistent(WokwiSessionDiagnosticsListener(LOG))
+        lifecycleDispatcher.subscribePersistent(project.service<WokwiComponentService>().simulatorToolWindowPresenter)
     }
 
     /**
@@ -125,10 +122,7 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
         currentProcessHandler?.destroyProcess()
         currentProcessHandler = null
 
-        withContext(Dispatchers.EDT) {
-            ToolWindowUtils.setSimulatorIcon(project, false)
-            componentService.simulatorToolWindowComponent.showConfig()
-        }
+        lifecycleDispatcher.simulationStopped()
     }
 
     /**
@@ -180,10 +174,7 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
 
         currentRuntime = runtime
 
-        withContext(Dispatchers.EDT) {
-            componentService.simulatorToolWindowComponent.showSimulation(runtime.view.component)
-            ToolWindowUtils.setSimulatorIcon(project, true)
-        }
+        lifecycleDispatcher.simulationViewReady(runtime.view.component)
 
         return true
     }

@@ -37,7 +37,7 @@ class WokwiRunProcessHandler(project: Project): WokwiProcessHandler(), WokwiSess
     }
 
     override fun onChipOutput(chipName: String, message: String) {
-        notifyConsoleText("$chipName: $message\n")
+        notifyConsoleText("[$chipName] $message\n")
     }
 
     override fun onShutdown(exitCode: SimExitCode) {

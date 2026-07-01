@@ -10,7 +10,7 @@
     <resource-bundle>messages.WokwiBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.jozott00.wokwiintellij.toolWindow.SimulatorWindowFactory" anchor="right"
+        <toolWindow factoryClass="com.github.jozott00.wokwiintellij.ui.toolwindow.WokwiToolWindowFactory" anchor="right"
                     id="Wokwi Simulator"
                     icon="/icons/pluginIcon@13x13.svg"
         />
