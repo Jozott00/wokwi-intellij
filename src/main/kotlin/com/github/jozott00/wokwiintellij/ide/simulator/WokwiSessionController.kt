@@ -2,10 +2,9 @@ package com.github.jozott00.wokwiintellij.ide.simulator
 
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
+import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.services.SimulationConfigLoader
 import com.github.jozott00.wokwiintellij.services.WokwiComponentService
-import com.github.jozott00.wokwiintellij.simulator.SimExitCode
-import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.simulator.services.UrlWokwiResourceLoader
 import com.github.jozott00.wokwiintellij.utils.ToolWindowUtils
 import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
@@ -41,10 +40,7 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
     private val componentService by lazy { project.service<WokwiComponentService>() }
     private val simulationConfigLoader by lazy { project.service<SimulationConfigLoader>() }
     private val gdbServerManager = WokwiGdbServerManager(project, ::childScope)
-    private val eventBridge = WokwiSimulatorEventBridge(
-        currentConfig = { currentRuntime?.simulationConfig },
-        log = LOG,
-    )
+    private val eventDispatcher = WokwiSessionEventDispatcher()
     private val runtimeFactory by lazy {
         WokwiSimulationRuntimeFactory(
             owner = this,
@@ -52,6 +48,10 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
             simulationConfigLoader = simulationConfigLoader,
             resourceLoader = UrlWokwiResourceLoader(),
         )
+    }
+
+    init {
+        eventDispatcher.subscribePersistent(WokwiSessionDiagnosticsListener(LOG))
     }
 
     /**
@@ -88,12 +88,12 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
      * When no runtime exists, or when debugger support is requested, a fresh runtime is created. Otherwise the existing
      * session receives an updated firmware start config and is started again.
      *
-     * @param listener simulator listener to receive lifecycle and console events for this run.
+     * @param listener optional session listener to receive events for this run.
      * @param byDebugger whether a GDB server should be available to Wokwi.
      * @return `true` when startup data was prepared and the session was asked to start.
      */
     suspend fun startSimulatorAsync(
-        listener: WokwiSimulatorListener? = null,
+        listener: WokwiSession.Listener? = null,
         byDebugger: Boolean = false,
     ): Boolean {
         LOG.info("Start simulator...")
@@ -104,7 +104,7 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
             if (!updateFirmware()) return false
         }
 
-        listener?.let { eventBridge.addListener(it) }
+        listener?.let { eventDispatcher.subscribe(it) }
         currentRuntime?.session?.start()
 
         return true
@@ -175,7 +175,7 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
         val runtime = runtimeFactory.createRuntime(
             simulationConfig = simulationConfig,
             gdbServer = gdbServer,
-            listener = eventBridge.createSessionListener(),
+            listener = eventDispatcher.asSessionListener(),
         )
 
         currentRuntime = runtime
@@ -207,14 +207,14 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
 
     private fun disposeCurrentRuntime(clearListeners: Boolean) {
         if (currentRuntime != null) {
-            eventBridge.notifyShutdown(SimExitCode.OK)
+            currentProcessHandler?.onShutdown(SimExitCode.OK)
         }
 
         currentRuntime?.dispose()
         currentRuntime = null
 
         if (clearListeners) {
-            eventBridge.clearListeners()
+            eventDispatcher.clearSessionSubscribers()
         }
     }
 

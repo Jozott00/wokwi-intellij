@@ -45,8 +45,10 @@ adapter implementations. Concrete simulator-side adapters live under `simulator.
 
 `ide.simulator.WokwiSessionController` is the IntelliJ adapter/controller. It creates the JCEF view through a runtime
 factory, asks `services.SimulationConfigLoader` for loaded startup data, maps the pure `SimulationConfig` into the
-session start config, coordinates concrete GDB/resource adapters, and adapts session events to IntelliJ
-console/tool-window listeners. Actions, run configurations, macros, and file watchers use this controller directly.
+session start config, coordinates concrete GDB/resource adapters, and dispatches session events to IntelliJ
+subscribers through `WokwiSessionEventDispatcher`. IntelliJ-specific diagnostics live in a registered diagnostics
+listener, while console rendering stays in process handlers that subscribe to pure `WokwiSession.Listener` events.
+Actions, run configurations, macros, and file watchers use this controller directly.
 
 Project configuration loading stays outside `core`: `config.WokwiProjectConfigResolver` parses `wokwi.toml`, resolves
 project-relative firmware and diagram paths, and leaves browser/session runtime input as `core.model.SimulationConfig`.

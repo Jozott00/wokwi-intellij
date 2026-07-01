@@ -1,7 +1,7 @@
 package com.github.jozott00.wokwiintellij.execution.runBefore
 
+import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
-import com.github.jozott00.wokwiintellij.simulator.WokwiSimulatorListener
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
 import com.github.jozott00.wokwiintellij.utils.simulation.SimulatorRunUtils
 import com.intellij.execution.BeforeRunTask
@@ -70,11 +70,11 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
 
 /**
  * A [BeforeRunTask] implementation that waits for the Wokwi simulator to start and reach a running state
- * before allowing the debug session to proceed. It implements the [WokwiSimulatorListener] interface
+ * before allowing the debug session to proceed. It implements the [WokwiSession.Listener] interface
  * to receive notifications about the simulator's state.
  */
 class WokwiStartDebugBeforeRunTask :
-    BeforeRunTask<WokwiStartDebugBeforeRunTask>(ID), WokwiSimulatorListener {
+    BeforeRunTask<WokwiStartDebugBeforeRunTask>(ID), WokwiSession.Listener {
 
     private val simulatorRunning = CompletableDeferred<Unit>()
 
@@ -88,7 +88,7 @@ class WokwiStartDebugBeforeRunTask :
     }
 
     /**
-     * Callback method from the [WokwiSimulatorListener] interface. It is called when the simulator
+     * Callback method from the [WokwiSession.Listener] interface. It is called when the simulator
      * changes its state to running.
      *
      * This method completes the [simulatorRunning] deferred, allowing any suspended coroutines
