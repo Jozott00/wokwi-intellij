@@ -50,5 +50,12 @@ subscribers through `WokwiSessionEventDispatcher`. IntelliJ-specific diagnostics
 listener, while console rendering stays in process handlers that subscribe to pure `WokwiSession.Listener` events.
 Actions, run configurations, macros, and file watchers use this controller directly.
 
+Tool window presentation is handled by an IDE/UI lifecycle subscriber, not by the session controller directly.
+`WokwiSimulationLifecycleDispatcher` publishes UI-level lifecycle events such as a simulator view becoming available
+or the active simulation stopping. `ui.toolwindow.WokwiToolWindowPresenter` consumes those events and updates
+the Swing tool window plus live tool-window icon on the EDT. These lifecycle events are separate from
+`core.session.WokwiSession.Listener` because they carry UI components and must not leak Swing or JCEF concepts into
+the pure core session layer.
+
 Project configuration loading stays outside `core`: `config.WokwiProjectConfigResolver` parses `wokwi.toml`, resolves
 project-relative firmware and diagram paths, and leaves browser/session runtime input as `core.model.SimulationConfig`.

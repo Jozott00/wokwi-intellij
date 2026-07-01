@@ -1,7 +1,8 @@
 package com.github.jozott00.wokwiintellij.services
 
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
-import com.github.jozott00.wokwiintellij.toolWindow.WokwiSimulationToolWindow
+import com.github.jozott00.wokwiintellij.ui.toolwindow.WokwiToolWindowPanel
+import com.github.jozott00.wokwiintellij.ui.toolwindow.WokwiToolWindowPresenter
 import com.github.jozott00.wokwiintellij.ui.config.wokwiConfigPanel
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -21,5 +22,9 @@ class WokwiComponentService(val project: Project, val cs: CoroutineScope) {
         }
     }
 
-    val simulatorToolWindowComponent by lazy { WokwiSimulationToolWindow(configPanel) }
+    val simulatorToolWindowComponent by lazy { WokwiToolWindowPanel(configPanel) }
+
+    val simulatorToolWindowPresenter by lazy {
+        WokwiToolWindowPresenter(project) { simulatorToolWindowComponent }
+    }
 }
