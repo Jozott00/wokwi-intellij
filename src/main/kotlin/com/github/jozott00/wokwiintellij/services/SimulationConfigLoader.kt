@@ -46,7 +46,7 @@ data class LoadedSimulationConfig(
 @Service(Service.Level.PROJECT)
 class SimulationConfigLoader(val project: Project) {
 
-    private var licensingService = ApplicationManager.getApplication().service<WokwiLicensingService>()
+    private var licenseService: LicenseService = ApplicationManager.getApplication().service<WokwiLicensingService>()
     private val settingsState by lazy { project.service<WokwiSettingsState>() }
     private val projectFiles: ProjectFiles = IntelliJProjectFiles
     private val configResolver = WokwiProjectConfigResolver(project, projectFiles)
@@ -191,7 +191,7 @@ class SimulationConfigLoader(val project: Project) {
             null
         }
 
-    private suspend fun loadLicense() = licensingService.loadAndCheckLicense()
+    private suspend fun loadLicense() = licenseService.loadAndCheckLicense()
         .onLeft {
             notifyBalloonAsync(
                 title = it.title,

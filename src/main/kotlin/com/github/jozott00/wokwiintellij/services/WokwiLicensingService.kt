@@ -21,35 +21,47 @@ import kotlin.io.encoding.Base64
 
 
 @Service(Service.Level.APP)
-class WokwiLicensingService(private val cs: CoroutineScope) {
+class WokwiLicensingService private constructor(
+    private val cs: CoroutineScope,
+    private val readStoredLicense: suspend () -> String?,
+    private val writeStoredLicense: suspend (String?) -> Unit,
+) : LicenseService {
 
-    private val licenseAttributes =
-        CredentialAttributes(WokwiConstants.WOWKI_PLUGIN_SERVICE_NAME, WokwiConstants.WOKWI_LICENCE_STORE_KEY)
+    constructor(cs: CoroutineScope) : this(
+        cs = cs,
+        readStoredLicense = {
+            withContext(Dispatchers.IO) {
+                PasswordSafe.instance.getPassword(licenseAttributes)
+            }
+        },
+        writeStoredLicense = { license ->
+            withContext(Dispatchers.IO) {
+                PasswordSafe.instance.setPassword(licenseAttributes, license)
+            }
+        },
+    )
 
     private var licenseCache: String? = null
 
-    suspend fun getLicense() = licenseCache ?: withContext(Dispatchers.IO) {
-        PasswordSafe.instance.let {
-            licenseCache = it.getPassword(licenseAttributes)
-            licenseCache
-        }
+    override suspend fun getLicense() = licenseCache ?: readStoredLicense().also {
+        licenseCache = it
     }
 
-    fun updateLicense(license: String) = cs.launch(Dispatchers.IO) {
+    override fun updateLicense(license: String) = cs.launch(Dispatchers.IO) {
         LOG.info("Update Wokwi license")
         licenseCache = license
-        PasswordSafe.instance.setPassword(licenseAttributes, license)
+        writeStoredLicense(license)
         WokwiNotifier.notifyBalloonAsync("New Wokwi license activated", "You are ready to go!")
     }
 
     @Suppress("unused")
-    fun removeLicense() = cs.launch(Dispatchers.IO) {
+    override fun removeLicense() = cs.launch(Dispatchers.IO) {
         licenseCache = null
-        PasswordSafe.instance.setPassword(licenseAttributes, null)
+        writeStoredLicense(null)
         WokwiNotifier.notifyBalloonAsync("Wokwi license removed", "Your license has been removed.")
     }
 
-    suspend fun loadAndCheckLicense(): Either<GenericError, String> {
+    override suspend fun loadAndCheckLicense(): Either<GenericError, String> {
         val license = getLicense() ?:
             return GenericError(
                 "No Wokwi license found",
@@ -72,7 +84,7 @@ class WokwiLicensingService(private val cs: CoroutineScope) {
     }
 
 
-    fun parseLicense(license: String): WokwiLicense? {
+    override fun parseLicense(license: String): WokwiLicense? {
         lateinit var decoded: ByteArray
         try {
             // Decoding the base64 input
@@ -130,18 +142,19 @@ class WokwiLicensingService(private val cs: CoroutineScope) {
 
     companion object {
         val LOG = logger<WokwiLicensingService>()
-    }
+        private val licenseAttributes =
+            CredentialAttributes(WokwiConstants.WOWKI_PLUGIN_SERVICE_NAME, WokwiConstants.WOKWI_LICENCE_STORE_KEY)
 
-
-    data class WokwiLicense(
-        val userId: String,
-        val name: String,
-        val email: String,
-        val expiration: Date,
-        val plan: String?
-    ) {
-        fun isValid(): Boolean {
-            return expiration.after(Date())
+        internal fun createForTests(
+            cs: CoroutineScope,
+            initialLicense: String?,
+        ): WokwiLicensingService {
+            var storedLicense = initialLicense
+            return WokwiLicensingService(
+                cs = cs,
+                readStoredLicense = { storedLicense },
+                writeStoredLicense = { storedLicense = it },
+            )
         }
     }
 }
