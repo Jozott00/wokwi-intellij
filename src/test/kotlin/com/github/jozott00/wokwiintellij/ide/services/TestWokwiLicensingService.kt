@@ -1,5 +1,8 @@
-package com.github.jozott00.wokwiintellij.services
+package com.github.jozott00.wokwiintellij.ide.services
 
+import com.github.jozott00.wokwiintellij.services.UserNotificationAction
+import com.github.jozott00.wokwiintellij.services.UserNotificationType
+import com.github.jozott00.wokwiintellij.services.UserNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 

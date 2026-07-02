@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.config
+package com.github.jozott00.wokwiintellij.ide.config
 
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.core.config.WokwiConfigResolveError

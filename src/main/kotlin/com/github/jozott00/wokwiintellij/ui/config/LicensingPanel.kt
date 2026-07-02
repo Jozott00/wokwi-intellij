@@ -2,7 +2,7 @@
 
 package com.github.jozott00.wokwiintellij.ui.config
 
-import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
+import com.github.jozott00.wokwiintellij.ide.services.WokwiLicensingService
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
