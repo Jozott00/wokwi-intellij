@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.actions
+package com.github.jozott00.wokwiintellij.ide.actions
 
 
 import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
