@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.execution.runBefore
+package com.github.jozott00.wokwiintellij.ide.execution.runBefore
 
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController

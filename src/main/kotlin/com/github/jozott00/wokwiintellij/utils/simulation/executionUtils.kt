@@ -1,8 +1,8 @@
 package com.github.jozott00.wokwiintellij.utils.simulation
 
-import com.github.jozott00.wokwiintellij.execution.WokwiConfigurationFactory
-import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiProcessHandler
-import com.github.jozott00.wokwiintellij.execution.configs.WokwiRunConfigType
+import com.github.jozott00.wokwiintellij.ide.execution.WokwiConfigurationFactory
+import com.github.jozott00.wokwiintellij.ide.execution.processHandler.WokwiProcessHandler
+import com.github.jozott00.wokwiintellij.ide.execution.configs.WokwiRunConfigType
 import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
 import com.intellij.execution.ExecutionManager
 import com.intellij.execution.ProgramRunnerUtil

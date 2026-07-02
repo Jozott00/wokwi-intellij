@@ -18,13 +18,13 @@
         <notificationGroup id="Wokwi Simulator"
                            displayType="BALLOON"/>
 
-        <!--        <configurationType implementation="com.github.jozott00.wokwiintellij.execution.configs.WokwiRunConfigType"/>-->
+        <!--        <configurationType implementation="com.github.jozott00.wokwiintellij.ide.execution.configs.WokwiRunConfigType"/>-->
 
         <stepsBeforeRunProvider
-            implementation="com.github.jozott00.wokwiintellij.execution.runBefore.WokwiStartDebugBeforeRunTaskProvider"/>
+            implementation="com.github.jozott00.wokwiintellij.ide.execution.runBefore.WokwiStartDebugBeforeRunTaskProvider"/>
 
-        <macro implementation="com.github.jozott00.wokwiintellij.execution.macros.ElfPathMacro"/>
-        <macro implementation="com.github.jozott00.wokwiintellij.execution.macros.GdbServerMacro"/>
+        <macro implementation="com.github.jozott00.wokwiintellij.ide.execution.macros.ElfPathMacro"/>
+        <macro implementation="com.github.jozott00.wokwiintellij.ide.execution.macros.GdbServerMacro"/>
 
     </extensions>
 

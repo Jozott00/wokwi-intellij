@@ -1,6 +1,6 @@
-package com.github.jozott00.wokwiintellij.execution
+package com.github.jozott00.wokwiintellij.ide.execution
 
-import com.github.jozott00.wokwiintellij.execution.configs.*
+import com.github.jozott00.wokwiintellij.ide.execution.configs.*
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.ConfigurationType
 import com.intellij.openapi.project.Project
