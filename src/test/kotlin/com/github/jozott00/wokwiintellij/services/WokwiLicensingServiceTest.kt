@@ -1,7 +1,5 @@
 package com.github.jozott00.wokwiintellij.services
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -67,10 +65,7 @@ class WokwiLicensingServiceTest {
     }
 
     private fun serviceWithLicense(license: String?) =
-        WokwiLicensingService.createForTests(
-            cs = CoroutineScope(Dispatchers.Unconfined),
-            initialLicense = license,
-        )
+        testWokwiLicensingService(initialLicense = license)
 
     private fun license(expiration: String): String {
         val payload = "u=12345678&n=Test&e=test@example.com&x=$expiration&p=pro"

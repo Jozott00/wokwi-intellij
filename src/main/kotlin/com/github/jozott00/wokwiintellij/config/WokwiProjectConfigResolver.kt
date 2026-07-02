@@ -12,12 +12,11 @@ import com.github.jozott00.wokwiintellij.core.config.WokwiTomlTable
 import com.github.jozott00.wokwiintellij.core.ports.ProjectFiles
 import com.github.jozott00.wokwiintellij.extensions.findRelativeFiles
 import com.github.jozott00.wokwiintellij.ide.services.IntelliJProjectFiles
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
+import com.github.jozott00.wokwiintellij.services.UserNotificationAction
+import com.github.jozott00.wokwiintellij.services.UserNotifier
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
-import com.github.jozott00.wokwiintellij.utils.NotifyAction
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.github.jozott00.wokwiintellij.utils.WokwiTemplates
-import com.intellij.notification.NotificationType
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.readAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
@@ -53,6 +52,7 @@ data class ResolvedWokwiProjectConfig(
 class WokwiProjectConfigResolver(
     private val project: Project,
     private val projectFiles: ProjectFiles = IntelliJProjectFiles,
+    private val userNotifier: UserNotifier = IntelliJUserNotifier,
 ) {
 
     /**
@@ -150,15 +150,12 @@ class WokwiProjectConfigResolver(
         }
     }
 
-    private suspend fun notifyError(error: String, action: NotifyAction? = null) {
-        withContext(Dispatchers.EDT) {
-            WokwiNotifier.notifyBalloonAsync(
-                "Couldn't load Wokwi configuration",
-                error,
-                NotificationType.ERROR,
-                action
-            )
-        }
+    private fun notifyError(error: String, action: UserNotificationAction? = null) {
+        userNotifier.error(
+            "Couldn't load Wokwi configuration",
+            error,
+            action,
+        )
     }
 
     private fun resolveErrorMessage(error: WokwiConfigResolveError): String =
@@ -171,7 +168,7 @@ class WokwiProjectConfigResolver(
         }
 
     @Suppress("SameParameterValue")
-    private fun getNotifyJumpToAction(text: String, file: VirtualFile) = NotifyAction(text) { _, _ ->
+    private fun getNotifyJumpToAction(text: String, file: VirtualFile) = UserNotificationAction(text) {
         val descriptor = OpenFileDescriptor(project, file)
         FileEditorManager.getInstance(project).openTextEditor(descriptor, true)
     }
@@ -184,10 +181,9 @@ class WokwiProjectConfigResolver(
             }
         }.run {
             if (isEmpty()) {
-                WokwiNotifier.notifyBalloon(
+                userNotifier.error(
                     "Failed to load Wokwi config",
                     "Configuration file `$wokwiConfigPath` not found in project.",
-                    type = NotificationType.ERROR
                 )
                 return@run null
             }
@@ -208,9 +204,9 @@ class WokwiProjectConfigResolver(
                 if (isEmpty()) {
                     notifyError(
                         "Diagram file `$wokwiDiagramPath` not found in project.",
-                        NotifyAction("Create diagram.json") { _, _ ->
+                        UserNotificationAction("Create diagram.json") {
                             val psiManager = PsiManager.getInstance(project)
-                            val virtualFile = project.guessProjectDir() ?: return@NotifyAction
+                            val virtualFile = project.guessProjectDir() ?: return@UserNotificationAction
                             val psiDir = psiManager.findDirectory(virtualFile)
                             WriteCommandAction.runWriteCommandAction(project) {
                                 val diagramFile =

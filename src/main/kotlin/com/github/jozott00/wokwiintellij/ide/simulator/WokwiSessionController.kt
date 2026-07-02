@@ -3,10 +3,11 @@ package com.github.jozott00.wokwiintellij.ide.simulator
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
 import com.github.jozott00.wokwiintellij.services.SimulationConfigLoader
+import com.github.jozott00.wokwiintellij.services.UserNotifier
 import com.github.jozott00.wokwiintellij.services.WokwiComponentService
 import com.github.jozott00.wokwiintellij.simulator.services.UrlWokwiResourceLoader
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -37,6 +38,7 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
     private val gdbServerManager = WokwiGdbServerManager(project, ::childScope)
     private val eventDispatcher = WokwiSessionEventDispatcher()
     private val lifecycleDispatcher = WokwiSimulationLifecycleDispatcher()
+    private val userNotifier: UserNotifier = IntelliJUserNotifier
     private val runtimeFactory by lazy {
         WokwiSimulationRuntimeFactory(
             owner = this,
@@ -134,7 +136,7 @@ class WokwiSessionController(val project: Project, private val cs: CoroutineScop
      * Handles a watched firmware change by notifying the user and restarting the current simulator session.
      */
     fun firmwareUpdated() = cs.launch {
-        WokwiNotifier.notifyBalloonAsync(title = "New firmware detected", "Restarting Wokwi simulator...")
+        userNotifier.info(title = "New firmware detected", "Restarting Wokwi simulator...")
         startSimulatorAsync()
     }
 

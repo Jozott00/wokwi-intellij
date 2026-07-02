@@ -5,7 +5,7 @@ import arrow.core.left
 import arrow.core.right
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.exceptions.GenericError
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
 import com.intellij.credentialStore.CredentialAttributes
 import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.openapi.components.Service
@@ -21,10 +21,11 @@ import kotlin.io.encoding.Base64
 
 
 @Service(Service.Level.APP)
-class WokwiLicensingService private constructor(
+class WokwiLicensingService internal constructor(
     private val cs: CoroutineScope,
     private val readStoredLicense: suspend () -> String?,
     private val writeStoredLicense: suspend (String?) -> Unit,
+    private val userNotifier: UserNotifier,
 ) : LicenseService {
 
     constructor(cs: CoroutineScope) : this(
@@ -39,6 +40,7 @@ class WokwiLicensingService private constructor(
                 PasswordSafe.instance.setPassword(licenseAttributes, license)
             }
         },
+        userNotifier = IntelliJUserNotifier,
     )
 
     private var licenseCache: String? = null
@@ -51,14 +53,14 @@ class WokwiLicensingService private constructor(
         LOG.info("Update Wokwi license")
         licenseCache = license
         writeStoredLicense(license)
-        WokwiNotifier.notifyBalloonAsync("New Wokwi license activated", "You are ready to go!")
+        userNotifier.info("New Wokwi license activated", "You are ready to go!")
     }
 
     @Suppress("unused")
     override fun removeLicense() = cs.launch(Dispatchers.IO) {
         licenseCache = null
         writeStoredLicense(null)
-        WokwiNotifier.notifyBalloonAsync("Wokwi license removed", "Your license has been removed.")
+        userNotifier.info("Wokwi license removed", "Your license has been removed.")
     }
 
     override suspend fun loadAndCheckLicense(): Either<GenericError, String> {
@@ -144,17 +146,5 @@ class WokwiLicensingService private constructor(
         val LOG = logger<WokwiLicensingService>()
         private val licenseAttributes =
             CredentialAttributes(WokwiConstants.WOWKI_PLUGIN_SERVICE_NAME, WokwiConstants.WOKWI_LICENCE_STORE_KEY)
-
-        internal fun createForTests(
-            cs: CoroutineScope,
-            initialLicense: String?,
-        ): WokwiLicensingService {
-            var storedLicense = initialLicense
-            return WokwiLicensingService(
-                cs = cs,
-                readStoredLicense = { storedLicense },
-                writeStoredLicense = { storedLicense = it },
-            )
-        }
     }
 }

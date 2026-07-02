@@ -3,13 +3,12 @@ package com.github.jozott00.wokwiintellij.utils.simulation
 import com.github.jozott00.wokwiintellij.execution.WokwiConfigurationFactory
 import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiProcessHandler
 import com.github.jozott00.wokwiintellij.execution.configs.WokwiRunConfigType
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
 import com.intellij.execution.ExecutionManager
 import com.intellij.execution.ProgramRunnerUtil
 import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
-import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
 
 
@@ -27,7 +26,7 @@ object SimulatorRunUtils {
         val builder = ExecutionEnvironmentBuilder.createOrNull(DefaultRunExecutor.getRunExecutorInstance(), config)
 
         if (builder == null) {
-            WokwiNotifier.notifyBalloon("Failed to start Wokwi simulator", "Couldn't create execution environment", NotificationType.ERROR)
+            IntelliJUserNotifier.error("Failed to start Wokwi simulator", "Couldn't create execution environment")
             return
         }
 
