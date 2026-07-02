@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.execution.macros
+package com.github.jozott00.wokwiintellij.ide.execution.macros
 
 import com.github.jozott00.wokwiintellij.config.WokwiProjectConfigResolver
 import com.github.jozott00.wokwiintellij.extensions.wokwiCoroutineChildScope

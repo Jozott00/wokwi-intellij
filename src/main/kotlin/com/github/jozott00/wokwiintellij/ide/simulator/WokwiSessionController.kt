@@ -1,7 +1,7 @@
 package com.github.jozott00.wokwiintellij.ide.simulator
 
-import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiProcessHandler
-import com.github.jozott00.wokwiintellij.execution.processHandler.WokwiRunProcessHandler
+import com.github.jozott00.wokwiintellij.ide.execution.processHandler.WokwiProcessHandler
+import com.github.jozott00.wokwiintellij.ide.execution.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
 import com.github.jozott00.wokwiintellij.services.SimulationConfigLoader

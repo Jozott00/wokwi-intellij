@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.execution.profileStates
+package com.github.jozott00.wokwiintellij.ide.execution.profileStates
 
 import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.intellij.execution.Executor

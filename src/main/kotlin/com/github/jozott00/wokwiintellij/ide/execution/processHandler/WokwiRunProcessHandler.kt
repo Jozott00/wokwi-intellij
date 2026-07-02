@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.execution.processHandler
+package com.github.jozott00.wokwiintellij.ide.execution.processHandler
 
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController

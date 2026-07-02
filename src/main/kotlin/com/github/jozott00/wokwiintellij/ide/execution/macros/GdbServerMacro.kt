@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.execution.macros
+package com.github.jozott00.wokwiintellij.ide.execution.macros
 
 import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.intellij.ide.macro.Macro
