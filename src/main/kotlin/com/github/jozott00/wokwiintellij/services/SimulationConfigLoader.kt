@@ -10,11 +10,9 @@ import com.github.jozott00.wokwiintellij.core.model.FirmwareImage
 import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
 import com.github.jozott00.wokwiintellij.core.ports.ProjectFiles
 import com.github.jozott00.wokwiintellij.ide.services.IntelliJProjectFiles
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier.notifyBalloonAsync
-import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -47,6 +45,7 @@ data class LoadedSimulationConfig(
 class SimulationConfigLoader(val project: Project) {
 
     private var licenseService: LicenseService = ApplicationManager.getApplication().service<WokwiLicensingService>()
+    private val userNotifier: UserNotifier = IntelliJUserNotifier
     private val settingsState by lazy { project.service<WokwiSettingsState>() }
     private val projectFiles: ProjectFiles = IntelliJProjectFiles
     private val configResolver = WokwiProjectConfigResolver(project, projectFiles)
@@ -96,13 +95,10 @@ class SimulationConfigLoader(val project: Project) {
     suspend fun loadFirmware(firmwarePath: Path): FirmwareImage? = withContext(Dispatchers.IO) {
         val firmwareFile = firmwarePath.normalize()
         if (!projectFiles.exists(firmwareFile)) {
-            withContext(Dispatchers.EDT) {
-                notifyBalloonAsync(
-                    title = "Failed to load firmware",
-                    message = "Firmware `$firmwarePath` does not exist and therefore cannot be loaded for simulation.",
-                    NotificationType.ERROR
-                )
-            }
+            userNotifier.error(
+                title = "Failed to load firmware",
+                message = "Firmware `$firmwarePath` does not exist and therefore cannot be loaded for simulation.",
+            )
             return@withContext null
         }
 
@@ -113,10 +109,9 @@ class SimulationConfigLoader(val project: Project) {
             val packedResult =
                 when (val result = EspIdfFirmwarePackager.pack(firmwareFile, projectFiles)) {
                     is FirmwarePackResult.Failure -> {
-                        notifyBalloonAsync(
+                        userNotifier.error(
                             title = result.error.title,
                             message = result.error.message,
-                            type = NotificationType.ERROR
                         )
                         return@withContext null
                     }
@@ -158,20 +153,18 @@ class SimulationConfigLoader(val project: Project) {
 
     private suspend fun readCustomChipBinary(chip: WokwiResolvedCustomChip): ByteArray? {
         if (!projectFiles.exists(chip.binaryPath)) {
-            notifyBalloonAsync(
+            userNotifier.error(
                 title = "Failed to load custom chip",
                 message = "Custom chip WASM `${chip.binaryPath}` does not exist and therefore cannot be loaded for simulation.",
-                type = NotificationType.ERROR
             )
             return null
         }
 
         val buffer = projectFiles.readBytes(chip.binaryPath)
         if (buffer.isEmpty()) {
-            notifyBalloonAsync(
+            userNotifier.error(
                 title = "Failed to load custom chip",
                 message = "Custom chip WASM `${chip.binaryPath}` is empty and therefore cannot be loaded for simulation.",
-                type = NotificationType.ERROR
             )
             return null
         }
@@ -183,20 +176,18 @@ class SimulationConfigLoader(val project: Project) {
         try {
             json.parseToJsonElement(projectFiles.readString(chip.jsonPath))
         } catch (e: SerializationException) {
-            notifyBalloonAsync(
+            userNotifier.error(
                 title = "Failed to load custom chip",
                 message = "Custom chip JSON `${chip.jsonPath}` is invalid. Full error message: ${e.message}",
-                type = NotificationType.ERROR
             )
             null
         }
 
     private suspend fun loadLicense() = licenseService.loadAndCheckLicense()
         .onLeft {
-            notifyBalloonAsync(
+            userNotifier.error(
                 title = it.title,
                 message = it.message,
-                type = NotificationType.ERROR
             )
         }.getOrNull()
 

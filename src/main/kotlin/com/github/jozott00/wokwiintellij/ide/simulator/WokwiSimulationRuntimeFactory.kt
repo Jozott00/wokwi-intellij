@@ -6,12 +6,12 @@ import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
 import com.github.jozott00.wokwiintellij.services.LoadedSimulationConfig
 import com.github.jozott00.wokwiintellij.services.SimulationConfigLoader
+import com.github.jozott00.wokwiintellij.services.UserNotifier
 import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
 import com.github.jozott00.wokwiintellij.simulator.services.DefaultGdbServer
 import com.github.jozott00.wokwiintellij.ui.jcef.WokwiHtmlPageFactory
 import com.github.jozott00.wokwiintellij.ui.jcef.JcefWokwiView
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
-import com.intellij.notification.NotificationType
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefApp
@@ -33,6 +33,7 @@ class WokwiSimulationRuntimeFactory(
     private val childScope: () -> CoroutineScope,
     private val simulationConfigLoader: SimulationConfigLoader,
     private val resourceLoader: ResourceLoader,
+    private val userNotifier: UserNotifier = IntelliJUserNotifier,
 ) {
     /**
      * Loads project simulation configuration for a normal or debugger-backed start.
@@ -52,10 +53,9 @@ class WokwiSimulationRuntimeFactory(
     suspend fun ensureBrowserSupported(): Boolean {
         if (JBCefApp.isSupported()) return true
 
-        WokwiNotifier.notifyBalloonAsync(
+        userNotifier.error(
             "Could not create Wokwi simulator",
             "JCEF browser is not supported. Please report this issue on the wokwi-intellij Github repository.",
-            NotificationType.ERROR
         )
         return false
     }

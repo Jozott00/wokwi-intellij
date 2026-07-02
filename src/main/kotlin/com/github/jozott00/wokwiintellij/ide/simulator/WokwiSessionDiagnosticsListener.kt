@@ -5,8 +5,8 @@ import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
 import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
-import com.github.jozott00.wokwiintellij.utils.WokwiNotifier
-import com.intellij.notification.NotificationType
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
+import com.github.jozott00.wokwiintellij.services.UserNotifier
 import com.intellij.openapi.diagnostic.Logger
 
 /**
@@ -14,6 +14,7 @@ import com.intellij.openapi.diagnostic.Logger
  */
 class WokwiSessionDiagnosticsListener(
     private val log: Logger,
+    private val userNotifier: UserNotifier = IntelliJUserNotifier,
 ) : WokwiSession.Listener {
 
     override fun onStarted(config: WokwiSessionStartConfig) {
@@ -24,10 +25,9 @@ class WokwiSessionDiagnosticsListener(
         error.cause?.let { cause ->
             log.error(error.message, cause)
         } ?: log.error(error.message)
-        WokwiNotifier.notifyBalloon(
+        userNotifier.error(
             error.title,
             error.message,
-            NotificationType.ERROR,
         )
     }
 
