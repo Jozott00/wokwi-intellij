@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.services
+package com.github.jozott00.wokwiintellij.ide.services
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service

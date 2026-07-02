@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.services
+package com.github.jozott00.wokwiintellij.ide.services
 
 import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets

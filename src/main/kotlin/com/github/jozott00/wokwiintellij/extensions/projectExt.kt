@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.extensions
 
-import com.github.jozott00.wokwiintellij.services.WokwiPluginDisposable
+import com.github.jozott00.wokwiintellij.ide.services.WokwiPluginDisposable
 import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service

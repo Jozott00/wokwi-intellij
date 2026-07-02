@@ -1,4 +1,4 @@
-package com.github.jozott00.wokwiintellij.services
+package com.github.jozott00.wokwiintellij.ide.services
 
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.github.jozott00.wokwiintellij.ui.toolwindow.WokwiToolWindowPanel

@@ -4,9 +4,9 @@ import com.github.jozott00.wokwiintellij.ide.execution.processHandler.WokwiProce
 import com.github.jozott00.wokwiintellij.ide.execution.processHandler.WokwiRunProcessHandler
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
-import com.github.jozott00.wokwiintellij.services.SimulationConfigLoader
+import com.github.jozott00.wokwiintellij.ide.services.SimulationConfigLoader
 import com.github.jozott00.wokwiintellij.services.UserNotifier
-import com.github.jozott00.wokwiintellij.services.WokwiComponentService
+import com.github.jozott00.wokwiintellij.ide.services.WokwiComponentService
 import com.github.jozott00.wokwiintellij.simulator.services.UrlWokwiResourceLoader
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service

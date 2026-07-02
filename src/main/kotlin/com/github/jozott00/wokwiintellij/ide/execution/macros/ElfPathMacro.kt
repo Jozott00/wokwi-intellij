@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.ide.execution.macros
 
-import com.github.jozott00.wokwiintellij.config.WokwiProjectConfigResolver
+import com.github.jozott00.wokwiintellij.ide.config.WokwiProjectConfigResolver
 import com.github.jozott00.wokwiintellij.extensions.wokwiCoroutineChildScope
 import com.intellij.ide.macro.Macro
 import com.intellij.openapi.actionSystem.CommonDataKeys

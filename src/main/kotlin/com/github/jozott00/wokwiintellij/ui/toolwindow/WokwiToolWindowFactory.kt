@@ -1,6 +1,6 @@
 package com.github.jozott00.wokwiintellij.ui.toolwindow
 
-import com.github.jozott00.wokwiintellij.services.WokwiComponentService
+import com.github.jozott00.wokwiintellij.ide.services.WokwiComponentService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow

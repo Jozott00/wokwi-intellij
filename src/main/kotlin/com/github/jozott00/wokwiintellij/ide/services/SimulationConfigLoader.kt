@@ -1,6 +1,6 @@
-package com.github.jozott00.wokwiintellij.services
+package com.github.jozott00.wokwiintellij.ide.services
 
-import com.github.jozott00.wokwiintellij.config.WokwiProjectConfigResolver
+import com.github.jozott00.wokwiintellij.ide.config.WokwiProjectConfigResolver
 import com.github.jozott00.wokwiintellij.core.config.WokwiResolvedCustomChip
 import com.github.jozott00.wokwiintellij.core.firmware.EspIdfFirmwarePackager
 import com.github.jozott00.wokwiintellij.core.firmware.FirmwareFormatDetector
@@ -9,8 +9,8 @@ import com.github.jozott00.wokwiintellij.core.model.CustomChip
 import com.github.jozott00.wokwiintellij.core.model.FirmwareImage
 import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
 import com.github.jozott00.wokwiintellij.core.ports.ProjectFiles
-import com.github.jozott00.wokwiintellij.ide.services.IntelliJProjectFiles
-import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
+import com.github.jozott00.wokwiintellij.services.LicenseService
+import com.github.jozott00.wokwiintellij.services.UserNotifier
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service

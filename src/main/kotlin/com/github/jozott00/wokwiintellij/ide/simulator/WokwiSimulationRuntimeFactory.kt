@@ -4,10 +4,10 @@ import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
 import com.github.jozott00.wokwiintellij.core.ports.ResourceLoader
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
-import com.github.jozott00.wokwiintellij.services.LoadedSimulationConfig
-import com.github.jozott00.wokwiintellij.services.SimulationConfigLoader
+import com.github.jozott00.wokwiintellij.ide.services.LoadedSimulationConfig
+import com.github.jozott00.wokwiintellij.ide.services.SimulationConfigLoader
 import com.github.jozott00.wokwiintellij.services.UserNotifier
-import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
+import com.github.jozott00.wokwiintellij.ide.services.WokwiLicensingService
 import com.github.jozott00.wokwiintellij.simulator.services.DefaultGdbServer
 import com.github.jozott00.wokwiintellij.ui.jcef.WokwiHtmlPageFactory
 import com.github.jozott00.wokwiintellij.ui.jcef.JcefWokwiView

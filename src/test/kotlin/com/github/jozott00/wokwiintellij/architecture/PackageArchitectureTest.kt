@@ -77,4 +77,39 @@ class PackageArchitectureTest {
             "Production execution classes should live under com.github.jozott00.wokwiintellij.ide.execution",
         )
     }
+
+    @Test
+    fun `IntelliJ config adapters live under ide config package`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        assertTrue(
+            productionClasses.none {
+                it.packageName == "com.github.jozott00.wokwiintellij.config" ||
+                    it.packageName.startsWith("com.github.jozott00.wokwiintellij.config.")
+            },
+            "Production config adapter classes should live under com.github.jozott00.wokwiintellij.ide.config",
+        )
+    }
+
+    @Test
+    fun `service contracts do not depend on IntelliJ APIs`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses()
+            .that()
+            .resideInAPackage("com.github.jozott00.wokwiintellij.services..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.intellij..",
+                "javax.swing..",
+                "java.awt..",
+                "org.cef..",
+            )
+            .check(productionClasses)
+    }
 }
