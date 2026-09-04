@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-04
+
 ### Added
 
 - Custom chip support, including chip output logs ([#147](https://github.com/Jozott00/wokwi-intellij/pull/147))
@@ -39,7 +41,7 @@
 
 ### Chore
 
-- CI: Fix gradle-setup action by upgrading to v4 
+- CI: Fix gradle-setup action by upgrading to v4
 
 ## [0.10.2] - 2024-09-18
 
@@ -82,7 +84,8 @@ most Intellij users.
 - wokwi.toml analysis support
 - Wokwi simulation debugging support
 
-[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.5...HEAD
+[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.5...v0.11.0
 [0.10.5]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.2...v0.10.3
