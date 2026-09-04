@@ -6,6 +6,22 @@
 
 ### Added
 
+- Custom chip support, including chip output logs ([#147](https://github.com/Jozott00/wokwi-intellij/pull/147))
+- Support for IntelliJ Platform 2026.2.*
+
+### Fixed
+
+- JCEF browser startup on IntelliJ Platform 2026.2 ([#148](https://github.com/Jozott00/wokwi-intellij/issues/148))
+- Serial console line feeds
+
+### Changed
+
+- The minimum supported IntelliJ Platform version is now 2026.2
+
+## [0.10.5] - 2025-12-19
+
+### Added
+
 - Support for IntelliJ Platform 2025.3.*
 - Kotlin 2.3.0
 
@@ -66,7 +82,8 @@ most Intellij users.
 - wokwi.toml analysis support
 - Wokwi simulation debugging support
 
-[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.4...HEAD
+[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.5...HEAD
+[0.10.5]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.1...v0.10.2
