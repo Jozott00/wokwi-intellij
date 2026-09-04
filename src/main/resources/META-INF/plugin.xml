@@ -6,6 +6,7 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends config-file="toml-only.xml">org.toml.lang</depends>
+    <depends>com.intellij.modules.jcef</depends>
 
     <resource-bundle>messages.WokwiBundle</resource-bundle>
 
