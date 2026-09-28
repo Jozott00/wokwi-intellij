@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- HEX firmware not loaded by the simulator (empty flash, `Invalid opcode ffff at 0x0` on AVR boards)
+
 ## [0.11.0] - 2026-09-04
 
 ### Added
