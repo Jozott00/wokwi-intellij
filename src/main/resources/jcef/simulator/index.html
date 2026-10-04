@@ -40,7 +40,20 @@
         }
 
         function prepareMessageForWokwi(data) {
-            if (data?.command !== "start" || !Array.isArray(data.chips)) {
+            if (data?.command !== "start") {
+                return data;
+            }
+
+            // Wokwi expects HEX firmware as plain text; firmwareB64 is only decoded into a binary buffer
+            if (data.firmwareB64 && data.firmwareFormat === "hex" && typeof data.firmware === "string") {
+                const {firmwareB64, ...rest} = data;
+                data = {
+                    ...rest,
+                    firmware: new TextDecoder().decode(decodeBase64ToUint8Array(data.firmware)),
+                };
+            }
+
+            if (!Array.isArray(data.chips)) {
                 return data;
             }
 
