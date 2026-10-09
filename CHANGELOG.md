@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-10-09
+
 ### Fixed
 
 - HEX firmware not loaded by the simulator (empty flash, `Invalid opcode ffff at 0x0` on AVR boards)
@@ -88,7 +90,8 @@ most Intellij users.
 - wokwi.toml analysis support
 - Wokwi simulation debugging support
 
-[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/Jozott00/wokwi-intellij/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.5...v0.11.0
 [0.10.5]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.3...v0.10.4
