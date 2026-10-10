@@ -156,10 +156,14 @@ changelog {
   repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
 }
 
-// Configure Gradle Kover Plugin - read more: https://github.com/Kotlin/kotlinx-kover#configuration
-//kover {
-//
-//}
+// Live IDE tests run in their own CI job rather than through coverage verification.
+kover {
+  currentProject {
+    instrumentation {
+      disabledForTestTasks.add("integrationTest")
+    }
+  }
+}
 
 tasks {
   wrapper {

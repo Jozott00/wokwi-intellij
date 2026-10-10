@@ -271,8 +271,15 @@ configuration/system directories and PasswordSafe stores. Do not upload the
 Starter cache or raw environment. Copied projects remain locally available for
 reproduction and can be removed with the build directory.
 
-`.github/workflows/run-ui-tests.yml` runs the suite manually on Linux under Xvfb,
-using the repository secret `WOKWI_TEST_LICENSE`. Starter replaces the previous
+`.github/workflows/build.yml` calls the reusable `run-ui-tests.yml` workflow
+after its `build` job succeeds, in parallel with unit tests, verification and
+inspection. It runs on pushes to `main` and same-repository pull requests;
+fork and Dependabot pull requests skip the job because the Actions license
+secret is unavailable. Draft releases wait for E2E success too.
+`run-ui-tests.yml` also supports manual dispatch. Both entry points run on Linux
+under Xvfb using `WOKWI_TEST_LICENSE`; the Build caller passes only that secret.
+Updated revisions cancel an older E2E run for the same event and PR or branch.
+Starter replaces the previous
 Remote Robot startup/health-check orchestration. Start with this single platform;
 expand the matrix after real JCEF/simulator runs establish stability. Do not expose
 credentials to untrusted pull-request contexts. Network or licensing failures

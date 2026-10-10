@@ -5,6 +5,14 @@ IDE, JCEF or the live simulator belong in `src/integrationTest/kotlin` and use
 the reusable [simulator fixture](Simulator-Testing.md). Integration tests run
 separately from ordinary `check`.
 
+Kover excludes the `integrationTest` task from instrumentation and coverage
+verification, so `check` runs only the fast suite. CI runs the full IDE suite in
+the **Simulator integration / IDE E2E tests** job in the Build workflow on pushes
+to `main` and same-repository pull requests, excluding Dependabot. It waits for
+the `build` job, then runs alongside unit tests, verification and inspection.
+Draft releases wait for all of these checks. The reusable simulator workflow also
+supports manual runs.
+
 ```sh
 # Fast unit and regression tests:
 ./gradlew test

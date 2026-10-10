@@ -92,6 +92,21 @@ jobs:
           name: ${{ steps.artifact.outputs.filename }}
           path: ./build/distributions/content/*/*
 
+  # Run IDE tests alongside the other checks after the build succeeds.
+  simulator:
+    name: Simulator integration
+    needs: [ build ]
+    # Fork and Dependabot PRs cannot use the Actions license secret.
+    if: >-
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
+    uses: ./.github/workflows/run-ui-tests.yml
+    secrets:
+      WOKWI_TEST_LICENSE: ${{ secrets.WOKWI_TEST_LICENSE }}
+
   # Run tests and upload a code coverage report
   test:
     name: Test
@@ -232,7 +247,7 @@ jobs:
   releaseDraft:
     name: Release draft
     if: github.event_name != 'pull_request'
-    needs: [ build, test, inspectCode, verify ]
+    needs: [ build, test, simulator, inspectCode, verify ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
