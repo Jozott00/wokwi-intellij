@@ -73,7 +73,9 @@ The debugger's before-run task creates a fresh readiness wait for every executio
 does not request external resources. Configuration failure, GDB bind failure, resource failure, stop, or runtime
 replacement ends the wait with failure. A 30-second timeout covers both startup work and the acknowledgement wait;
 timeout and IDE cancellation stop that request without stopping a newer request. The synchronous before-run API uses
-IntelliJ's cancellable coroutine bridge so cancellation of the run also cancels startup.
+IntelliJ's `runBlockingMaybeCancellable` bridge: it propagates cancellation when the caller supplies a job or progress
+indicator, and also supports CLion's legacy executor, which may supply neither. The controller's 30-second deadline
+bounds startup in that raw executor context.
 Before reporting success, the controller checks that the acknowledged request is still current and has not failed;
 stop, replacement, or failure can invalidate readiness while the waiting caller is scheduled to resume.
 

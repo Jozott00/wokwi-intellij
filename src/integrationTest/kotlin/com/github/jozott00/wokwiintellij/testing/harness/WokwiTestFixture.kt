@@ -2,6 +2,7 @@ package com.github.jozott00.wokwiintellij.testing.harness
 
 import com.intellij.driver.client.Driver
 import com.intellij.driver.sdk.singleProject
+import com.intellij.driver.sdk.findFile
 import com.intellij.driver.sdk.step
 import com.intellij.driver.sdk.waitForIndicators
 import com.intellij.ide.starter.ci.CIServer
@@ -14,6 +15,7 @@ import com.intellij.ide.starter.models.TestCase
 import com.intellij.ide.starter.project.LocalProjectInfo
 import com.intellij.platform.testFramework.teamCity.TeamCityReporter
 import com.intellij.tools.ide.starter.product.idea.ultimate.IdeaUltimate
+import com.intellij.tools.ide.starter.product.clion.CLion
 import org.kodein.di.DI
 import org.kodein.di.bindSingleton
 import java.nio.file.Files
@@ -22,6 +24,7 @@ import java.util.UUID
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /** Receiver shared by feature tests. Compose new helpers around [driver] instead of extending a base class.
  *
@@ -37,7 +40,12 @@ class WokwiTestFixture internal constructor(
     val console = RunConsole { driver.readWokwiConsole(driver.singleProject()) }
     /** Registered plugin actions, including process termination waits. */
     val simulator = SimulatorActions(driver, console)
+    /** Real IDE debugger sessions, breakpoints, source positions and rendered variables. */
+    val debugger = DebuggerActions(driver, simulator, projectDirectory, artifactsDirectory)
 }
+
+/** Product launched by Starter; CLion supplies the native Remote Debug configuration. */
+enum class TestIde { IDEA, CLION }
 
 /** Launch an isolated IDE with the built plugin and a writable fixture, then execute a receiver lambda.
  *
@@ -47,28 +55,34 @@ class WokwiTestFixture internal constructor(
  * an in-memory license, and always stops the simulator and closes the IDE. IDE errors fail JUnit too.
  * The live suite runs serially because Starter's dependency container is shared within the worker.
  * [additionalPluginIds] enables plugins needed by a particular feature test beyond the minimal default set.
+ * [ide] defaults to CLion for simulator and debugger coverage; IDEA is an explicit alternative. [prepareProject] may configure
+ * the private project copy before IDE startup, for example by persisting a Remote Debug configuration.
  */
-fun runWokwiTest(project: ProjectFixture, additionalPluginIds: Set<String> = emptySet(), test: WokwiTestFixture.() -> Unit) {
+fun runWokwiTest(project: ProjectFixture, additionalPluginIds: Set<String> = emptySet(), ide: TestIde = TestIde.CLION,
+                 prepareProject: (Path) -> Unit = {}, test: WokwiTestFixture.() -> Unit) {
     val license = System.getenv("WOKWI_TEST_LICENSE")?.takeIf { it.isNotBlank() }
         ?: error("Live Wokwi test requires WOKWI_TEST_LICENSE from the environment or local.properties (editor/plugin license, not a CLI token)")
-    runIsolatedWokwiIde(project, license, additionalPluginIds, test)
+    runIsolatedWokwiIde(project, license, additionalPluginIds, ide, prepareProject, test)
 }
 
 /** Shared launch lifecycle for live tests and the license-free IDE/JCEF prerequisite smoke test.
  * A null license permits IDE inspection only; simulation tests must call [runWokwiTest].
  */
-internal fun runIsolatedWokwiIde(project: ProjectFixture, license: String?, additionalPluginIds: Set<String> = emptySet(), test: WokwiTestFixture.() -> Unit) {
+internal fun runIsolatedWokwiIde(project: ProjectFixture, license: String?, additionalPluginIds: Set<String> = emptySet(),
+                                ide: TestIde = TestIde.CLION, prepareProject: (Path) -> Unit = {}, test: WokwiTestFixture.() -> Unit) {
     val repository = Path.of(requireNotNull(System.getProperty("wokwi.test.projectRoot")))
     val artifacts = Files.createDirectories(Path.of(requireNotNull(System.getProperty("wokwi.test.artifacts")))
         .resolve("${project.name}-${UUID.randomUUID()}"))
     val copiedProject = project.copyTo(repository, artifacts.resolve("project"))
-    prepareSdkFreeProject(copiedProject)
+    if (ide == TestIde.IDEA) prepareSdkFreeProject(copiedProject)
+    prepareProject(copiedProject)
     val diagnostics = TestDiagnostics(artifacts, license)
     IdeErrors.install()
     IdeErrors.clear()
     val context = Starter.newContext(
         artifacts.fileName.toString(),
-        TestCase(IdeInfo.IdeaUltimate, LocalProjectInfo(copiedProject)).withVersion(requireNotNull(System.getProperty("wokwi.test.ideVersion"))),
+        TestCase(if (ide == TestIde.CLION) IdeInfo.CLion else IdeInfo.IdeaUltimate, LocalProjectInfo(copiedProject))
+            .withVersion(requireNotNull(System.getProperty("wokwi.test.ideVersion"))),
     )
     context.isReportPublishingEnabled = false
     context.pluginConfigurator.installPluginFromPath(Path.of(requireNotNull(System.getProperty("path.to.build.plugin"))))
@@ -95,7 +109,9 @@ internal fun runIsolatedWokwiIde(project: ProjectFixture, license: String?, addi
         addVMOptionsPatch {
             // The platform adds essential plugins and transitive dependencies automatically.
             // Performance Testing supplies Starter/Driver's transport, not simulator behavior.
-            val pluginIds = setOf("com.github.jozott00.wokwiintellij", "org.toml.lang", "com.intellij.modules.jcef", "com.jetbrains.performancePlugin") + additionalPluginIds
+            val nativePlugins = if (ide == TestIde.CLION)
+                setOf("com.intellij.clion", "com.intellij.nativeDebug", "org.jetbrains.plugins.clion.radler") else emptySet()
+            val pluginIds = setOf("com.github.jozott00.wokwiintellij", "org.toml.lang", "com.intellij.modules.jcef", "com.jetbrains.performancePlugin") + nativePlugins + additionalPluginIds
             addSystemProperty("idea.load.plugins.id", pluginIds.sorted().joinToString(","))
         }
     }
@@ -107,6 +123,14 @@ internal fun runIsolatedWokwiIde(project: ProjectFixture, license: String?, addi
                 step("Wait for project initialization and indexing") {
                     waitForIndicators(2.minutes, waitSmartLongEnough = false)
                 }
+                if (ide == TestIde.CLION) {
+                    step("Finish CLion first-project toolchain setup") { finishClionSetup() }
+                    step("Wait for CLion project content roots") {
+                        awaitCondition("CLion fixture configuration discovery", 30.seconds) {
+                            findFile("wokwi.toml")?.getPath() == copiedProject.resolve("wokwi.toml").toString()
+                        }
+                    }
+                }
                 if (license != null) installTestLicense(license)
                 fixture = WokwiTestFixture(this, copiedProject, artifacts)
                 fixture.test()
@@ -116,6 +140,7 @@ internal fun runIsolatedWokwiIde(project: ProjectFixture, license: String?, addi
                     .onFailure { diagnostics.write("screenshot-error.txt", it.toString()) }
             } finally {
                 fixture?.let { active ->
+                    runCatching { active.debugger.stopAndAwaitTermination() }.onFailure { recordFailure(it) }
                     runCatching { diagnostics.write("console.txt", active.console.snapshot()?.text.orEmpty()) }
                         .onFailure { diagnostics.write("console-error.txt", it.toString()) }
                     runCatching { active.simulator.stopAndAwaitTermination() }.onFailure { cleanup ->

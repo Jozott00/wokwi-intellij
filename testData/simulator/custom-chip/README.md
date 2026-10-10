@@ -26,7 +26,7 @@ Tests use committed `firmware.hex`, `firmware.elf` and `chips/printer.chip.wasm`
 they never download toolchains or compile the fixture during a test run.
 
 The AVR firmware uses Arduino AVR GCC `7.3.0-atmel3.6.1-arduino7`, the same
-toolchain documented in [avr-hex](../avr-hex/README.md). The custom chip uses
+toolchain documented in [avr-uart](../avr-uart/README.md). The custom chip uses
 [WASI SDK 27.0](https://github.com/WebAssembly/wasi-sdk/releases/tag/wasi-sdk-27).
 The committed WASM was built with the arm64 macOS archive:
 

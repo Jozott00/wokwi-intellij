@@ -1,6 +1,7 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import java.util.Properties
 
 
@@ -173,6 +174,8 @@ tasks {
 intellijPlatformTesting {
   testIdeUi {
     register("integrationTest") {
+      type = IntelliJPlatformType.CLion
+      version = providers.gradleProperty("platformVersion")
       task {
         testClassesDirs = integrationTestSourceSet.output.classesDirs
         classpath = integrationTestSourceSet.runtimeClasspath

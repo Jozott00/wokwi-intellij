@@ -24,8 +24,8 @@ class HarnessTest {
 
     /** UART prints can arrive in several writes; assertions must match the accumulated document. */
     @Test fun `matches fragmented console output`() {
-        val observations = ArrayDeque(listOf(snapshot("HEX sim"), snapshot("HEX simulation ready\n")))
-        RunConsole { observations.removeFirst() }.awaitText("HEX simulation ready\n", 500.milliseconds)
+        val observations = ArrayDeque(listOf(snapshot("AVR sim"), snapshot("AVR simulation ready\n")))
+        RunConsole { observations.removeFirst() }.awaitText("AVR simulation ready\n", 500.milliseconds)
     }
 
     /** Reusing a process must not allow output emitted before a checkpoint to satisfy a new assertion. */
@@ -58,7 +58,7 @@ class HarnessTest {
     /** Every committed simulator fixture must pass its manifest check before an IDE is launched. */
     @Test fun `committed simulator fixtures verify and copy`() {
         val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))
-        for (fixture in listOf(Fixtures.avrHex, Fixtures.customChip)) {
+        for (fixture in listOf(Fixtures.avrUart, Fixtures.customChip)) {
             val copy = fixture.copyTo(repository, temporary.resolve(fixture.name))
             assertArrayEquals(
                 Files.readAllBytes(repository.resolve(fixture.relativePath).resolve("firmware.hex")),
@@ -70,9 +70,9 @@ class HarnessTest {
     /** Corrupted firmware must be rejected before IDE startup, while mutations stay within the copy. */
     @Test fun `fixture copy is isolated and rejects corrupt firmware`() {
         val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))
-        val copy = Fixtures.avrHex.copyTo(repository, temporary.resolve("copy"))
+        val copy = Fixtures.avrUart.copyTo(repository, temporary.resolve("copy"))
         copy.resolve("firmware.hex").writeText(":corrupted")
-        assertNotEquals(":corrupted", repository.resolve(Fixtures.avrHex.relativePath).resolve("firmware.hex").readText())
+        assertNotEquals(":corrupted", repository.resolve(Fixtures.avrUart.relativePath).resolve("firmware.hex").readText())
         assertThrows(IllegalArgumentException::class.java) {
             ProjectFixture("corrupt", "copy").copyTo(temporary, temporary.resolve("rejected"))
         }
@@ -81,7 +81,7 @@ class HarnessTest {
     /** Local SDK/indexing settings and undeclared firmware must not affect a reproducible fixture run. */
     @Test fun `fixture copy excludes undeclared local files`() {
         val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))
-        val source = Fixtures.avrHex.copyTo(repository, temporary.resolve("source"))
+        val source = Fixtures.avrUart.copyTo(repository, temporary.resolve("source"))
         Files.createDirectories(source.resolve(".idea"))
         source.resolve(".idea/misc.xml").writeText("local-sdk-settings")
         source.resolve("untracked.hex").writeText("local-firmware")

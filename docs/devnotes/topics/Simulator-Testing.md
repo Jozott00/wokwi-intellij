@@ -40,7 +40,7 @@ token). Shared local environment setup and CI precedence are documented in
 [Testing](Testing.md#test-environment). A missing or blank license fails preflight
 rather than silently skipping a requested test.
 
-An IDE with JCEF-enabled JetBrains Runtime, the TOML/JCEF plugin dependencies,
+CLion with JCEF-enabled JetBrains Runtime, the TOML/JCEF plugin dependencies,
 network access to Wokwi and a graphical display are required. On Linux, run with
 `xvfb-run -a`. Starter downloads/caches its IDE independently from the unit-test
 sandbox. Each invocation receives a unique project copy and IDE context. JUnit
@@ -59,11 +59,13 @@ compare cold and warm workflow durations to measure the benefit.
 Only files declared in `SHA256SUMS`, plus the manifest itself, enter that project
 copy. Ignored `.idea` settings and other undeclared local files stay out, avoiding
 accidental SDK assignment and indexing from a developer's fixture checkout.
-Plain firmware projects receive a generic `EMPTY_MODULE` with no project SDK,
-so IDEA does not create a Java module and automatically assign/index a local JDK.
-Fixture authors do not need to create or commit `.idea`. The harness generates
-`modules.xml`, `firmware.iml` and `misc.xml` inside the temporary project's `.idea`
-directory: these describe the module, its content root and the SDK-free project.
+Default CLion launches use its plain-folder project model and complete the
+first-project toolchain dialog. Explicit IDEA launches receive a generic
+`EMPTY_MODULE` with no project SDK, preventing automatic Java module creation
+and local JDK indexing. Fixture authors do not need to create or commit `.idea`.
+For IDEA, the harness generates `modules.xml`, `firmware.iml` and `misc.xml` inside
+the temporary project's `.idea` directory: these describe the module, its content
+root and the SDK-free project.
 Local workspace, VCS and other editor settings are unnecessary and remain ignored.
 The IDE still runs on JetBrains Runtime, which provides JCEF. Fixtures that need
 specific module/SDK configuration can declare their project metadata in the
@@ -73,21 +75,71 @@ for those specific files), and include it in `SHA256SUMS`.
 
 The IDE does not inherit the developer's installed plugins or configuration.
 By default it loads Wokwi, TOML, JCEF and Performance Testing (Starter/Driver's
-transport), plus the platform's essential plugins and required transitive
+transport), plus CLion's Native Build Tools, Native Debugging Support and C/C++
+language plugin, the platform's essential plugins and required transitive
 dependencies. The runner sets `idea.load.plugins.id` on this launch only, using
-the platform's plugin-subset selection. This keeps unrelated bundled Ultimate
-plugins out of the test run without maintaining a version-dependent denylist.
+the platform's plugin-subset selection. This keeps unrelated bundled plugins out
+of the test run without maintaining a version-dependent denylist.
 It still downloads the full IDE distribution. Validate this internal platform
 setting when upgrading the target IDE.
 Feature tests needing another plugin can opt in:
 
 ```kotlin
-runWokwiTest(projectFixture, additionalPluginIds = setOf("com.intellij.java")) {
+runWokwiTest(projectFixture, additionalPluginIds = setOf("your.feature.plugin")) {
     // Feature assertions using the additional plugin's capabilities.
 }
 ```
 
 ## Feature-test API
+
+### CLion debugger coverage
+
+`./gradlew integrationTest --no-configuration-cache` runs simulator, smoke and
+native debugger tests in isolated CLion instances, using the same Starter/Driver
+lifecycle, Java 25 worker, memory-only Wokwi license and diagnostic exports.
+CLion is also the default build IDE (`platformType=CL`), so CI needs only one IDE
+product. Gradle and Starter still maintain separate dependency and IDE caches.
+Tests tagged `clion-debugger` retain their feature grouping. To run only native
+debugger coverage, use
+`./gradlew integrationTest --tests '*ClionDebuggerTest' --no-configuration-cache`.
+The shared **Run CLion Debugger Tests** IDE configuration invokes that selection.
+The runner confirms CLion's first-project toolchain dialog in the isolated
+sandbox and waits until the native project model can discover the copied
+`wokwi.toml`. CLion uses its own plain-folder project model for all tests.
+Explicit IDEA launches keep the SDK-free generic module configuration described above.
+
+`ClionDebuggerTest` uses the user guide's Remote Debug setup: `$WokwiGdbServer$`
+as the target, `$WokwiElfPath$` as the symbol file, and `Start Wokwi Debug` before
+launch. It asserts a breakpoint at an exact copied source line, the rendered
+counter value, source stepping and the changed counter, then resumes and checks
+actual UART output. It shares `Fixtures.avrUart` under
+`testData/simulator/avr-uart` with `HexFirmwareTest`: both load the same HEX firmware
+and assert `AVR simulation ready` followed by LF. The counter increments precede
+the repeated UART marker, so the debugger test proves firmware continuation after
+resuming. The fixture ships precompiled HEX/ELF files; no firmware compiler is
+needed during tests.
+
+The fixture defaults to CLion's bundled multi-target GDB. If it lacks AVR support
+on a platform, set `WOKWI_TEST_GDB` to a recent executable AVR GDB's absolute path
+through the environment or `local.properties`. CI uses `/usr/bin/avr-gdb`.
+Compiler source paths are normalized to `/wokwi-avr-fixture` and mapped to each
+copied project, so breakpoint resolution cannot depend on the developer's original
+checkout. Debugger cleanup runs before simulator cleanup, including after assertion
+failures. Position and Variables-tree
+diagnostics are saved alongside the simulator console and IDE logs.
+
+Debugger tests compose the harness as follows:
+
+```kotlin
+runWokwiTest(Fixtures.avrUart, prepareProject = ::prepareClionRemoteDebug) {
+    // debugger.setBreakpoint(...), debugger.launch(), debugger.awaitSuspendedAt(...)
+}
+```
+
+The preparation callback edits only the copied project before IDE startup; it
+persists the Remote Debug configuration without committing machine-specific GDB
+paths. Driver helpers use the public platform session API for execution state and
+the actual Variables tree for values.
 
 ```kotlin
 @Tag("live-wokwi")
@@ -143,7 +195,8 @@ that requires detecting that exact case should add document-generation tracking.
 
 ## Add a feature test
 
-1. Add a folder under `testData/simulator` with `wokwi.toml`, `diagram.json`,
+1. Reuse an existing fixture when it covers the required behavior. Otherwise,
+   add a folder under `testData/simulator` with `wokwi.toml`, `diagram.json`,
    firmware/ELF, firmware source, a regeneration script and README.
    Commit precompiled artifacts so contributors do not need every embedded toolchain.
    Omit `.idea`; the harness creates the IDE project configuration automatically.

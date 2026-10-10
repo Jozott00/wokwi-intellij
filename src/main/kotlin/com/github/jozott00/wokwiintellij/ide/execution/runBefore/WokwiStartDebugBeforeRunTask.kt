@@ -9,7 +9,7 @@ import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.components.service
-import com.intellij.openapi.progress.runBlockingCancellable
+import com.intellij.openapi.progress.runBlockingMaybeCancellable
 import com.intellij.openapi.util.Key
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -51,7 +51,9 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
         task: WokwiStartDebugBeforeRunTask
     ): Boolean {
         val projectService = environment.project.service<WokwiSessionController>()
-        return runBlockingCancellable {
+        // CLion's legacy before-run executor may supply neither a Job nor an indicator.
+        // Propagate cancellation when supplied, and retain the controller's bounded wait otherwise.
+        return runBlockingMaybeCancellable {
             withContext(Dispatchers.IO) {
                 val result = projectService.startDebuggerAndAwaitReady()
                 if (result) SimulatorRunUtils.startExecutionIfNotRunning(environment.project)

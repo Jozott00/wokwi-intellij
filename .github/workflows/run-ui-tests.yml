@@ -6,7 +6,7 @@ on:
 jobs:
   simulator:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -14,6 +14,8 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Install AVR debugger
+        run: sudo apt-get update && sudo apt-get install -y gdb-avr
       - name: Read test IDE cache identity
         id: test-ide
         shell: bash
@@ -26,10 +28,11 @@ jobs:
           path: |
             out/ide-tests/installers
             out/ide-tests/cache/builds
-          key: starter-ide-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.test-ide.outputs.platformType }}-${{ steps.test-ide.outputs.platformVersion }}
+          key: starter-ide-v3-${{ runner.os }}-${{ runner.arch }}-${{ steps.test-ide.outputs.platformType }}-${{ steps.test-ide.outputs.platformVersion }}
       - name: Run simulator tests in an isolated IDE
         env:
           WOKWI_TEST_LICENSE: ${{ secrets.WOKWI_TEST_LICENSE }}
+          WOKWI_TEST_GDB: /usr/bin/avr-gdb
         run: xvfb-run -a -s '-screen 0 1920x1080x24' ./gradlew integrationTest --no-configuration-cache
       - name: Upload test reports and redacted diagnostics
         if: always()
@@ -39,6 +42,7 @@ jobs:
           path: |
             build/reports/tests/integrationTest
             build/test-results/integrationTest
+            build/wokwi-tests/**/debugger*.txt
             build/wokwi-tests/**/console*.txt
             build/wokwi-tests/**/failure.txt
             build/wokwi-tests/**/ide-errors.txt

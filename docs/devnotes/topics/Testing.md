@@ -12,16 +12,21 @@ separately from ordinary `check`.
 # Wrapper message-port regression tests (Node.js 24, no extra packages):
 node --test src/test/js/bridge.test.cjs
 
-# Real IDE integration suite:
+# Full CLion integration suite (simulator, smoke and debugger tests):
 ./gradlew integrationTest --no-configuration-cache
 
 # Select a class without changing shared setup:
 ./gradlew integrationTest --tests '*YourFeatureTest' --no-configuration-cache
+
+# CLion Remote Debug end-to-end suite:
+./gradlew integrationTest --tests '*ClionDebuggerTest' --no-configuration-cache
 ```
 
 The plugin and unit tests target Java 17. The current JetBrains Starter framework
 requires Java 25 for the integration-test worker, selected by the Gradle toolchain.
+CLion is the default build and integration-test IDE (`platformType=CL`).
 IDE integration tests also need a graphical display; CI uses Xvfb on Linux.
+The `clion-debugger` tag identifies native debugger tests within the same suite.
 
 ## Test environment
 
