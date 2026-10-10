@@ -6,7 +6,7 @@ object WokwiTemplates {
 
     fun defaultDiagramJson(): String {
         @Language("JSON")
-        val diagram = """
+        val diagram = $$"""
             {
                 "version": 1,
                 "editor": "wokwi",
@@ -20,7 +20,7 @@ object WokwiTemplates {
                         "flashSize": "16"
                     }
                 }],
-                "connections": [ [ "esp:TX", "${'$'}serialMonitor:RX", "", [] ], [ "esp:RX", "${'$'}serialMonitor:TX", "", [] ] ]
+                "connections": [ [ "esp:TX", "$serialMonitor:RX", "", [] ], [ "esp:RX", "$serialMonitor:TX", "", [] ] ]
             }
         """.trimIndent()
 

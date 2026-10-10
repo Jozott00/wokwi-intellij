@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "author": "Wokwi IntelliJ Tests",
+  "editor": "wokwi",
+  "parts": [{ "type": "wokwi-arduino-uno", "id": "uno", "top": 0, "left": 0, "attrs": {} }],
+  "connections": [
+    ["uno:1", "$serialMonitor:RX", "", []],
+    ["uno:0", "$serialMonitor:TX", "", []]
+  ],
+  "serialMonitor": { "display": "always", "newline": "lf" }
+}

@@ -1,65 +1,63 @@
-# GitHub Actions Workflow for launching UI tests on Linux, Windows, and Mac in the following steps:
-# - Prepare and launch IDE with your plugin and robot-server plugin, which is needed to interact with the UI.
-# - Wait for IDE to start.
-# - Run UI tests with a separate Gradle task.
-#
-# Please check https://github.com/JetBrains/intellij-ui-test-robot for information about UI tests with IntelliJ Platform.
-#
-# Workflow is triggered manually.
-
-name: Run UI Tests
+# Starter owns IDE startup, project isolation and shutdown. A display is required by JCEF.
+name: Simulator Integration Tests
 on:
-  workflow_dispatch
+  workflow_call:
+    secrets:
+      WOKWI_TEST_LICENSE:
+        required: true
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: simulator-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-
-  testUI:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            runIde: |
-              export DISPLAY=:99.0
-              Xvfb -ac :99 -screen 0 1920x1080x16 &
-              gradle runIdeForUiTests &
-          - os: windows-latest
-            runIde: start gradlew.bat runIdeForUiTests
-          - os: macos-latest
-            runIde: ./gradlew runIdeForUiTests &
-
+  simulator:
+    name: IDE E2E tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-
-      # Check out the current repository
-      - name: Fetch Sources
-        uses: actions/checkout@v4
-
-      # Set up Java environment for the next steps
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: zulu
-          java-version: 17
-
-      # Setup Gradle
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install AVR debugger
+        run: sudo apt-get update && sudo apt-get install -y gdb-avr
+      - name: Read test IDE cache identity
+        id: test-ide
+        shell: bash
+        run: |
+          awk -F= '/^platformType=|^platformVersion=/ { print $1 "=" $2 }' gradle.properties >> "$GITHUB_OUTPUT"
+      # Starter downloads its IDE separately from Gradle's dependency cache.
+      - name: Cache Starter IDE archive and installation
+        uses: actions/cache@v4
         with:
-          gradle-home-cache-cleanup: true
-
-      # Run IDEA prepared for UI testing
-      - name: Run IDE
-        run: ${{ matrix.runIde }}
-
-      # Wait for IDEA to be started
-      - name: Health Check
-        uses: jtalk/url-health-check-action@v4
+          path: |
+            out/ide-tests/installers
+            out/ide-tests/cache/builds
+          key: starter-ide-v3-${{ runner.os }}-${{ runner.arch }}-${{ steps.test-ide.outputs.platformType }}-${{ steps.test-ide.outputs.platformVersion }}
+      - name: Run simulator tests in an isolated IDE
+        env:
+          WOKWI_TEST_LICENSE: ${{ secrets.WOKWI_TEST_LICENSE }}
+          WOKWI_TEST_GDB: /usr/bin/avr-gdb
+        run: xvfb-run -a -s '-screen 0 1920x1080x24' ./gradlew integrationTest --no-configuration-cache
+      - name: Upload test reports and redacted diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          url: http://127.0.0.1:8082
-          max-attempts: 15
-          retry-delay: 30s
-
-      # Run tests
-      - name: Tests
-        run: ./gradlew test
+          name: simulator-test-results
+          path: |
+            build/reports/tests/integrationTest
+            build/test-results/integrationTest
+            build/wokwi-tests/**/debugger*.txt
+            build/wokwi-tests/**/console*.txt
+            build/wokwi-tests/**/failure.txt
+            build/wokwi-tests/**/ide-errors.txt
+            build/wokwi-tests/**/ide-logs
+            build/wokwi-tests/**/screenshot*
+          retention-days: 7

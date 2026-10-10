@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wokwi Embedded</title>
+    <style>
+{{BRIDGE_CSS}}
+    </style>
+</head>
+<body>
+    <div id="loading-message" class="full-screen">Loading...</div>
+    <div id="offline-message" class="full-screen hidden">Wokwi requires an internet connection to run.</div>
+    <iframe id="wcode-frame" data-src="{{WOKWI_IFRAME_URL}}"></iframe>
+    <script>
+{{BRIDGE_JS}}
+    </script>
+</body>
+</html>

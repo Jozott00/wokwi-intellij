@@ -4,10 +4,14 @@ import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.icons.AllIcons
 import com.intellij.ide.wizard.withVisualPadding
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.fileChooser.FileChooser
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.BottomGap
@@ -53,7 +57,7 @@ class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSett
 
             group("Settings") {
                 row("wokwi.toml path: ") {
-                    textFieldWithBrowseButton { getRootRelativePathOf(it) }.apply {
+                    cell(projectPathField()).apply {
                         component.preferredSize = Dimension(400, component.preferredSize.height)
                     }
                         .validationOnInput {
@@ -76,7 +80,7 @@ class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSett
 
 
                 row("diagram.json path: ") {
-                    textFieldWithBrowseButton { getRootRelativePathOf(it) }.apply {
+                    cell(projectPathField()).apply {
                         component.preferredSize = Dimension(400, component.preferredSize.height)
                     }
                         .onChanged { _ -> onChange() }
@@ -94,6 +98,19 @@ class WokwiConfigPanelBuilder(val project: Project, private val model: WokwiSett
 
 
         return panel
+    }
+
+    private fun projectPathField(): TextFieldWithBrowseButton = TextFieldWithBrowseButton().apply {
+        addActionListener {
+            val projectDirectory = project.guessProjectDir()
+            val initialFile = text.takeIf { it.isNotBlank() }?.let {
+                val path = projectDirectory?.toNioPath()?.resolve(it)?.toString() ?: it
+                LocalFileSystem.getInstance().findFileByPath(path)
+            } ?: projectDirectory
+            FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor(), project, initialFile) {
+                text = getRootRelativePathOf(it)
+            }
+        }
     }
 
     private fun getRootRelativePathOf(file: VirtualFile): String {

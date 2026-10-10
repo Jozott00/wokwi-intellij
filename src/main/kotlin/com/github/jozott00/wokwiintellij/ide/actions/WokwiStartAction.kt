@@ -1,0 +1,22 @@
+package com.github.jozott00.wokwiintellij.ide.actions
+
+
+import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
+import com.github.jozott00.wokwiintellij.utils.simulation.SimulatorRunUtils
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.components.service
+
+class WokwiStartAction : AnAction() {
+    override fun update(e: AnActionEvent) {
+        e.project?.let {
+            e.presentation.isEnabled = !it.service<WokwiSessionController>().isSimulatorRunning()
+        }
+    }
+    override fun actionPerformed(event: AnActionEvent) {
+        event.project?.let { SimulatorRunUtils.startExecution(it) }
+    }
+
+    override fun getActionUpdateThread() = ActionUpdateThread.EDT
+}

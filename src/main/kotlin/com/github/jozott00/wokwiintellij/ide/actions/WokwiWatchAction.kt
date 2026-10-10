@@ -1,0 +1,23 @@
+package com.github.jozott00.wokwiintellij.ide.actions
+
+import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.components.service
+
+class WokwiWatchAction : ToggleAction() {
+
+    override fun getActionUpdateThread(): ActionUpdateThread {
+        return ActionUpdateThread.EDT
+    }
+
+    override fun isSelected(p0: AnActionEvent): Boolean {
+        return p0.project?.service<WokwiSettingsState>()?.watchFirmware ?: false
+    }
+
+    override fun setSelected(even: AnActionEvent, watchEnabled: Boolean) {
+        even.project?.service<WokwiSettingsState>()?.watchFirmware = watchEnabled
+    }
+
+}

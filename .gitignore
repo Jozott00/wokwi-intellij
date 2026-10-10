@@ -7,4 +7,14 @@ build
 .vs/
 
 .notes
-.run
+.run/*
+!.run/Run CLion Debugger Tests.run.xml
+
+.agents
+
+# JetBrains Starter IDE downloads and isolated runtime directories
+/out/
+# Optional Starter/Allure reporting output
+/allure-results/
+# Local test environment defaults (may contain credentials)
+/local.properties

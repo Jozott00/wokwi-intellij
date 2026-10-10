@@ -1,0 +1,183 @@
+package com.github.jozott00.wokwiintellij.core.protocol
+
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+
+/**
+ * Inbound message sent by the embedded Wokwi iframe to the IntelliJ backend.
+ *
+ * Unknown commands are represented by [Unknown] so the simulator can log or forward them without losing
+ * the raw payload. Known commands should model only fields that are part of the stable protocol contract.
+ */
+sealed interface InboundMessage {
+    val command: String
+
+    /**
+     * Wire-level command names sent by Wokwi's VS Code-compatible simulator endpoint.
+     */
+    object Command {
+        /** Wokwi iframe readiness signal. The IDE should respond with a simulator start payload. */
+        const val START = "start"
+
+        /** Requests a base64 resend after Wokwi could not use a binary firmware payload. */
+        const val SWITCH_TO_BASE64 = "switchToBase64"
+
+        /** Request for the IDE to load a simulator resource and reply with `resourceData`. */
+        const val LOAD_RESOURCE = "loadResource"
+
+        /** UART bytes emitted by the running simulation. */
+        const val UART_DATA = "uartData"
+
+        /** Console output emitted by a custom chip. */
+        const val CHIP_OUTPUT = "chipOutput"
+
+        /** Request to create or connect the IDE-mediated WiFi gateway. */
+        const val WIFI_CONNECT = "wifiConnect"
+
+        /** WiFi frame emitted by Wokwi for the IDE-mediated gateway. */
+        const val WIFI_FRAME = "wifiFrame"
+
+        /** Response packet from Wokwi for the active GDB connection. */
+        const val GDB_RESPONSE = "gdbResponse"
+
+        const val SIM_RUN = "sim:run"
+        const val SIM_PAUSE = "sim:pause"
+        const val SIM_STOP = "sim:stop"
+    }
+
+    /**
+     * Wokwi iframe readiness signal.
+     *
+     * Received after the wrapper page has connected to the embedded Wokwi iframe and forwarded Wokwi's initial
+     * `start` handshake message. The IDE responds by sending a simulator `start` command containing license, diagram,
+     * firmware, debugger, and runtime settings.
+     */
+    @Serializable
+    data class Ready(
+        override val command: String = Command.START,
+    ) : InboundMessage
+
+    /**
+     * Request to switch startup/resource payloads to base64.
+     *
+     * The IntelliJ JCEF bridge already sends firmware and resource bytes as base64, so this message is expected to be
+     * rare and does not require a state transition. The session still models it explicitly so it can be logged without
+     * being treated as an unknown command.
+     */
+    @Serializable
+    data class SwitchToBase64(
+        override val command: String = Command.SWITCH_TO_BASE64,
+    ) : InboundMessage
+
+    /** Wokwi has initialized the simulator and is executing firmware. */
+    @Serializable
+    data class SimulationRunning(override val command: String = Command.SIM_RUN) : InboundMessage
+
+    /** Wokwi has initialized the simulator and is paused, including wait-for-debugger startup. */
+    @Serializable
+    data class SimulationPaused(override val command: String = Command.SIM_PAUSE) : InboundMessage
+
+    @Serializable
+    data class SimulationStopped(override val command: String = Command.SIM_STOP) : InboundMessage
+
+    /**
+     * Request to load a simulator resource through the IDE.
+     *
+     * Received while Wokwi is starting or running and needs bytes that are not already available inside the iframe,
+     * such as an ESP32 ROM file or a URL fallback. The IDE must reply with a `resourceData` command containing the
+     * resource buffer encoded for the active bridge.
+     */
+    @Serializable
+    data class LoadResource(
+        override val command: String = Command.LOAD_RESOURCE,
+
+        /** Resource namespace such as `esp32`; optional for compatibility with older/fallback messages. */
+        val namespace: String? = null,
+
+        /** Resource name within the namespace; optional for URL-only fallbacks. */
+        val name: String? = null,
+
+        /** URL Wokwi provided as a fallback when the IDE does not have a bundled resource. */
+        val url: String,
+    ) : InboundMessage
+
+    /**
+     * UART bytes emitted by the running simulation.
+     *
+     * Received whenever simulated firmware writes to its UART. The IDE forwards these bytes to its console/terminal
+     * and, once RFC2217 support is implemented, to connected serial clients.
+     */
+    @Serializable
+    data class UartData(
+        override val command: String = Command.UART_DATA,
+
+        /** UART bytes as JSON numbers. */
+        val bytes: List<Int>,
+    ) : InboundMessage {
+        fun toByteArray(): ByteArray = bytes.map { it.toByte() }.toByteArray()
+    }
+
+    /**
+     * Console output emitted by a custom chip.
+     */
+    @Serializable
+    data class ChipOutput(
+        override val command: String = Command.CHIP_OUTPUT,
+        val chipName: String,
+        val message: String,
+    ) : InboundMessage
+
+    /**
+     * Request to initialize the IDE-mediated WiFi gateway.
+     *
+     * Received when simulated firmware enables WiFi and Wokwi expects the extension/plugin host to provide network
+     * gateway bridging. The current IntelliJ plugin does not implement this yet, so the simulator handler still marks
+     * it as unsupported.
+     */
+    @Serializable
+    data class WifiConnect(
+        override val command: String = Command.WIFI_CONNECT,
+    ) : InboundMessage
+
+    /**
+     * WiFi frame emitted by Wokwi for the IDE-mediated gateway.
+     *
+     * Received after WiFi gateway mode is active. The IDE should pass the frame into the configured gateway and later
+     * send gateway output back to Wokwi with an outbound `wifiFrame` command. Binary handling is intentionally still
+     * raw here until the WiFi gateway bridge is implemented.
+     */
+    @Serializable
+    data class WifiFrame(
+        override val command: String = Command.WIFI_FRAME,
+
+        /** Raw frame payload. Binary handling will be finalized when WiFi gateway support is implemented. */
+        val frame: JsonElement? = null,
+    ) : InboundMessage
+
+    /**
+     * Remote GDB protocol response generated by Wokwi.
+     *
+     * Received after the IDE forwards a debugger packet to Wokwi with `gdbMessage`. The IDE writes [response] back to
+     * the active local debugger socket.
+     */
+    @Serializable
+    data class GdbResponse(
+        override val command: String = Command.GDB_RESPONSE,
+
+        /** Remote GDB protocol response packet to write to the active debugger socket. */
+        val response: String,
+    ) : InboundMessage
+
+    /**
+     * Fallback for Wokwi commands this plugin version does not model yet.
+     *
+     * Received whenever the iframe sends a command name unknown to [ProtocolCodec]. Keeping the raw payload lets the
+     * simulator log useful diagnostics and allows future session refactors to forward or handle new commands without
+     * changing the low-level decoder behavior.
+     */
+    data class Unknown(
+        override val command: String,
+        val raw: JsonObject,
+    ) : InboundMessage
+}

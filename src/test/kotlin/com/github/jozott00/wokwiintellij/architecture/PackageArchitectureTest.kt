@@ -1,0 +1,146 @@
+package com.github.jozott00.wokwiintellij.architecture
+
+import com.tngtech.archunit.core.importer.ClassFileImporter
+import com.tngtech.archunit.core.importer.ImportOption
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
+import kotlin.test.Test
+import kotlin.test.assertTrue
+
+class PackageArchitectureTest {
+
+    @Test
+    fun `core package does not depend on ide ui or browser APIs`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses()
+            .that()
+            .resideInAPackage("..core..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.intellij..",
+                "javax.swing..",
+                "java.awt..",
+                "org.cef..",
+                "com.github.jozott00.wokwiintellij.ide..",
+                "com.github.jozott00.wokwiintellij.ui..",
+                "com.github.jozott00.wokwiintellij.simulator..",
+            )
+            .check(productionClasses)
+    }
+
+    @Test
+    fun `simulator package does not depend on IntelliJ UI or browser APIs`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses()
+            .that()
+            .resideInAPackage("com.github.jozott00.wokwiintellij.simulator..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.intellij..",
+                "javax.swing..",
+                "java.awt..",
+                "org.cef..",
+                "com.github.jozott00.wokwiintellij.ide..",
+                "com.github.jozott00.wokwiintellij.ui..",
+            )
+            .check(productionClasses)
+    }
+
+    @Test
+    fun `browser surface does not depend on session or infrastructure implementation`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses().that().resideInAPackage("..ui.jcef..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                "..core.config..", "..core.firmware..", "..core.model..", "..core.protocol..", "..core.session..",
+                "..ide..", "..simulator..", "..services..", "..states..",
+            ).check(productionClasses)
+    }
+
+    @Test
+    fun `actions and execution leave protocol encoding to the session`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses().that().resideInAnyPackage("..ide.actions..", "..ide.execution..")
+            .should().dependOnClassesThat().haveNameMatching(".*[.]core[.]protocol[.](ProtocolCodec|OutboundMessage).*")
+            .check(productionClasses)
+    }
+
+    @Test
+    fun `IntelliJ actions live under ide actions package`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        assertTrue(
+            productionClasses.none {
+                it.packageName == "com.github.jozott00.wokwiintellij.actions" ||
+                    it.packageName.startsWith("com.github.jozott00.wokwiintellij.actions.")
+            },
+            "Production action classes should live under com.github.jozott00.wokwiintellij.ide.actions",
+        )
+    }
+
+    @Test
+    fun `IntelliJ execution classes live under ide execution package`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        assertTrue(
+            productionClasses.none {
+                it.packageName == "com.github.jozott00.wokwiintellij.execution" ||
+                    it.packageName.startsWith("com.github.jozott00.wokwiintellij.execution.")
+            },
+            "Production execution classes should live under com.github.jozott00.wokwiintellij.ide.execution",
+        )
+    }
+
+    @Test
+    fun `IntelliJ config adapters live under ide config package`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        assertTrue(
+            productionClasses.none {
+                it.packageName == "com.github.jozott00.wokwiintellij.config" ||
+                    it.packageName.startsWith("com.github.jozott00.wokwiintellij.config.")
+            },
+            "Production config adapter classes should live under com.github.jozott00.wokwiintellij.ide.config",
+        )
+    }
+
+    @Test
+    fun `service contracts do not depend on IntelliJ APIs`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses()
+            .that()
+            .resideInAPackage("com.github.jozott00.wokwiintellij.services..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.intellij..",
+                "javax.swing..",
+                "java.awt..",
+                "org.cef..",
+                "com.github.jozott00.wokwiintellij.ide..",
+                "com.github.jozott00.wokwiintellij.ui..",
+            )
+            .check(productionClasses)
+    }
+}

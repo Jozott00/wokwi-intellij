@@ -1,7 +1,6 @@
 package com.github.jozott00.wokwiintellij.ide.inspections
 
 import com.github.jozott00.wokwiintellij.WokwiBundle
-import com.github.jozott00.wokwiintellij.toml.stringValue
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiElementVisitor
