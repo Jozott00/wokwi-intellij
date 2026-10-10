@@ -1,6 +1,7 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import java.util.Properties
 
 
 plugins {
@@ -21,6 +22,31 @@ kotlin {
   jvmToolchain(17)
 }
 
+val integrationTestSourceSet = sourceSets.create("integrationTest")
+
+/**
+ * Local defaults for all test-task environment variables, using UTF-8 Java properties syntax.
+ * Evaluated only when the test task starts, keeping credentials out of configuration-cache state.
+ * The caller preserves inherited environment entries so CI secrets override local defaults.
+ */
+val localTestEnvironment = providers.provider {
+  val propertiesFile = layout.projectDirectory.file("local.properties").asFile
+  val properties = Properties()
+  if (propertiesFile.isFile) {
+    propertiesFile.reader(Charsets.UTF_8).use { properties.load(it) }
+  }
+  properties.stringPropertyNames().associateWith { properties.getProperty(it) }
+}
+
+// Shared by unit tests, integration tests and future Gradle Test tasks.
+tasks.withType<Test>().configureEach {
+  notCompatibleWithConfigurationCache("Tests load local environment defaults at execution without caching credential values")
+  doFirst {
+    val inheritedKeys = environment.keys.toSet()
+    environment(localTestEnvironment.get().filterKeys { it !in inheritedKeys })
+  }
+}
+
 // Configure the project's dependencies
 repositories {
   mavenCentral()
@@ -39,6 +65,14 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   testImplementation(libs.archunit)
   testImplementation(libs.kotlin.test.junit)
+  // The IDE supplies stdlib to the plugin, but Starter runs in a separate JVM.
+  "integrationTestImplementation"(kotlin("stdlib"))
+  "integrationTestImplementation"(libs.junit.jupiter)
+  "integrationTestImplementation"(libs.kodein.di)
+  "integrationTestImplementation"(libs.kotlinx.coroutines.core)
+  "integrationTestRuntimeOnly"(libs.junit.platform.launcher)
+  // Starter calls the platform reporter during shutdown even outside TeamCity.
+  "integrationTestRuntimeOnly"(libs.teamcity.service.messages)
 
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
   intellijPlatform {
@@ -54,6 +88,7 @@ dependencies {
     pluginVerifier()
     zipSigner()
     testFramework(TestFrameworkType.Platform)
+    testFramework(TestFrameworkType.Starter, configurationName = "integrationTestImplementation")
   }
 }
 
@@ -136,6 +171,25 @@ tasks {
 }
 
 intellijPlatformTesting {
+  testIdeUi {
+    register("integrationTest") {
+      task {
+        testClassesDirs = integrationTestSourceSet.output.classesDirs
+        classpath = integrationTestSourceSet.runtimeClasspath
+        useJUnitPlatform { includeEngines("junit-jupiter") }
+        maxParallelForks = 1
+        // Starter matching IDE 2026.2 requires Java 25; the plugin itself remains Java 17.
+        javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+        systemProperty("junit.jupiter.execution.parallel.enabled", "false")
+        systemProperty("wokwi.test.sandboxPlugins", sandboxPluginsDirectory.get().asFile.absolutePath)
+        systemProperty("wokwi.test.pluginDirectoryName", providers.gradleProperty("pluginName").get())
+        systemProperty("wokwi.test.ideVersion", providers.gradleProperty("platformVersion").get())
+        systemProperty("wokwi.test.projectRoot", layout.projectDirectory.asFile.absolutePath)
+        systemProperty("wokwi.test.artifacts", layout.buildDirectory.dir("wokwi-tests").get().asFile.absolutePath)
+        notCompatibleWithConfigurationCache("Live simulator tests use runtime credentials and manage a separate IDE process")
+      }
+    }
+  }
   runIde {
     register("runIdeForUiTests") {
       task {

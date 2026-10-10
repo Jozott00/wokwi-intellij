@@ -10,3 +10,10 @@ build
 .run
 
 .agents
+
+# JetBrains Starter IDE downloads and isolated runtime directories
+/out/
+# Optional Starter/Allure reporting output
+/allure-results/
+# Local test environment defaults (may contain credentials)
+/local.properties

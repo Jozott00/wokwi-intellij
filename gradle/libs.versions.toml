@@ -4,6 +4,11 @@ arrow = "2.2.3"
 archunit = "1.4.2"
 ktoml = "0.7.1"
 kotlinxSerialization = "1.11.0"
+junitJupiter = "5.14.4"
+junitPlatform = "1.14.4"
+teamcityServiceMessages = "2024.07"
+kodein = "7.26.1"
+coroutines = "1.10.2"
 
 # plugins
 changelog = "2.5.0"
@@ -19,6 +24,11 @@ ktoml-core = { group = "com.akuleshov7", name = "ktoml-core", version.ref = "kto
 ktoml-file = { group = "com.akuleshov7", name = "ktoml-file", version.ref = "ktoml" }
 kotlin-test-junit = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit", version.ref = "kotlin" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitJupiter" }
+teamcity-service-messages = { group = "org.jetbrains.teamcity", name = "serviceMessages", version.ref = "teamcityServiceMessages" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junitPlatform" }
+kodein-di = { group = "org.kodein.di", name = "kodein-di-jvm", version.ref = "kodein" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
 
 [plugins]
 changelog = { id = "org.jetbrains.changelog", version.ref = "changelog" }
