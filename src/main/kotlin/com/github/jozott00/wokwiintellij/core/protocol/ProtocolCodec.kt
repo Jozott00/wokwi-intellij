@@ -42,6 +42,9 @@ object ProtocolCodec {
             is OutboundMessage.GdbBreak -> {
                 outboundJson.encodeToString(OutboundMessage.GdbBreak.serializer(), message)
             }
+            is OutboundMessage.UartData -> {
+                outboundJson.encodeToString(OutboundMessage.UartData.serializer(), message)
+            }
             else -> error("Unsupported outbound message: ${message::class.qualifiedName}")
         }
 

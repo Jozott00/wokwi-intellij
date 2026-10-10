@@ -37,7 +37,10 @@ class WokwiTestFixture internal constructor(
     val artifactsDirectory: Path,
 ) {
     /** Assertions against the real rendered console of the project's Wokwi execution. */
-    val console = RunConsole { driver.readWokwiConsole(driver.singleProject()) }
+    val console = RunConsole(
+        read = { driver.readWokwiConsole(driver.singleProject()) },
+        type = { driver.typeWokwiConsole(driver.singleProject(), it) },
+    )
     /** Registered plugin actions, including process termination waits. */
     val simulator = SimulatorActions(driver, console)
     /** Real IDE debugger sessions, breakpoints, source positions and rendered variables. */

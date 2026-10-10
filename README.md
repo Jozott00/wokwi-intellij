@@ -62,6 +62,7 @@ the [documentation](https://jozott00.github.io/wokwi-intellij/starter-topic.html
 ### Features
 
 - Run simulation in IDE window
+- Send serial input from the Run console by typing a line and pressing Enter
 - Automatically restart the simulation on rebuild
 - Intelligent configuration checking
 - Intellij idiomatic debugging (CLion only)
@@ -89,7 +90,7 @@ For building and installing the plugin from source:
 
 ## Roadmap
 
-- [ ] Make Console writable
+- [x] Make Console writable
 - [ ] Add Serial Port forwarding
 - [ ] Add IoT gateway
 - [ ] Support custom chips
@@ -148,4 +149,3 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 [license-shield]: https://img.shields.io/github/license/Jozott00/wokwi-intellij.svg
 
 [license-url]: https://github.com/Jozott00/wokwi-intellij/blob/master/LICENSE.txt
-

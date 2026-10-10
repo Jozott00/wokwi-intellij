@@ -22,7 +22,7 @@ class WokwiSimulatorRunnerState(myEnvironment: ExecutionEnvironment) : CommandLi
 
     override fun createConsole(executor: Executor): ConsoleView? {
         val builder = consoleBuilder ?: return null
-        builder.setViewer(true) // make it readonly
+        builder.setViewer(false)
         return builder.console
     }
 

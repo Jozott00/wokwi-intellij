@@ -11,7 +11,16 @@ data class ConsoleSnapshot(val executionId: Long, val text: String, val terminat
 data class ConsoleCheckpoint(val executionId: Long, val prefix: String)
 
 /** Bounded console assertions. The reader adapter keeps Driver/platform details out of feature tests. */
-class RunConsole internal constructor(private val read: () -> ConsoleSnapshot?) {
+class RunConsole internal constructor(
+    private val type: (String) -> Unit = { error("Console input is unavailable") },
+    private val read: () -> ConsoleSnapshot?,
+) {
+    /** Type into the actual console editor and submit with LF, using its normal process-input path. */
+    fun sendLine(text: String) {
+        require('\n' !in text && '\r' !in text) { "sendLine expects a single line without a line ending" }
+        type("$text\n")
+    }
+
     /** Read the current console; null means the execution descriptor has not been created yet. */
     fun snapshot(): ConsoleSnapshot? = read()
 
