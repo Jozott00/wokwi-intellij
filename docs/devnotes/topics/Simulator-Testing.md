@@ -150,6 +150,8 @@ that requires detecting that exact case should add document-generation tracking.
 2. Create `SHA256SUMS` covering every simulation input and any optional golden
    files. Add a `ProjectFixture` descriptor to `Fixtures` in the `fixtures`
    package. Hashes are checked before IDE startup.
+   Git attributes pin fixture text to LF; normalize generated text before hashing
+   (the existing build scripts do this for HEX firmware). ELF and WASM remain binary.
 3. Add a Jupiter test at the `testing` root, tagged `live-wokwi`, using
    `runWokwiTest(Fixtures.yourFixture)`.
    Assert a feature-specific observable result, then stop or rely on guaranteed cleanup.

@@ -94,8 +94,13 @@
   });
 
   iframe.src = iframe.getAttribute('data-src');
+  const wokwiOrigin = new URL(iframe.src).origin;
 
   window.addEventListener('message', (event) => {
+    if (event.origin !== wokwiOrigin || event.source !== iframe.contentWindow) {
+      return;
+    }
+
     const message = event.data;
     if (message?.command !== 'start' || !message.port) {
       return;

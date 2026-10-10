@@ -9,6 +9,9 @@ separately from ordinary `check`.
 # Fast unit and regression tests:
 ./gradlew test
 
+# Wrapper message-port regression tests (Node.js 24, no extra packages):
+node --test src/test/js/bridge.test.cjs
+
 # Real IDE integration suite:
 ./gradlew integrationTest --no-configuration-cache
 

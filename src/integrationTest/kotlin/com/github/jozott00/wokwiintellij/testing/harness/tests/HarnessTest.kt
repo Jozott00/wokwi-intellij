@@ -55,6 +55,18 @@ class HarnessTest {
         assertTrue(error.message!!.contains("exited (1)"))
     }
 
+    /** Every committed simulator fixture must pass its manifest check before an IDE is launched. */
+    @Test fun `committed simulator fixtures verify and copy`() {
+        val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))
+        for (fixture in listOf(Fixtures.avrHex, Fixtures.customChip)) {
+            val copy = fixture.copyTo(repository, temporary.resolve(fixture.name))
+            assertArrayEquals(
+                Files.readAllBytes(repository.resolve(fixture.relativePath).resolve("firmware.hex")),
+                Files.readAllBytes(copy.resolve("firmware.hex")),
+            )
+        }
+    }
+
     /** Corrupted firmware must be rejected before IDE startup, while mutations stay within the copy. */
     @Test fun `fixture copy is isolated and rejects corrupt firmware`() {
         val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))

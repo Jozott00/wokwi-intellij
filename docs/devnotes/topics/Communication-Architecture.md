@@ -6,7 +6,9 @@ and the IDE's JavaScript query bridge, allowing the IDE and simulator to exchang
 ## Communication Flow
 
 Wokwi begins communication by sending a `start` handshake with a transferred message port. The wrapper retains
-that port and forwards the handshake to the IDE. Once the IDE has also requested simulation startup, the session
+that port only when the sender is the configured iframe and its origin matches the configured iframe URL. This
+prevents redirected pages or other windows from receiving simulator data. The wrapper forwards the accepted
+handshake to the IDE. Once the IDE has also requested simulation startup, the session
 sends the startup payload containing the diagram, firmware, license, and debugger settings.
 
 ```mermaid
