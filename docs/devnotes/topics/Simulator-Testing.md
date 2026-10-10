@@ -47,6 +47,15 @@ sandbox. Each invocation receives a unique project copy and IDE context. JUnit
 parallel execution is disabled because Starter's DI container and error reporter
 are shared within a worker.
 
+The simulator GitHub Actions workflow caches Starter's IDE archives in
+`out/ide-tests/installers` and extracted installations in
+`out/ide-tests/cache/builds`, separately from Gradle's dependency cache. The key
+includes runner OS/architecture and `platformType`/`platformVersion` from
+`gradle.properties`. The first successful run populates the cache; later cache
+hits reuse the download and extracted IDE. An IDE version change or cache
+eviction requires a fresh download. Cache restore still transfers data, so
+compare cold and warm workflow durations to measure the benefit.
+
 Only files declared in `SHA256SUMS`, plus the manifest itself, enter that project
 copy. Ignored `.idea` settings and other undeclared local files stay out, avoiding
 accidental SDK assignment and indexing from a developer's fixture checkout.

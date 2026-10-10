@@ -14,6 +14,19 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Read test IDE cache identity
+        id: test-ide
+        shell: bash
+        run: |
+          awk -F= '/^platformType=|^platformVersion=/ { print $1 "=" $2 }' gradle.properties >> "$GITHUB_OUTPUT"
+      # Starter downloads its IDE separately from Gradle's dependency cache.
+      - name: Cache Starter IDE archive and installation
+        uses: actions/cache@v4
+        with:
+          path: |
+            out/ide-tests/installers
+            out/ide-tests/cache/builds
+          key: starter-ide-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.test-ide.outputs.platformType }}-${{ steps.test-ide.outputs.platformVersion }}
       - name: Run simulator tests in an isolated IDE
         env:
           WOKWI_TEST_LICENSE: ${{ secrets.WOKWI_TEST_LICENSE }}
