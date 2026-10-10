@@ -9,4 +9,7 @@ object Fixtures {
 
     /** WASM custom chip printing to the chip console alongside silent ATmega328P firmware. */
     val customChip = ProjectFixture("custom-chip", "testData/simulator/custom-chip")
+
+    /** ATmega328P firmware replying to console input with a prefix that cannot be satisfied by local echo. */
+    val avrConsoleInput = ProjectFixture("avr-console-input", "testData/simulator/avr-console-input")
 }

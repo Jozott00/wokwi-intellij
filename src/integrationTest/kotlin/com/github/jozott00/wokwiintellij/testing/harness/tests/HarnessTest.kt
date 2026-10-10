@@ -58,7 +58,7 @@ class HarnessTest {
     /** Every committed simulator fixture must pass its manifest check before an IDE is launched. */
     @Test fun committedSimulatorFixturesVerifyAndCopy() {
         val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))
-        for (fixture in listOf(Fixtures.avrUart, Fixtures.customChip)) {
+        for (fixture in listOf(Fixtures.avrUart, Fixtures.customChip, Fixtures.avrConsoleInput)) {
             val copy = fixture.copyTo(repository, temporary.resolve(fixture.name))
             assertArrayEquals(
                 Files.readAllBytes(repository.resolve(fixture.relativePath).resolve("firmware.hex")),

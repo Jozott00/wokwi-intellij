@@ -184,6 +184,10 @@ can support multiple tests with different assertions. Larger golden outputs may
 live in optional fixture files, loaded explicitly by tests that need them; the
 harness does not require an expected-output file.
 
+`console.sendLine(text)` invokes the registered typing and Enter handlers for the real console editor, exercising its
+process input stream without relying on desktop focus. `ConsoleInputTest` uses `Fixtures.avrConsoleInput` to verify ASCII, UTF-8 and
+empty lines: firmware replies with a prefix that local console input echo cannot satisfy.
+
 `RunConsole` waits for accumulated exact text, including text arriving across
 multiple writes. It preserves line endings. It fails early if the process exits
 before the assertion and otherwise reports a bounded console tail on timeout.

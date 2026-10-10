@@ -90,6 +90,16 @@ class WokwiSession(
         }
     }
 
+    /** Sends input only to an initialized running or paused simulation. */
+    fun sendUartData(bytes: ByteArray): Boolean = synchronized(stateLock) {
+        val initialized = simulationStatus == InboundMessage.Command.SIM_RUN || simulationStatus == InboundMessage.Command.SIM_PAUSE
+        if (disposed || !startSent || !initialized || bytes.isEmpty()) {
+            return@synchronized false
+        }
+        transport.send(ProtocolCodec.encode(OutboundMessage.UartData(bytes = bytes.map { it.toInt() and 0xff })))
+        true
+    }
+
     /**
      * Detaches this session from the transport.
      *

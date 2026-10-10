@@ -86,6 +86,11 @@ Firmware and resource data travel as base64. Resource replies preserve request o
 not include a request identifier. UART data, custom-chip output, and diagnostics are delivered to IDE consumers
 without making the protocol session responsible for their presentation.
 
+The Run console accepts line input: typing a line and pressing Enter sends the IDE's encoded bytes through the
+process input stream and session controller to the simulated UART. The session sends `uartData` with a `bytes`
+array of unsigned integers, matching Wokwi's base64-compatible serial protocol. Bytes and line endings are preserved.
+Only the console owning the active simulation can send input; closed consoles and stopped or disposed sessions reject it.
+
 Stopping or replacing a simulator cancels obsolete startup work and releases its resources. Messages from retired
 sessions cannot affect the current session. Attaching a console to an initialized debug session preserves that
 session rather than starting it again.

@@ -186,6 +186,15 @@ class WokwiSessionController internal constructor(
     }
     fun isSimulatorRunning(): Boolean = synchronized(stateLock) { usableSimulation() != null }
 
+    /** Routes input only from the live console that owns the current simulation. */
+    fun sendConsoleInput(handler: WokwiProcessHandler, bytes: ByteArray): Boolean = synchronized(stateLock) {
+        val active = usableSimulation() ?: return@synchronized false
+        if (active.handler !== handler || handler.isProcessTerminated || handler.isProcessTerminating) {
+            return@synchronized false
+        }
+        active.runtime.session.sendUartData(bytes)
+    }
+
     fun firmwareUpdated(): Job {
         val request = synchronized(stateLock) {
             if (usableSimulation() == null) return Job().apply { complete() }

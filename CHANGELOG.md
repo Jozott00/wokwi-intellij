@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Writable Run console: submit lines to the simulated UART by pressing Enter
+
 ## [0.11.1] - 2026-10-09
 
 ### Fixed

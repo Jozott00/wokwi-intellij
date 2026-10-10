@@ -13,21 +13,22 @@ class WokwiRunProcessHandler(project: Project): WokwiProcessHandler(), WokwiSess
 
     private val projectService: WokwiSessionController = project.service()
     private val ansiEscapeDecoder = AnsiEscapeDecoder()
+    private val consoleInput = WokwiConsoleInputStream { bytes -> projectService.sendConsoleInput(this, bytes) }
 
     override fun destroyProcessImpl() {
+        consoleInput.close()
         projectService.stopSimulator()
         notifyProcessTerminated(0)
     }
 
     override fun detachProcessImpl() {
+        consoleInput.close()
         notifyProcessDetached()
     }
 
     override fun detachIsDefault(): Boolean = false
 
-    override fun getProcessInput(): OutputStream? {
-        return null
-    }
+    override fun getProcessInput(): OutputStream = consoleInput
 
     override fun onUartData(bytes: ByteArray) {
         if (bytes.isEmpty()) return
@@ -40,6 +41,7 @@ class WokwiRunProcessHandler(project: Project): WokwiProcessHandler(), WokwiSess
     }
 
     override fun onShutdown(exitCode: SimExitCode) {
+        consoleInput.close()
         if (!isProcessTerminated) {
             notifyProcessTerminated(exitCode.int)
         }

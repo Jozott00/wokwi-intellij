@@ -19,6 +19,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
@@ -29,6 +30,40 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class WokwiSessionTest {
+
+    @Test
+    fun `UART input preserves unsigned bytes and line endings and stops with the session`() {
+        val transport = FakeTransport()
+        val session = createSession(transport)
+        val input = "Grüße\r\n".encodeToByteArray() + byteArrayOf(0, -1)
+        assertFalse(session.sendUartData(input))
+        session.start()
+        assertFalse(session.sendUartData(input))
+        transport.receive("""{"command":"start"}""")
+        assertFalse(session.sendUartData(input))
+        transport.receive("""{"command":"sim:run"}""")
+        assertFalse(session.sendUartData(ByteArray(0)))
+        assertTrue(session.sendUartData(input))
+        val payload = Json.parseToJsonElement(transport.sentMessages.last()).jsonObject
+        assertEquals("uartData", payload["command"]!!.jsonPrimitive.content)
+        assertEquals(input.map { it.toInt() and 0xff }, payload["bytes"]!!.jsonArray.map { it.jsonPrimitive.int })
+
+        transport.receive("""{"command":"sim:pause"}""")
+        assertTrue(session.sendUartData(input))
+        transport.receive("""{"command":"sim:stop"}""")
+        val before = transport.sentMessages.size
+        assertFalse(session.sendUartData(input))
+        assertEquals(before, transport.sentMessages.size)
+
+        session.start()
+        assertFalse(session.sendUartData(input))
+        transport.receive("""{"command":"sim:run"}""")
+        assertTrue(session.sendUartData(input))
+        session.dispose()
+        val after = transport.sentMessages.size
+        assertFalse(session.sendUartData(input))
+        assertEquals(after, transport.sentMessages.size)
+    }
 
     @Test
     fun `start waits for browser readiness before sending simulator payload`() {

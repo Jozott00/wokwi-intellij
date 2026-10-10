@@ -25,6 +25,53 @@ import kotlin.test.*
 /** Tests real session behavior with controlled startup boundaries, without an IDE or browser. */
 class WokwiSessionControllerTest {
     @Test
+    fun `console input follows its handler through restart and rejects retired consoles`() {
+        Fixture().use { fixture ->
+            val old = fixture.controller.startSimulator()
+            val previous = fixture.factory.created.single()
+            val input = "hello\n".encodeToByteArray()
+            previous.transport.receive("sim:run")
+            assertTrue(fixture.controller.sendConsoleInput(old, input))
+            assertTrue(previous.transport.sent.last().contains("\"command\":\"uartData\""))
+
+            fixture.controller.firmwareUpdated()
+            previous.transport.receive("sim:run")
+            assertTrue(fixture.controller.sendConsoleInput(old, input))
+
+            val current = fixture.controller.startSimulator(true)
+            val replacement = fixture.factory.created.last()
+            replacement.transport.receive("sim:pause")
+            val before = replacement.transport.sent.size
+            assertFalse(fixture.controller.sendConsoleInput(old, input))
+            assertEquals(before, replacement.transport.sent.size)
+            assertTrue(fixture.controller.sendConsoleInput(current, input))
+            fixture.controller.stopSimulator()
+            val after = replacement.transport.sent.size
+            assertFalse(fixture.controller.sendConsoleInput(current, input))
+            assertEquals(after, replacement.transport.sent.size)
+        }
+    }
+
+    @Test
+    fun `console input is rejected while startup is pending and as soon as stop is requested`() {
+        val dispatcher = QueuedDispatcher()
+        Fixture(dispatcher).use { fixture ->
+            val handler = fixture.controller.startSimulator()
+            val input = byteArrayOf(65)
+            assertFalse(fixture.controller.sendConsoleInput(handler, input))
+            dispatcher.drain()
+            fixture.factory.created.single().transport.receive("sim:run")
+            assertTrue(fixture.controller.sendConsoleInput(handler, input))
+            fixture.controller.stopSimulator()
+            assertFalse(fixture.controller.sendConsoleInput(handler, input))
+            dispatcher.drain()
+            fixture.controller.dispose()
+            assertFalse(fixture.controller.sendConsoleInput(handler, input))
+        }
+        dispatcher.drain()
+    }
+
+    @Test
     fun `stop rejects configuration that finishes after cancellation`() = runBlocking {
         Fixture().use { fixture ->
             val release = CompletableDeferred<Unit>()

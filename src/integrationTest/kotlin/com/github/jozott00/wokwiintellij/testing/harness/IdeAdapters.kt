@@ -13,6 +13,7 @@ import com.intellij.driver.sdk.openToolWindow
 import com.intellij.driver.sdk.singleProject
 import com.intellij.driver.sdk.step
 import com.intellij.driver.sdk.ui.components.common.ideFrame
+import com.intellij.driver.sdk.ui.remote.Component
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -65,6 +66,25 @@ internal fun Driver.readWokwiConsole(project: Project): ConsoleSnapshot? = withR
     ConsoleSnapshot(descriptor.getExecutionId(), editor?.getDocument()?.getText().orEmpty(), process.isProcessTerminated(), process.getExitCode())
 }
 
+/** Invoke the console's registered typing and Enter handlers without depending on desktop focus. */
+internal fun Driver.typeWokwiConsole(project: Project, text: String) {
+    check(readWokwiConsole(project)?.terminated == false) { "No running Wokwi console exists" }
+    require(text.endsWith('\n')) { "Console submission must end with LF" }
+    val component = withContext(OnDispatcher.EDT) {
+        val descriptor = getRunContentManager(project).getAllDescriptors().single { it.getDisplayName() == "Wokwi Simulator" }
+        val console = cast(requireNotNull(cast(descriptor, ConsoleDescriptor::class).getExecutionConsole()), RenderedConsole::class)
+        val editor = requireNotNull(console.getEditor())
+        val content = cast(editor, ConsoleInputEditor::class).getContentComponent()
+        editor.getSelectionModel().removeSelection()
+        editor.getCaretModel().moveToOffset(editor.getDocument().getText().length)
+        val context = utility(ConsoleDataManager::class).getInstance().getDataContext(content)
+        val typing = utility(ConsoleTypedAction::class).getInstance()
+        text.dropLast(1).forEach { typing.actionPerformed(editor, it, context) }
+        content
+    }
+    invokeAction("EditorEnter", component = component)
+}
+
 /** Configure only the isolated IDE's in-memory PasswordSafe entry, without touching the user's keychain. */
 internal fun Driver.installTestLicense(license: String) {
     try {
@@ -95,6 +115,35 @@ internal interface ExecutionConsole
 internal interface RenderedConsole {
     /** Return the console editor once the UI has created it. */
     fun getEditor(): Editor?
+}
+
+/** Console editor component used to build a precise action context, independent of keyboard focus. */
+@Remote("com.intellij.openapi.editor.Editor")
+internal interface ConsoleInputEditor {
+    /** Return the component owning the console's keyboard handlers. */
+    fun getContentComponent(): Component
+}
+
+/** Opaque platform data context for registered editor actions. */
+@Remote("com.intellij.openapi.actionSystem.DataContext")
+internal interface ConsoleDataContext
+
+/** Public platform API for resolving the console editor's action context. */
+@Remote("com.intellij.ide.DataManager")
+internal interface ConsoleDataManager {
+    /** Resolve the application's data manager. */
+    fun getInstance(): ConsoleDataManager
+    /** Get action data for this specific console editor. */
+    fun getDataContext(component: Component): ConsoleDataContext
+}
+
+/** Public typing entry point dispatching to the installed console typing handler. */
+@Remote("com.intellij.openapi.editor.actionSystem.TypedAction")
+internal interface ConsoleTypedAction {
+    /** Resolve the application's editor typing action. */
+    fun getInstance(): ConsoleTypedAction
+    /** Deliver a typed character through the same handler used by editor key events. */
+    fun actionPerformed(editor: Editor, charTyped: Char, dataContext: ConsoleDataContext)
 }
 
 /** Remote constructor marker for the platform credential lookup key. */

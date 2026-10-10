@@ -30,6 +30,9 @@ interface OutboundMessage {
 
         /** Requests that Wokwi pause/break the running simulation, usually after a debugger connects. */
         const val GDB_BREAK = "gdbBreak"
+
+        /** Forwards console or serial-client input to the simulated UART. */
+        const val UART_DATA = "uartData"
     }
 
     /**
@@ -114,5 +117,12 @@ interface OutboundMessage {
     @Serializable
     data class GdbBreak(
         override val command: String = Command.GDB_BREAK,
+    ) : OutboundMessage
+
+    /** UART input as unsigned JSON byte values, matching Wokwi's base64-compatible serial protocol. */
+    @Serializable
+    data class UartData(
+        override val command: String = Command.UART_DATA,
+        val bytes: List<Int>,
     ) : OutboundMessage
 }
