@@ -1,12 +1,13 @@
 package com.github.jozott00.wokwiintellij.listeners
 
-import com.github.jozott00.wokwiintellij.services.WokwiSimulatorService
+import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.github.jozott00.wokwiintellij.states.WokwiSettingsState
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import java.nio.file.Path
 
 class WokwiFirmwareWatcher(val project: Project) : BulkFileListener {
 
@@ -14,7 +15,7 @@ class WokwiFirmwareWatcher(val project: Project) : BulkFileListener {
         if (project.isDisposed || !project.isInitialized) return
 
         val configState = project.service<WokwiSettingsState>()
-        val projectService = project.service<WokwiSimulatorService>()
+        val projectService = project.service<WokwiSessionController>()
 
         if (!configState.watchFirmware) return
         val watchPaths = projectService.getWatchPaths() ?: return
@@ -24,7 +25,9 @@ class WokwiFirmwareWatcher(val project: Project) : BulkFileListener {
             if (it.file?.isInLocalFileSystem != true)
                 return@find false
 
-            if (watchPaths.contains(it.file?.path))
+            val eventPath = it.file?.path?.let { path -> Path.of(path).normalize() } ?: return@find false
+
+            if (watchPaths.contains(eventPath))
                 return@find true
 
             false

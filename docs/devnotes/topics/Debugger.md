@@ -9,3 +9,5 @@
 </procedure>
 
 See [Custom Intellij Debugger](Intellij-Debugger.md) for research results.
+
+See [GDB Debugging Architecture](GDB-Debugging-Architecture.md) for the current Wokwi GDB bridge design.

@@ -1,0 +1,5 @@
+{
+  "name": "Integration Printer",
+  "author": "Wokwi IntelliJ Tests",
+  "pins": ["VCC", "GND"]
+}

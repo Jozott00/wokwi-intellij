@@ -1,0 +1,4 @@
+# Fixture manifests hash exact bytes; keep text stable across checkout settings.
+testData/simulator/** text eol=lf
+testData/simulator/**/*.elf -text
+testData/simulator/**/*.wasm -text

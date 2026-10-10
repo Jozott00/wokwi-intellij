@@ -13,6 +13,8 @@ object ToolWindowUtils {
         var icon = WokwiIcons.SimulatorToolWindowIcon
         if (live)
             icon = ExecutionUtil.getLiveIndicator(icon)
+        // The platform getter/setter signatures do not expose a writable Kotlin property.
+        @Suppress("UsePropertyAccessSyntax")
         toolWindow?.setIcon(icon)
     }
 

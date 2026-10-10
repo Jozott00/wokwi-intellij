@@ -2,7 +2,7 @@
 
 package com.github.jozott00.wokwiintellij.ui.config
 
-import com.github.jozott00.wokwiintellij.services.WokwiLicensingService
+import com.github.jozott00.wokwiintellij.ide.services.WokwiLicensingService
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
@@ -20,6 +20,7 @@ import java.awt.CardLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
+import kotlin.time.Duration.Companion.milliseconds
 
 class LicensingPanel(val cs: CoroutineScope) : ComponentContainer {
 
@@ -65,7 +66,7 @@ class LicensingPanel(val cs: CoroutineScope) : ComponentContainer {
     private fun checkLicenseAvailability(recentlyChanged: Boolean = false) = cs.launch {
         if (recentlyChanged) {
             withContext(Dispatchers.EDT) { statusCardLayout.show(statusCard, "LOADING") }
-            delay(500)
+            delay(500.milliseconds)
         }
 
         val raw = licensingService.getLicense()
