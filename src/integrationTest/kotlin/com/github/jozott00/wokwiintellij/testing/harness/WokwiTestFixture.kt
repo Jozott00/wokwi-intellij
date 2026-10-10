@@ -178,8 +178,8 @@ internal fun runIsolatedWokwiIde(project: ProjectFixture, license: String?, addi
 internal fun prepareSdkFreeProject(project: Path) {
     val idea = Files.createDirectories(project.resolve(".idea"))
     if (Files.exists(idea.resolve("modules.xml"))) return
-    idea.resolve("modules.xml").writeText("""<project version="4"><component name="ProjectModuleManager"><modules><module fileurl="file://${'$'}PROJECT_DIR${'$'}/.idea/firmware.iml" filepath="${'$'}PROJECT_DIR${'$'}/.idea/firmware.iml"/></modules></component></project>""")
-    idea.resolve("firmware.iml").writeText("""<module type="EMPTY_MODULE" version="4"><component name="NewModuleRootManager"><content url="file://${'$'}MODULE_DIR${'$'}"/><orderEntry type="sourceFolder" forTests="false"/></component></module>""")
+    idea.resolve("modules.xml").writeText($$"""<project version="4"><component name="ProjectModuleManager"><modules><module fileurl="file://$PROJECT_DIR$/.idea/firmware.iml" filepath="$PROJECT_DIR$/.idea/firmware.iml"/></modules></component></project>""")
+    idea.resolve("firmware.iml").writeText($$"""<module type="EMPTY_MODULE" version="4"><component name="NewModuleRootManager"><content url="file://$MODULE_DIR$"/><orderEntry type="sourceFolder" forTests="false"/></component></module>""")
     if (!Files.exists(idea.resolve("misc.xml"))) {
         idea.resolve("misc.xml").writeText("""<project version="4"><component name="ProjectRootManager" version="2"/></project>""")
     }
@@ -223,6 +223,8 @@ internal object IdeErrors {
             bindSingleton<CIServer>(overrides = true) {
                 object : CIServer by NoCIServer {
                     /** Bridge IDE failures across the process boundary without throwing on a background thread. */
+                    // Starter requires this internal platform type in the CIServer callback signature.
+                    @Suppress("UnstableApiUsage")
                     override fun reportTestFailure(testName: String, message: String, details: String, linkToLogs: String?, kind: TeamCityReporter.SyntheticTestKind, generifyTestName: Boolean) {
                         synchronized(errors) { errors += "$testName: $message\n$details" }
                     }

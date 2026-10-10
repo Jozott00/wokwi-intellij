@@ -40,12 +40,6 @@ class SimulatorActions internal constructor(private val driver: Driver, private 
         }
     }
 
-    /** Request the normal toolbar restart; use a console checkpoint to assert new firmware output. */
-    fun restart() = invoke("Restart")
-
-    /** Toggle the normal firmware watch action for tests of automatic reload. */
-    fun toggleWatch() = invoke("Watch")
-
     /** Stop through the toolbar and wait until the underlying Run process is terminated. */
     fun stopAndAwaitTermination(timeout: Duration = 15.seconds) {
         if (console.snapshot()?.terminated != false) return

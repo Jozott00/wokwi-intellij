@@ -113,8 +113,7 @@ class WokwiSession(
      * propagation if they support that behavior.
      */
     override fun messageReceived(message: String): Boolean {
-        if (synchronized(stateLock) { disposed }) return false
-        return when (val result = ProtocolCodec.decode(message)) {
+        return !synchronized(stateLock) { disposed } && when (val result = ProtocolCodec.decode(message)) {
             InboundDecodeResult.Empty -> true
             is InboundDecodeResult.Malformed -> {
                 listener.onMalformedMessage(result)
@@ -328,4 +327,27 @@ data class WokwiSessionStartConfig(
 
     /** Custom chip definitions to load before the simulation starts. */
     val customChips: List<com.github.jozott00.wokwiintellij.core.model.CustomChip> = emptyList(),
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is WokwiSessionStartConfig) return false
+        return license == other.license
+            && diagram == other.diagram
+            && firmware.contentEquals(other.firmware)
+            && firmwareFormat == other.firmwareFormat
+            && waitForDebugger == other.waitForDebugger
+            && gdbPort == other.gdbPort
+            && customChips == other.customChips
+    }
+
+    override fun hashCode(): Int {
+        var result = license.hashCode()
+        result = 31 * result + diagram.hashCode()
+        result = 31 * result + firmware.contentHashCode()
+        result = 31 * result + firmwareFormat.hashCode()
+        result = 31 * result + waitForDebugger.hashCode()
+        result = 31 * result + gdbPort.hashCode()
+        result = 31 * result + customChips.hashCode()
+        return result
+    }
+}

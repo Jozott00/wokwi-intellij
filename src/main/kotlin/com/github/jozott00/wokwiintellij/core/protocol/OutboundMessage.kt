@@ -2,7 +2,6 @@ package com.github.jozott00.wokwiintellij.core.protocol
 
 import com.github.jozott00.wokwiintellij.core.model.CustomChip
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 
 /**
  * Outbound message sent from the IntelliJ backend to the Wokwi iframe through the browser wrapper.
@@ -76,11 +75,7 @@ interface OutboundMessage {
 
         /** Requests that Wokwi hide personal information in the simulator UI. */
         val hidePersonalInfo: Boolean? = null,
-    ) : OutboundMessage {
-        /** Internal bridge metadata; not serialized into the Wokwi protocol payload. */
-        @Transient
-        val binaryEncoding: BinaryEncoding = BinaryEncoding.BASE64
-    }
+    ) : OutboundMessage
 
     /**
      * Response to Wokwi's `loadResource` request.

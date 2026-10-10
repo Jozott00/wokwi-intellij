@@ -8,7 +8,6 @@ import com.github.jozott00.wokwiintellij.core.config.WokwiResolvedCustomChip
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlConfig
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlParseResult
 import com.github.jozott00.wokwiintellij.core.config.WokwiTomlParser
-import com.github.jozott00.wokwiintellij.core.config.WokwiTomlTable
 import com.github.jozott00.wokwiintellij.core.ports.ProjectFiles
 import com.github.jozott00.wokwiintellij.extensions.findRelativeFiles
 import com.github.jozott00.wokwiintellij.ide.services.IntelliJProjectFiles
@@ -77,17 +76,6 @@ class WokwiProjectConfigResolver(
     }
 
     /**
-     * Reads the configured `wokwi.toml` file and returns its `[wokwi]` table.
-     *
-     * This is used by IDE features that need raw TOML settings without loading the full simulator runtime payload.
-     */
-    suspend fun readConfig(): WokwiTomlTable? {
-        val projectSettings = project.service<WokwiSettingsState>()
-        val configFile = findWokwiConfigPath(projectSettings.wokwiConfigPath) ?: return null
-        return readTomlConfig(configFile)?.wokwi
-    }
-
-    /**
      * Resolves the ELF file referenced by the configured `wokwi.toml`.
      *
      * The debugger run-configuration macro uses this to expand the ELF path without starting the simulator.
@@ -99,7 +87,7 @@ class WokwiProjectConfigResolver(
         return configFile.parent.findFileByRelativePath(tomlConfig.wokwi.elf)
     }
 
-    private suspend fun readTomlConfig(configFile: VirtualFile): WokwiTomlConfig? {
+    private fun readTomlConfig(configFile: VirtualFile): WokwiTomlConfig? {
         if (!configFile.exists()) {
             notifyError("Configuration file `${configFile.path}` not found.")
             return null
@@ -123,7 +111,7 @@ class WokwiProjectConfigResolver(
         }
     }
 
-    private suspend fun resolveConfig(
+    private fun resolveConfig(
         tomlConfig: WokwiTomlConfig,
         configFile: VirtualFile,
         diagramFile: VirtualFile
@@ -213,6 +201,8 @@ class WokwiProjectConfigResolver(
                                     psiDir?.createFile(WokwiConstants.WOKWI_DIAGRAM_FILE)
                                         ?: return@runWriteCommandAction
                                 val document = diagramFile.viewProvider.document
+                                // Document getter/setter types differ, so Kotlin exposes text as read-only.
+                                @Suppress("UsePropertyAccessSyntax")
                                 document.setText(WokwiTemplates.defaultDiagramJson())
                                 val descriptor =
                                     OpenFileDescriptor(project, diagramFile.virtualFile)

@@ -12,7 +12,7 @@ import kotlin.io.path.readLines
 @Tag("clion-debugger")
 class ClionDebuggerTest {
     /** Prove attachment, source mapping, breakpoint suspension, variable reads, stepping and firmware continuation. */
-    @Test fun `remote debugger hits a breakpoint and steps through firmware`() =
+    @Test fun remoteDebuggerHitsABreakpointAndStepsThroughFirmware() =
         runWokwiTest(Fixtures.avrUart, prepareProject = ::prepareClionRemoteDebug) {
             val source = projectDirectory.resolve("main.c")
             val lines = source.readLines()

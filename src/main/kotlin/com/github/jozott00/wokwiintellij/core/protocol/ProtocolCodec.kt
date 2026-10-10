@@ -1,6 +1,5 @@
 package com.github.jozott00.wokwiintellij.core.protocol
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -16,7 +15,6 @@ import kotlinx.serialization.json.jsonPrimitive
  * JSON into [InboundMessage] instances. Unknown inbound commands are preserved as [InboundMessage.Unknown].
  */
 object ProtocolCodec {
-    @OptIn(ExperimentalSerializationApi::class)
     private val outboundJson = Json {
         encodeDefaults = true
         explicitNulls = false

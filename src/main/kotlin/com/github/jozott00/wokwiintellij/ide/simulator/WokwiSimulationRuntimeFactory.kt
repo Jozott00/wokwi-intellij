@@ -59,6 +59,8 @@ class WokwiSimulationRuntimeFactory(
         return false
     }
 
+    // The inspection misses the cleanup read when withContext discards its result on cancellation.
+    @Suppress("AssignedValueIsNeverRead")
     override suspend fun createRuntime(
         config: LoadedSimulationConfig,
         gdbServer: GdbServer?,

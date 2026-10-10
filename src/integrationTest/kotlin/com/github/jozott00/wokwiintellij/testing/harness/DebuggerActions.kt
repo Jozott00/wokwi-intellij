@@ -31,12 +31,12 @@ fun prepareClionRemoteDebug(project: Path) {
     val debugger = if (executable == null) "<debugger kind=\"GDB\" isBundled=\"true\" />"
                    else "<debugger kind=\"GDB\">${xmlText(executable)}</debugger>"
     // CLion's plain-folder project model has no module roots to discover top-level .run files.
-    Files.createDirectories(project.resolve(".idea/runConfigurations")).resolve("Wokwi_Debug.xml").writeText("""
+    Files.createDirectories(project.resolve(".idea/runConfigurations")).resolve("Wokwi_Debug.xml").writeText($$"""
         <component name="ProjectRunConfigurationManager">
           <configuration name="Wokwi Debug" type="CLion_Remote" version="1"
-                         remoteCommand="${'$'}WokwiGdbServer${'$'}" symbolFile="${'$'}WokwiElfPath${'$'}" sysroot="">
-            $debugger
-            <pathMapping remote="/wokwi-avr-fixture" local="${'$'}PROJECT_DIR${'$'}" />
+                         remoteCommand="$WokwiGdbServer$" symbolFile="$WokwiElfPath$" sysroot="">
+            $$debugger
+            <pathMapping remote="/wokwi-avr-fixture" local="$PROJECT_DIR$" />
             <method v="2"><option name="WokwiStartDebug.Before.Run" enabled="true" /></method>
           </configuration>
         </component>

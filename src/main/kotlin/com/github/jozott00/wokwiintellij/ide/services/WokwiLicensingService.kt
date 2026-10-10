@@ -6,8 +6,6 @@ import arrow.core.right
 import com.github.jozott00.wokwiintellij.WokwiConstants
 import com.github.jozott00.wokwiintellij.exceptions.GenericError
 import com.github.jozott00.wokwiintellij.services.LicenseService
-import com.github.jozott00.wokwiintellij.services.UserNotificationAction
-import com.github.jozott00.wokwiintellij.services.UserNotificationType
 import com.github.jozott00.wokwiintellij.services.UserNotifier
 import com.github.jozott00.wokwiintellij.services.WokwiLicense
 import com.intellij.credentialStore.CredentialAttributes
@@ -32,6 +30,8 @@ class WokwiLicensingService internal constructor(
     private val userNotifier: UserNotifier,
 ) : LicenseService {
 
+    // Instantiated reflectively by the IntelliJ service container.
+    @Suppress("unused")
     constructor(cs: CoroutineScope) : this(
         cs = cs,
         readStoredLicense = {

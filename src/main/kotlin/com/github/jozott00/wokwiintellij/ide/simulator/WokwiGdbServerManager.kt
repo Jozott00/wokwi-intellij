@@ -42,7 +42,7 @@ interface GdbServerManager {
  * IntelliJ disposal registration and reuse rules with the simulator controller.
  *
  * @property project project whose plugin disposable owns created GDB servers.
- * @property coroutineScope scope passed directly to [DefaultGdbServer] (it owns its own child job).
+ * @param coroutineScope scope passed directly to [DefaultGdbServer] (it owns its own child job).
  * @property userNotifier notifier used to report GDB server errors to the user.
  */
 class WokwiGdbServerManager(

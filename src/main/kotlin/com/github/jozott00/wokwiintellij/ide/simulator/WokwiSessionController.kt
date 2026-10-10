@@ -30,6 +30,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.nio.file.Path
+import kotlin.time.Duration.Companion.milliseconds
 
 /** Serializes project simulation transitions; stop invalidates and cancels pending startup immediately. */
 @Service(Service.Level.PROJECT)
@@ -143,8 +144,8 @@ class WokwiSessionController internal constructor(
         val request = synchronized(stateLock) { enqueueStart(listener, null, true) }
         request.job.start()
         try {
-            val acknowledged = withTimeoutOrNull(timeoutMillis) {
-                if (awaitRequest(request)) ready.await() else false
+            val acknowledged = withTimeoutOrNull(timeoutMillis.milliseconds) {
+                awaitRequest(request) && ready.await()
             } ?: run {
                 userNotifier.error("Wokwi debugger startup timed out", "The simulator did not acknowledge startup within the timeout.")
                 false
@@ -257,7 +258,7 @@ class WokwiSessionController internal constructor(
 
     private suspend fun awaitRequest(request: StartRequest): Boolean = try {
         request.job.await()
-    } catch (error: CancellationException) {
+    } catch (_: CancellationException) {
         request.job.cancel()
         currentCoroutineContext().ensureActive()
         false

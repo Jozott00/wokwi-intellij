@@ -23,32 +23,32 @@ class HarnessTest {
     @TempDir lateinit var temporary: Path
 
     /** UART prints can arrive in several writes; assertions must match the accumulated document. */
-    @Test fun `matches fragmented console output`() {
+    @Test fun matchesFragmentedConsoleOutput() {
         val observations = ArrayDeque(listOf(snapshot("AVR sim"), snapshot("AVR simulation ready\n")))
         RunConsole { observations.removeFirst() }.awaitText("AVR simulation ready\n", 500.milliseconds)
     }
 
     /** Reusing a process must not allow output emitted before a checkpoint to satisfy a new assertion. */
-    @Test fun `old output cannot satisfy checkpoint assertion`() {
+    @Test fun oldOutputCannotSatisfyCheckpointAssertion() {
         val console = RunConsole { snapshot("ready\n") }
         val checkpoint = console.checkpoint()
         assertThrows(AssertionError::class.java) { console.awaitText("ready", 1.milliseconds, checkpoint) }
     }
 
     /** A fresh descriptor or cleared console has its own output coordinate space. */
-    @Test fun `new execution and replaced document can satisfy checkpoint assertion`() {
+    @Test fun newExecutionAndReplacedDocumentCanSatisfyCheckpointAssertion() {
         val checkpoint = ConsoleCheckpoint(1, "old ready\n")
         RunConsole { snapshot("ready\n", id = 2) }.awaitText("ready", after = checkpoint)
         RunConsole { snapshot("ready\n") }.awaitText("ready", after = checkpoint)
     }
 
     /** Restart in the same execution must wait for prints appended after its checkpoint. */
-    @Test fun `appended output satisfies checkpoint assertion`() {
+    @Test fun appendedOutputSatisfiesCheckpointAssertion() {
         RunConsole { snapshot("ready\nready\n") }.awaitText("ready", after = ConsoleCheckpoint(1, "ready\n"))
     }
 
     /** Simulator failure should surface immediately instead of consuming the full output deadline. */
-    @Test fun `premature termination reports exit and console tail`() {
+    @Test fun prematureTerminationReportsExitAndConsoleTail() {
         val console = RunConsole { snapshot("load failed", terminated = true) }
         val error = assertThrows(IllegalStateException::class.java) { console.awaitText("ready") }
         assertTrue(error.message!!.contains("load failed"))
@@ -56,7 +56,7 @@ class HarnessTest {
     }
 
     /** Every committed simulator fixture must pass its manifest check before an IDE is launched. */
-    @Test fun `committed simulator fixtures verify and copy`() {
+    @Test fun committedSimulatorFixturesVerifyAndCopy() {
         val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))
         for (fixture in listOf(Fixtures.avrUart, Fixtures.customChip)) {
             val copy = fixture.copyTo(repository, temporary.resolve(fixture.name))
@@ -68,7 +68,7 @@ class HarnessTest {
     }
 
     /** Corrupted firmware must be rejected before IDE startup, while mutations stay within the copy. */
-    @Test fun `fixture copy is isolated and rejects corrupt firmware`() {
+    @Test fun fixtureCopyIsIsolatedAndRejectsCorruptFirmware() {
         val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))
         val copy = Fixtures.avrUart.copyTo(repository, temporary.resolve("copy"))
         copy.resolve("firmware.hex").writeText(":corrupted")
@@ -79,7 +79,7 @@ class HarnessTest {
     }
 
     /** Local SDK/indexing settings and undeclared firmware must not affect a reproducible fixture run. */
-    @Test fun `fixture copy excludes undeclared local files`() {
+    @Test fun fixtureCopyExcludesUndeclaredLocalFiles() {
         val repository = Path.of(System.getProperty("wokwi.test.projectRoot"))
         val source = Fixtures.avrUart.copyTo(repository, temporary.resolve("source"))
         Files.createDirectories(source.resolve(".idea"))
@@ -92,7 +92,7 @@ class HarnessTest {
     }
 
     /** Exported diagnostics must never contain the runtime credential. */
-    @Test fun `diagnostics redact credentials`() {
+    @Test fun diagnosticsRedactCredentials() {
         TestDiagnostics(temporary, "test-secret").write("console.txt", "before test-secret after")
         assertEquals("before [REDACTED] after", temporary.resolve("console.txt").readText())
     }

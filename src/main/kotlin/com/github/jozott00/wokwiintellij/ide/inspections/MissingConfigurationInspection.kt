@@ -161,7 +161,7 @@ class MissingConfigurationInspection : WokwiConfigInspectionBase() {
 
         private fun insertTemplate(wokwiTable: TomlTable, project: Project, editor: Editor) {
             val templateManager = TemplateManager.getInstance(project)
-            val template = templateManager.createTemplate("", "", "$attribute = \"\$PATH$\"").apply {
+            val template = templateManager.createTemplate("", "", $$"$$attribute = \"$PATH$\"").apply {
                 addVariable("PATH", TextExpression(defaultValue), true)
             }
 

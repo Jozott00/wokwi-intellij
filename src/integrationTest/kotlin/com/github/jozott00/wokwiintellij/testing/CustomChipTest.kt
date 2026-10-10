@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 @Tag("live-wokwi")
 class CustomChipTest {
     /** The marker comes from WASM chip_init through chipOutput; the AVR firmware produces no UART output. */
-    @Test fun `custom chip executes and prints to the Run console`() = runWokwiTest(Fixtures.customChip) {
+    @Test fun customChipExecutesAndPrintsToTheRunConsole() = runWokwiTest(Fixtures.customChip) {
         simulator.start()
         console.awaitText("[chip-integration-printer] Custom chip simulation ready\n")
         simulator.stopAndAwaitTermination()

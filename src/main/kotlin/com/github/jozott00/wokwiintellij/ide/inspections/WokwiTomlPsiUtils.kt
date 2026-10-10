@@ -11,7 +11,7 @@ val PsiFile.isWokwiToml: Boolean get() = name == WokwiConstants.WOKWI_CONFIG_FIL
 
 val TomlKey.stringValue: String
     get() {
-        return segments.map { it.name }.joinToString(".")
+        return segments.joinToString(".") { it.name.toString() }
     }
 
 val TomlValue.stringValue: String?

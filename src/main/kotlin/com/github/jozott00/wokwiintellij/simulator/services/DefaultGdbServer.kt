@@ -256,7 +256,7 @@ private class GdbClientConnection(private val socket: Socket, private val eventC
 
     private fun checkDetach(message: String): Boolean {
         if (message == "D") {
-            writer.println("+\$#00")
+            writer.println("+$#00")
             return true
         }
         return false

@@ -153,7 +153,7 @@ class SimulationConfigLoader(val project: Project) {
             }
         }
 
-    private suspend fun readCustomChipBinary(chip: WokwiResolvedCustomChip): ByteArray? {
+    private fun readCustomChipBinary(chip: WokwiResolvedCustomChip): ByteArray? {
         if (!projectFiles.exists(chip.binaryPath)) {
             userNotifier.error(
                 title = "Failed to load custom chip",
@@ -174,7 +174,7 @@ class SimulationConfigLoader(val project: Project) {
         return buffer
     }
 
-    private suspend fun readCustomChipJson(chip: WokwiResolvedCustomChip) =
+    private fun readCustomChipJson(chip: WokwiResolvedCustomChip) =
         try {
             json.parseToJsonElement(projectFiles.readString(chip.jsonPath))
         } catch (e: SerializationException) {

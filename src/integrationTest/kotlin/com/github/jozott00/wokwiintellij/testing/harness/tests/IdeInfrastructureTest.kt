@@ -18,7 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 @Tag("ide-smoke")
 class IdeInfrastructureTest {
     /** Check prerequisites in the real IDE before a live test attempts to execute firmware. */
-    @Test fun `isolated IDE loads Wokwi and supports JCEF`() = runIsolatedWokwiIde(Fixtures.avrUart, null) {
+    @Test fun isolatedIDELoadsWokwiAndSupportsJCEF() = runIsolatedWokwiIde(Fixtures.avrUart, null) {
         driver.withReadAction(OnDispatcher.EDT) {
             assertNull(service(ProjectRootManager::class, singleProject()).getProjectSdk(), "Plain firmware fixtures must not assign a project SDK")
         }

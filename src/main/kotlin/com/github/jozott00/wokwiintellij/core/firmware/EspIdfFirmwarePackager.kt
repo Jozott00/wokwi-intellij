@@ -54,7 +54,7 @@ object EspIdfFirmwarePackager {
         return FirmwarePackResult.Success(firmwareData, partPaths)
     }
 
-    private data class FirmwarePart(
+    private class FirmwarePart(
         val offset: Int,
         val data: ByteArray,
     )
@@ -64,7 +64,20 @@ sealed interface FirmwarePackResult {
     data class Success(
         val image: ByteArray,
         val watchPaths: List<Path>,
-    ) : FirmwarePackResult
+    ) : FirmwarePackResult {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Success) return false
+            return image.contentEquals(other.image)
+                && watchPaths == other.watchPaths
+        }
+
+        override fun hashCode(): Int {
+            var result = image.contentHashCode()
+            result = 31 * result + watchPaths.hashCode()
+            return result
+        }
+    }
 
     data class Failure(
         val error: FirmwarePackError,
