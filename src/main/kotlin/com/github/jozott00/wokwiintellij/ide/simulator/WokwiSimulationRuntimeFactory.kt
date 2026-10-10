@@ -1,111 +1,97 @@
 package com.github.jozott00.wokwiintellij.ide.simulator
 
+import com.github.jozott00.wokwiintellij.core.model.FirmwareImage
 import com.github.jozott00.wokwiintellij.core.model.SimulationConfig
+import com.github.jozott00.wokwiintellij.core.ports.GdbServer
 import com.github.jozott00.wokwiintellij.core.ports.ResourceLoader
 import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.core.session.WokwiSessionStartConfig
+import com.github.jozott00.wokwiintellij.extensions.disposeByDisposer
+import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
 import com.github.jozott00.wokwiintellij.ide.services.LoadedSimulationConfig
 import com.github.jozott00.wokwiintellij.ide.services.SimulationConfigLoader
 import com.github.jozott00.wokwiintellij.services.UserNotifier
-import com.github.jozott00.wokwiintellij.ide.services.WokwiLicensingService
-import com.github.jozott00.wokwiintellij.simulator.services.DefaultGdbServer
-import com.github.jozott00.wokwiintellij.ui.jcef.WokwiHtmlPageFactory
 import com.github.jozott00.wokwiintellij.ui.jcef.JcefWokwiView
-import com.github.jozott00.wokwiintellij.ide.services.IntelliJUserNotifier
-import com.intellij.openapi.components.service
-import com.intellij.openapi.util.Disposer
+import com.github.jozott00.wokwiintellij.ui.jcef.WokwiHtmlPageFactory
+import com.intellij.openapi.application.EDT
 import com.intellij.ui.jcef.JBCefApp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/**
- * Creates active simulator runtime objects from loaded project configuration.
- *
- * This factory keeps JCEF-specific construction and start-config mapping out of [WokwiSessionController]. It still
- * lives in the IntelliJ adapter layer because it creates [JcefWokwiView] instances and checks platform browser support.
- *
- * @property owner disposable parent for created browser views.
- * @property childScope scope factory used by each created [WokwiSession].
- * @property simulationConfigLoader project-aware configuration and firmware loader.
- * @property resourceLoader adapter used by sessions to fetch Wokwi resources.
- */
+/** The lifecycle controller's configuration and browser construction boundary. */
+interface SimulationRuntimeFactory {
+    suspend fun loadConfig(waitForDebugger: Boolean): LoadedSimulationConfig?
+    suspend fun loadFirmware(config: SimulationConfig): FirmwareImage?
+    suspend fun ensureBrowserSupported(): Boolean
+    suspend fun createRuntime(
+        config: LoadedSimulationConfig,
+        gdbServer: GdbServer?,
+        listener: WokwiSession.Listener,
+    ): SimulationRuntime
+
+    fun createStartConfig(config: SimulationConfig, gdbPort: Int?) = WokwiSessionStartConfig(
+        license = config.license,
+        diagram = config.diagram,
+        firmware = config.firmware.buffer,
+        firmwareFormat = config.firmware.format.toString(),
+        waitForDebugger = config.waitForDebugger,
+        gdbPort = gdbPort,
+        customChips = config.customChips,
+    )
+}
+
+/** Creates Swing/JCEF objects on the EDT and supplies the service scope to session-owned jobs. */
 class WokwiSimulationRuntimeFactory(
-    private val owner: WokwiSessionController,
-    private val childScope: () -> CoroutineScope,
+    private val coroutineScope: CoroutineScope,
     private val simulationConfigLoader: SimulationConfigLoader,
     private val resourceLoader: ResourceLoader,
     private val userNotifier: UserNotifier = IntelliJUserNotifier,
-) {
-    /**
-     * Loads project simulation configuration for a normal or debugger-backed start.
-     */
-    suspend fun loadConfig(waitForDebugger: Boolean): LoadedSimulationConfig? =
-        simulationConfigLoader.load(waitForDebugger)
+) : SimulationRuntimeFactory {
+    override suspend fun loadConfig(waitForDebugger: Boolean) = simulationConfigLoader.load(waitForDebugger)
 
-    /**
-     * Reloads firmware for an existing runtime while preserving the rest of its simulation config.
-     */
-    suspend fun loadFirmware(config: SimulationConfig) =
+    override suspend fun loadFirmware(config: SimulationConfig) =
         simulationConfigLoader.loadFirmware(config.firmware.rootPath)
 
-    /**
-     * Checks whether JCEF is available and reports a user-visible error when it is not.
-     */
-    suspend fun ensureBrowserSupported(): Boolean {
+    override suspend fun ensureBrowserSupported(): Boolean {
         if (JBCefApp.isSupported()) return true
-
-        userNotifier.error(
-            "Could not create Wokwi simulator",
-            "JCEF browser is not supported. Please report this issue on the wokwi-intellij Github repository.",
-        )
+        userNotifier.error("Could not create Wokwi simulator", "JCEF browser is not supported.")
         return false
     }
 
-    /**
-     * Creates the JCEF view and core session objects for one active simulation runtime.
-     *
-     * The returned runtime owns the session and view pair; disposing it tears both down.
-     */
-    fun createRuntime(
-        simulationConfig: SimulationConfig,
-        gdbServer: DefaultGdbServer?,
+    override suspend fun createRuntime(
+        config: LoadedSimulationConfig,
+        gdbServer: GdbServer?,
         listener: WokwiSession.Listener,
-    ): WokwiSimulationRuntime {
-        val view = JcefWokwiView(
-            htmlOptions = WokwiHtmlPageFactory.Options(
-                licenseUserId = owner.project.service<WokwiLicensingService>()
-                    .parseLicense(simulationConfig.license)
-                    ?.userId,
-            )
-        )
-        Disposer.register(owner, view)
-
-        val session = WokwiSession(
-            coroutineScope = childScope(),
-            transport = view.wokwiTransport,
-            initialConfig = createStartConfig(simulationConfig, gdbServer?.getCurrentServerPort()),
-            resourceLoader = resourceLoader,
-            gdbServer = gdbServer,
-            listener = listener,
-        )
-
-        return WokwiSimulationRuntime(
-            view = view,
-            session = session,
-            simulationConfig = simulationConfig,
-        )
+    ): SimulationRuntime {
+        var created: WokwiSimulationRuntime? = null
+        try {
+            return withContext(Dispatchers.EDT) {
+                val view = JcefWokwiView(
+                    htmlOptions = WokwiHtmlPageFactory.Options(licenseUserId = config.licenseUserId)
+                )
+                try {
+                    WokwiSimulationRuntime(
+                        view = view,
+                        session = WokwiSession(
+                            coroutineScope = coroutineScope,
+                            transport = view.wokwiTransport,
+                            initialConfig = createStartConfig(config.simulationConfig, config.gdbServerPort),
+                            resourceLoader = resourceLoader,
+                            gdbServer = gdbServer,
+                            listener = listener,
+                        ),
+                        simulationConfig = config.simulationConfig,
+                    ).also { created = it }
+                } catch (error: Throwable) {
+                    view.disposeByDisposer()
+                    throw error
+                }
+            }
+        } catch (error: Throwable) {
+            // withContext can discard its result if cancellation arrives while returning from the EDT.
+            created?.dispose()
+            throw error
+        }
     }
-
-    /**
-     * Maps the IDE-facing simulation config into the pure session start payload.
-     */
-    fun createStartConfig(config: SimulationConfig, gdbPort: Int?): WokwiSessionStartConfig =
-        WokwiSessionStartConfig(
-            license = config.license,
-            diagram = config.diagram,
-            firmware = config.firmware.buffer,
-            firmwareFormat = config.firmware.format.toString(),
-            waitForDebugger = config.waitForDebugger,
-            gdbPort = gdbPort,
-            customChips = config.customChips,
-        )
 }

@@ -1,13 +1,11 @@
 package com.github.jozott00.wokwiintellij.extensions
 
 import com.github.jozott00.wokwiintellij.ide.services.WokwiPluginDisposable
-import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
-import kotlinx.coroutines.CoroutineScope
 import java.net.URI
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -19,17 +17,6 @@ import kotlin.io.path.exists
  * intended to be used as a parent disposable instead of the project itself.
  */
 val Project.wokwiDisposable get() = service<WokwiPluginDisposable>() as Disposable
-
-/**
- * Creates a new CoroutineScope for the given childName in scope of the WokwiProjectService.
- *
- * @param childName the name of the child scope.
- * @return the created CoroutineScope for the specified childName.
- */
-@Suppress("unused")
-fun Project.wokwiCoroutineChildScope(childName: String): CoroutineScope {
-    return service<WokwiSessionController>().childScope()
-}
 
 /**
  * Finds the relative paths of files or directories within the project.

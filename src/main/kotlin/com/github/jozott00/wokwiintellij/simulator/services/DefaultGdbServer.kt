@@ -5,18 +5,23 @@ import com.github.jozott00.wokwiintellij.core.ports.GdbServer
 import com.github.jozott00.wokwiintellij.utils.runCloseable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.Closeable
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.ServerSocket
 import java.net.Socket
-import java.net.SocketException
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -27,93 +32,123 @@ import java.util.logging.Logger
  * [GdbEvent] values, and writes Wokwi responses back to the active debugger connection. Wokwi protocol forwarding
  * remains owned by `core.session.WokwiSession`.
  *
- * @param cs coroutine scope used for socket accept/read/write work.
+ * The server owns a child [SupervisorJob] derived from [parentScope], so [close] cancels only its own work
+ * without cancelling the supplied parent scope.
+ *
+ * @param parentScope the parent coroutine scope; the server creates its own child scope for all jobs.
  */
-class DefaultGdbServer(private val cs: CoroutineScope) : GdbServer, Closeable {
+class DefaultGdbServer(parentScope: CoroutineScope) : GdbServer, Closeable {
+
+    private val stateLock = Any()
+    private var closed = false
     private var serverSocket: ServerSocket? = null
     private var currentConnection: GdbClientConnection? = null
-    private var eventChannel = Channel<GdbEvent>(Channel.BUFFERED)
+    private val eventChannel = Channel<GdbEvent>(Channel.BUFFERED)
+    override val events: Flow<GdbEvent> = eventChannel.receiveAsFlow()
+    private val job = SupervisorJob(parentScope.coroutineContext[Job])
+    private val scope = CoroutineScope(parentScope.coroutineContext + job)
 
-    override val events: Flow<GdbEvent>
-        get() = eventChannel.receiveAsFlow()
+    init {
+        // Cancellation of the supplied scope also completes the server's socket/channel lifetime.
+        job.invokeOnCompletion { close() }
+    }
 
-    /**
-     * Listens for incoming connections on the specified port and handles them.
-     *
-     * @param port The port number to listen on. If null, a random port will be used.
-     */
-    fun listen(port: Int?) {
+    /** Binds synchronously. A closed or already listening server rejects another bind. */
+    fun listen(port: Int?): Result<Int> {
         val socket = try {
             ServerSocket(port ?: 0)
-        } catch (e: Exception) {
-            LOG.log(Level.WARNING, "Failed to create GDB server socket", e)
-            eventChannel.trySend(
-                GdbEvent.Error(
-                    title = "Couldn't start GDB server",
-                    message = "Failed to create server socket: ${e.message}",
-                    cause = e,
-                )
-            )
-            return
+        } catch (error: Exception) {
+            return Result.failure(error)
         }
-
-        serverSocket = socket
-        LOG.info("GDB server listening on port ${socket.localPort}")
-
-        cs.launch(Dispatchers.IO) {
-            acceptConnections(socket)
-        }
-    }
-
-    private suspend fun acceptConnections(socket: ServerSocket) = socket.use {
-        while (true) {
-            val clientSocket = try {
-                socket.runCloseable { it.accept() }
-            } catch (e: SocketException) {
-                break
+        val boundPort = socket.localPort
+        val failure = synchronized(stateLock) {
+            when {
+                closed || !job.isActive -> IllegalStateException("GDB server is closed")
+                serverSocket?.isClosed == false -> IllegalStateException("GDB server is already listening")
+                else -> { serverSocket = socket; null }
             }
-            currentConnection?.close()
-            currentConnection = null
-            handleConnection(clientSocket)
+        }
+        if (failure != null) {
+            closeQuietly(socket)
+            return Result.failure(failure)
+        }
+        LOG.info("GDB server listening on port $boundPort")
+        scope.launch(Dispatchers.IO) { acceptConnections(socket) }
+        return Result.success(boundPort)
+    }
+
+    private suspend fun acceptConnections(socket: ServerSocket) {
+        try {
+            while (currentCoroutineContext().isActive) {
+                val client = socket.runCloseable { it.accept() }
+                handleConnection(client)
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: IOException) {
+            if (job.isActive && !socket.isClosed) {
+                LOG.log(Level.WARNING, "GDB accept failed", error)
+                eventChannel.trySend(GdbEvent.Error("GDB server error", error.message ?: "Accept failed", error))
+            }
+        } finally {
+            synchronized(stateLock) { if (serverSocket === socket) serverSocket = null }
+            closeQuietly(socket)
         }
     }
 
-    /**
-     * Returns the bound local TCP port after [listen] succeeds.
-     */
-    fun getCurrentServerPort() = serverSocket?.localPort
-
-    /**
-     * Returns whether the local server socket is currently open.
-     */
-    fun isRunning() = serverSocket?.isClosed?.not() ?: false
-
-    private suspend fun handleConnection(socket: Socket) {
-        currentConnection = GdbClientConnection(socket, eventChannel)
-        currentConnection?.process()
+    private suspend fun handleConnection(socket: Socket) = socket.use {
+        try {
+            val connection = GdbClientConnection(socket, eventChannel)
+            val published = synchronized(stateLock) {
+                if (closed || !job.isActive) false else {
+                    currentConnection = connection
+                    true
+                }
+            }
+            if (!published) return@use
+            try {
+                connection.process()
+            } finally {
+                synchronized(stateLock) { if (currentConnection === connection) currentConnection = null }
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: IOException) {
+            // A disconnected/reset debugger does not terminate the listener.
+            currentCoroutineContext().ensureActive()
+            LOG.log(Level.FINE, "GDB client disconnected", error)
+        }
     }
 
-    override fun sendResponse(response: String) = cs.launch(Dispatchers.IO) {
-        currentConnection?.writeResponse(response)
-    }.let { }
+    fun getCurrentServerPort(): Int? = synchronized(stateLock) {
+        serverSocket?.takeUnless { it.isClosed }?.localPort
+    }
 
-    /**
-     * Closes the active debugger connection and server socket.
-     */
+    fun isRunning(): Boolean = getCurrentServerPort() != null
+
+    override fun sendResponse(response: String) {
+        val connection = synchronized(stateLock) { currentConnection } ?: return
+        scope.launch(Dispatchers.IO) { connection.writeResponse(response) }
+    }
+
+    /** Closes owned sockets/jobs and the stable event stream, leaving the parent scope active. */
     override fun close() {
-        currentConnection?.close()
-        currentConnection = null
-
-        serverSocket?.close()
-        serverSocket = null
+        val owned = synchronized(stateLock) {
+            if (closed) return
+            closed = true
+            (currentConnection to serverSocket).also {
+                currentConnection = null
+                serverSocket = null
+            }
+        }
+        job.cancel()
+        closeQuietly(owned.first)
+        closeQuietly(owned.second)
+        eventChannel.close()
     }
 
-    /**
-     * Replaces the event channel when reusing a running server for a new simulator session.
-     */
-    fun resetEventChannel() {
-        eventChannel.close()
-        eventChannel = Channel(Channel.BUFFERED)
+    private fun closeQuietly(closeable: Closeable?) {
+        try { closeable?.close() } catch (_: IOException) { /* Already disconnected. */ }
     }
 
     companion object {
@@ -136,20 +171,21 @@ private class GdbClientConnection(private val socket: Socket, private val eventC
     /**
      * Reads debugger input until the socket closes, emitting validated GDB protocol events.
      */
-    suspend fun process() = socket.use {
+    suspend fun process() {
         writer.println("+")
-
         dispatchEvent(GdbEvent.Connected)
 
         var buf = ""
         while (true) {
-            val data = try {
-                reader.read()
-            } catch (e: Exception) {
-                return@use
+            val data: Int
+            try {
+                data = socket.runCloseable { reader.read() }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: IOException) {
+                return
             }
-            if (data == -1)
-                break
+            if (data == -1) break
             if (data == 3) {
                 LOG.fine("Received break")
                 dispatchEvent(GdbEvent.Break)
@@ -162,13 +198,13 @@ private class GdbClientConnection(private val socket: Socket, private val eventC
                 buf = trimProcessedParts(buf)
 
                 if (calculateChecksum(message) != receivedChecksum) {
-                    writer.println('-') // Negative acknowledgment
+                    writer.println('-')
                     LOG.warning("GDB checksum error in message: $message")
                 } else {
-                    writer.println('+') // Positive acknowledgment
+                    writer.println('+')
 
                     if (checkDetach(message))
-                        return@use
+                        return
 
                     dispatchEvent(GdbEvent.Message(message))
                 }
@@ -183,8 +219,12 @@ private class GdbClientConnection(private val socket: Socket, private val eventC
         writer.println(response)
     }
 
-    private suspend fun dispatchEvent(event: GdbEvent) = withContext(Dispatchers.IO) {
-        eventChannel.send(event)
+    private suspend fun dispatchEvent(event: GdbEvent) {
+        try {
+            eventChannel.send(event)
+        } catch (_: kotlinx.coroutines.channels.ClosedSendChannelException) {
+            // channel closed during shutdown, ignore
+        }
     }
 
     private fun shouldContinueProcessingMessage(buf: String): Boolean {

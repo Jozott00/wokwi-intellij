@@ -1,13 +1,12 @@
 package com.github.jozott00.wokwiintellij.ide.execution.macros
 
 import com.github.jozott00.wokwiintellij.ide.config.WokwiProjectConfigResolver
-import com.github.jozott00.wokwiintellij.extensions.wokwiCoroutineChildScope
 import com.intellij.ide.macro.Macro
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.progress.runBlockingCancellable
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 class ElfPathMacro : Macro() {
     override fun getName() = "WokwiElfPath"
@@ -21,10 +20,10 @@ class ElfPathMacro : Macro() {
             return "project-not-ready"
         }
 
-        return runBlocking {
-            project.wokwiCoroutineChildScope("ElfPathMacro").async(Dispatchers.IO) {
+        return runBlockingCancellable {
+            withContext(Dispatchers.IO) {
                 WokwiProjectConfigResolver(project).findElfFile()
-            }.await()
+            }
         }?.path ?: "no-elf-found"
     }
 }

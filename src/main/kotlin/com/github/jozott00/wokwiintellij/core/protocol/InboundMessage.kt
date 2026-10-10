@@ -40,6 +40,10 @@ sealed interface InboundMessage {
 
         /** Response packet from Wokwi for the active GDB connection. */
         const val GDB_RESPONSE = "gdbResponse"
+
+        const val SIM_RUN = "sim:run"
+        const val SIM_PAUSE = "sim:pause"
+        const val SIM_STOP = "sim:stop"
     }
 
     /**
@@ -65,6 +69,17 @@ sealed interface InboundMessage {
     data class SwitchToBase64(
         override val command: String = Command.SWITCH_TO_BASE64,
     ) : InboundMessage
+
+    /** Wokwi has initialized the simulator and is executing firmware. */
+    @Serializable
+    data class SimulationRunning(override val command: String = Command.SIM_RUN) : InboundMessage
+
+    /** Wokwi has initialized the simulator and is paused, including wait-for-debugger startup. */
+    @Serializable
+    data class SimulationPaused(override val command: String = Command.SIM_PAUSE) : InboundMessage
+
+    @Serializable
+    data class SimulationStopped(override val command: String = Command.SIM_STOP) : InboundMessage
 
     /**
      * Request to load a simulator resource through the IDE.

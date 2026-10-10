@@ -1,6 +1,5 @@
 package com.github.jozott00.wokwiintellij.ide.execution.runBefore
 
-import com.github.jozott00.wokwiintellij.core.session.WokwiSession
 import com.github.jozott00.wokwiintellij.ide.simulator.WokwiSessionController
 import com.github.jozott00.wokwiintellij.ui.WokwiIcons
 import com.github.jozott00.wokwiintellij.utils.simulation.SimulatorRunUtils
@@ -10,8 +9,10 @@ import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.runBlockingCancellable
 import com.intellij.openapi.util.Key
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.swing.Icon
 
 /**
@@ -50,53 +51,18 @@ class WokwiStartDebugBeforeRunTaskProvider : BeforeRunTaskProvider<WokwiStartDeb
         task: WokwiStartDebugBeforeRunTask
     ): Boolean {
         val projectService = environment.project.service<WokwiSessionController>()
-        return runBlocking(Dispatchers.IO) {
-            // start child scope to make cancellation on dispose possible.
-            val job = projectService.childScope().async {
-                val result = projectService.startSimulatorAsync(task, true)
-                task.waitForSimulatorToBeRunning()
+        return runBlockingCancellable {
+            withContext(Dispatchers.IO) {
+                val result = projectService.startDebuggerAndAwaitReady()
+                if (result) SimulatorRunUtils.startExecutionIfNotRunning(environment.project)
                 result
             }
-            val result = job.await()
-
-            // start run execution for additional log output
-            SimulatorRunUtils.startExecutionIfNotRunning(environment.project)
-
-            result
         }
     }
 
 }
 
-/**
- * A [BeforeRunTask] implementation that waits for the Wokwi simulator to start and reach a running state
- * before allowing the debug session to proceed. It implements the [WokwiSession.Listener] interface
- * to receive notifications about the simulator's state.
- */
-class WokwiStartDebugBeforeRunTask :
-    BeforeRunTask<WokwiStartDebugBeforeRunTask>(ID), WokwiSession.Listener {
-
-    private val simulatorRunning = CompletableDeferred<Unit>()
-
-    /**
-     * Suspends the current coroutine until the Wokwi simulator has been reported as running.
-     * This method waits for the [onRunning] event to be called, indicating that the simulator
-     * is ready.
-     */
-    suspend fun waitForSimulatorToBeRunning() {
-        simulatorRunning.await()
-    }
-
-    /**
-     * Callback method from the [WokwiSession.Listener] interface. It is called when the simulator
-     * changes its state to running.
-     *
-     * This method completes the [simulatorRunning] deferred, allowing any suspended coroutines
-     * waiting for the simulator to start to resume execution.
-     */
-    override fun onRunning() {
-        simulatorRunning.complete(Unit)
-    }
-}
+/** Marker persisted in the debugger's before-run configuration. Each execution creates a fresh readiness wait. */
+class WokwiStartDebugBeforeRunTask : BeforeRunTask<WokwiStartDebugBeforeRunTask>(ID)
 
 val ID: Key<WokwiStartDebugBeforeRunTask> = Key.create("WokwiStartDebug.Before.Run")

@@ -24,6 +24,9 @@ class PackageArchitectureTest {
                 "javax.swing..",
                 "java.awt..",
                 "org.cef..",
+                "com.github.jozott00.wokwiintellij.ide..",
+                "com.github.jozott00.wokwiintellij.ui..",
+                "com.github.jozott00.wokwiintellij.simulator..",
             )
             .check(productionClasses)
     }
@@ -44,7 +47,33 @@ class PackageArchitectureTest {
                 "javax.swing..",
                 "java.awt..",
                 "org.cef..",
+                "com.github.jozott00.wokwiintellij.ide..",
+                "com.github.jozott00.wokwiintellij.ui..",
             )
+            .check(productionClasses)
+    }
+
+    @Test
+    fun `browser surface does not depend on session or infrastructure implementation`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses().that().resideInAPackage("..ui.jcef..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                "..core.config..", "..core.firmware..", "..core.model..", "..core.protocol..", "..core.session..",
+                "..ide..", "..simulator..", "..services..", "..states..",
+            ).check(productionClasses)
+    }
+
+    @Test
+    fun `actions and execution leave protocol encoding to the session`() {
+        val productionClasses = ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("com.github.jozott00.wokwiintellij")
+
+        noClasses().that().resideInAnyPackage("..ide.actions..", "..ide.execution..")
+            .should().dependOnClassesThat().haveNameMatching(".*[.]core[.]protocol[.](ProtocolCodec|OutboundMessage).*")
             .check(productionClasses)
     }
 
@@ -109,6 +138,8 @@ class PackageArchitectureTest {
                 "javax.swing..",
                 "java.awt..",
                 "org.cef..",
+                "com.github.jozott00.wokwiintellij.ide..",
+                "com.github.jozott00.wokwiintellij.ui..",
             )
             .check(productionClasses)
     }

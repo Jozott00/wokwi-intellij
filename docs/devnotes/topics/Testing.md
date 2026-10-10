@@ -59,6 +59,18 @@ Keep assertions tied to observable feature behavior. Document new fixtures and
 helpers with KDoc so feature tests can compose them without duplicating startup,
 credentials or cleanup.
 
+Controller lifecycle tests inject `SimulationRuntimeFactory` and `GdbServerManager` while using real core sessions.
+Deferred gates exercise stop, superseded startup, late browser construction, cancellation, timeout, and console
+ownership without JCEF. Controlled scheduling also covers starts reserved before stop cleanup, a failed or cancelled
+replacement retaining the previous runtime, and readiness invalidated before its waiter resumes.
+Core session tests distinguish iframe readiness from simulator status and check resource/job
+disposal. GDB adapter tests use bounded localhost socket reads to verify packet forwarding, collector replacement,
+binding failure, and closure without cancelling the parent scope.
+
+Architecture tests enforce dependency direction: core and simulator infrastructure cannot depend on IDE/UI adapters;
+the JCEF surface cannot depend on session, config, firmware, or infrastructure implementations; actions and execution
+adapters leave protocol encoding to the session.
+
 Fixture-specific hardware, firmware sources and regeneration instructions belong
 in the fixture's README under `testData`, rather than the shared infrastructure
 guide. Test reports record individual run results; developer guides describe the

@@ -14,13 +14,26 @@ class WokwiSessionEventDispatcher {
     private val sessionSubscribers = CopyOnWriteArrayList<WokwiSession.Listener>()
     private val persistentSubscribers = CopyOnWriteArrayList<WokwiSession.Listener>()
 
-    private val sessionListener = object : WokwiSession.Listener {
+    /** The controller can atomically ignore callbacks from a retired runtime. */
+    fun asSessionListener(dispatch: (() -> Unit) -> Unit = { it() }): WokwiSession.Listener = object : WokwiSession.Listener {
+        private fun notifySubscribers(event: (WokwiSession.Listener) -> Unit) {
+            dispatch { this@WokwiSessionEventDispatcher.notifySubscribers(event) }
+        }
+
         override fun onStarted(config: WokwiSessionStartConfig) {
             notifySubscribers { it.onStarted(config) }
         }
 
         override fun onRunning() {
             notifySubscribers { it.onRunning() }
+        }
+
+        override fun onDebuggerReady() { notifySubscribers { it.onDebuggerReady() } }
+        override fun onPaused() { notifySubscribers { it.onPaused() } }
+        override fun onStopped() { notifySubscribers { it.onStopped() } }
+        override fun onTerminated() { notifySubscribers { it.onTerminated() } }
+        override fun onResourceError(message: InboundMessage.LoadResource, error: Throwable) {
+            notifySubscribers { it.onResourceError(message, error) }
         }
 
         override fun onUartData(bytes: ByteArray) {
@@ -61,6 +74,10 @@ class WokwiSessionEventDispatcher {
         sessionSubscribers.add(listener)
     }
 
+    fun unsubscribe(listener: WokwiSession.Listener) {
+        sessionSubscribers.remove(listener)
+    }
+
     /**
      * Registers a subscriber that survives runtime replacement.
      */
@@ -76,11 +93,6 @@ class WokwiSessionEventDispatcher {
     fun clearSessionSubscribers() {
         sessionSubscribers.clear()
     }
-
-    /**
-     * Returns the listener attached to the active [WokwiSession].
-     */
-    fun asSessionListener(): WokwiSession.Listener = sessionListener
 
     private fun notifySubscribers(event: (WokwiSession.Listener) -> Unit) {
         for (listener in persistentSubscribers) {

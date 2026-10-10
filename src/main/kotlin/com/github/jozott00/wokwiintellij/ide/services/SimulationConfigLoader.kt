@@ -32,6 +32,7 @@ import kotlinx.serialization.json.Json
 data class LoadedSimulationConfig(
     val simulationConfig: SimulationConfig,
     val gdbServerPort: Int?,
+    val licenseUserId: String? = null,
 )
 
 /**
@@ -81,6 +82,7 @@ class SimulationConfigLoader(val project: Project) {
                 customChips = customChips,
             ),
             gdbServerPort = config.gdbServerPort,
+            licenseUserId = licenseService.parseLicense(license)?.userId,
         )
     }
 

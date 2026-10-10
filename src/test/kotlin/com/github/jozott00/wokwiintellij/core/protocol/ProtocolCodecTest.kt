@@ -82,6 +82,16 @@ class ProtocolCodecTest {
     }
 
     @Test
+    fun `decodes simulator lifecycle acknowledgements`() {
+        assertIs<InboundMessage.SimulationRunning>(
+            assertIs<InboundDecodeResult.Decoded>(ProtocolCodec.decode("""{"command":"sim:run"}""")).message)
+        assertIs<InboundMessage.SimulationPaused>(
+            assertIs<InboundDecodeResult.Decoded>(ProtocolCodec.decode("""{"command":"sim:pause"}""")).message)
+        assertIs<InboundMessage.SimulationStopped>(
+            assertIs<InboundDecodeResult.Decoded>(ProtocolCodec.decode("""{"command":"sim:stop"}""")).message)
+    }
+
+    @Test
     fun `preserves unknown inbound payloads`() {
         val result = ProtocolCodec.decode("""{"command":"newCommand","extra":"value"}""")
 

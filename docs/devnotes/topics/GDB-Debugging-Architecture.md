@@ -68,6 +68,51 @@ localhost:<gdbServerPort>
 
 If a random port is used, the macro reads the bound port from `WokwiSessionController.getRunningGDBPort()`.
 
+The debugger's before-run task creates a fresh readiness wait for every execution. It proceeds only after Wokwi sends
+`sim:run` or `sim:pause` for the debug start. A paused simulator is initialized and ready for attach even when its board
+does not request external resources. Configuration failure, GDB bind failure, resource failure, stop, or runtime
+replacement ends the wait with failure. A 30-second timeout covers both startup work and the acknowledgement wait;
+timeout and IDE cancellation stop that request without stopping a newer request. The synchronous before-run API uses
+IntelliJ's cancellable coroutine bridge so cancellation of the run also cancels startup.
+Before reporting success, the controller checks that the acknowledged request is still current and has not failed;
+stop, replacement, or failure can invalidate readiness while the waiting caller is scheduled to resume.
+
+The sequence below shows a successfully prepared debug runtime and the readiness decision. Configuration or binding
+failure exits before browser creation. Browser arrows follow the transport route shown in
+[Communication Architecture](Communication-Architecture.md); factory and manager calls are abbreviated here.
+
+```mermaid
+sequenceDiagram
+    participant Task as Debug before-run task
+    participant Controller as Session controller
+    participant Server as Local GDB server
+    participant Session as WokwiSession
+    participant Wokwi as Wokwi iframe
+
+    Task->>Controller: startDebuggerAndAwaitReady()
+    Note over Task,Wokwi: 30-second deadline covers setup and simulator acknowledgement
+    Controller->>Controller: Load configuration
+    Controller->>Server: Configure through GdbServerManager
+    Server-->>Controller: Actual bound port
+    Controller->>Session: Create runtime and request start
+    Wokwi->>Session: start (iframe handshake)
+    Session->>Wokwi: start payload with pause=true and bound gdbPort
+    Note over Task,Wokwi: Handshake and resource requests do not complete readiness
+
+    alt Simulator initialized
+        Wokwi-->>Session: sim:pause or sim:run
+        Session-->>Controller: onDebuggerReady()
+        Controller-->>Task: true
+        Note over Task,Controller: Attach Run console without restarting; debugger may connect
+    else Stop, replacement, resource/GDB error, or timeout
+        Controller->>Controller: Stop failed request only if still current
+        Controller-->>Task: false
+    end
+```
+
+IDE cancellation propagates cancellation to the before-run caller and stops its request. A newer request remains
+unaffected by cleanup of an older readiness wait.
+
 ## Why This Bridge Exists
 
 Wokwi's simulator and internal GDB stub run inside the embedded browser iframe. A native IntelliJ debugger cannot attach
@@ -86,6 +131,13 @@ This keeps each layer narrow:
 `WokwiGdbServerManager` owns concrete GDB adapter lifecycle for `WokwiSessionController`. It creates
 `DefaultGdbServer`, registers it with the project disposable, and disposes it when debugging stops or the simulator
 controller shuts down.
+
+A running server is reused when the requested port is absent or matches its actual bound port. Its event channel
+remains stable across session replacement, so an already connected debugger can continue sending packets after the
+old session collector is cancelled and a new one subscribes. A different explicit port requires a new server. Binding
+returns a result synchronously; on failure the manager disposes the candidate and reports the error before the browser
+is created. The server owns its accept/read/response jobs and cancels them along with its sockets on close, leaving the
+parent scope active.
 
 `WokwiSession` owns only its subscription to `GdbServer.events`. Disposing a session cancels that collection and
 unsubscribes from the browser transport. It does not close the local GDB server directly; server disposal remains a

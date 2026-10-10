@@ -7,7 +7,8 @@ import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
  */
 fun interface ResourceLoader {
     /**
-     * Returns raw bytes for [message]. The session handles transport encoding before replying to Wokwi.
+     * Returns raw bytes for [message]. Implementations move blocking I/O off the caller's dispatcher and bound waits.
+     * The session owns cancellation, request ordering, and transport encoding before replying to Wokwi.
      */
-    fun load(message: InboundMessage.LoadResource): ByteArray
+    suspend fun load(message: InboundMessage.LoadResource): ByteArray
 }

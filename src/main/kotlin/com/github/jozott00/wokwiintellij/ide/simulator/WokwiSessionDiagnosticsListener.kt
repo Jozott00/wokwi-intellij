@@ -35,6 +35,11 @@ class WokwiSessionDiagnosticsListener(
         log.info("Wokwi requested base64 payloads; IntelliJ already sends firmware and resources as base64.")
     }
 
+    override fun onResourceError(message: InboundMessage.LoadResource, error: Throwable) {
+        log.warn("Failed to load Wokwi resource", error)
+        userNotifier.error("Failed to load Wokwi resource", error.message ?: "Resource loading failed.")
+    }
+
     override fun onMalformedMessage(message: InboundDecodeResult.Malformed) {
         log.error("Malformed Wokwi message: ${message.reason}\n${message.raw}", Throwable())
     }

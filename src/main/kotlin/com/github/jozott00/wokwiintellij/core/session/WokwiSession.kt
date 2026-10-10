@@ -11,7 +11,11 @@ import com.github.jozott00.wokwiintellij.core.protocol.ProtocolCodec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import java.util.Base64
@@ -47,10 +51,17 @@ class WokwiSession(
     private var config = initialConfig
     private var browserReady = false
     private var startInvoked = false
-    private var simulationRunning = false
+    private val stateLock = Any()
+    private var disposed = false
+    private var startSent = false
+    private var debuggerReady = false
+    private var simulationStatus: String? = null
+    private val resources = Channel<InboundMessage.LoadResource>(Channel.UNLIMITED)
 
     init {
         transport.subscribe(this)
+        // resourceData carries no request id, so replies must preserve request order.
+        sessionScope.launch { for (request in resources) loadResource(request) }
         gdbServer?.events
             ?.onEach(::handleGdbEvent)
             ?.launchIn(sessionScope)
@@ -63,7 +74,10 @@ class WokwiSession(
      * again after readiness resends the current startup config, which is how restarts are represented today.
      */
     fun start() {
-        startInvoked = true
+        synchronized(stateLock) {
+            if (disposed) return
+            startInvoked = true
+        }
         startInternal()
     }
 
@@ -71,7 +85,9 @@ class WokwiSession(
      * Replaces the startup payload data used by subsequent [start] calls or readiness-triggered starts.
      */
     fun updateStartConfig(config: WokwiSessionStartConfig) {
-        this.config = config
+        synchronized(stateLock) {
+            if (!disposed) this.config = config
+        }
     }
 
     /**
@@ -80,8 +96,14 @@ class WokwiSession(
      * The transport itself remains owned by the caller.
      */
     fun dispose() {
+        synchronized(stateLock) {
+            if (disposed) return
+            disposed = true
+        }
         sessionJob.cancel()
+        resources.close()
         transport.removeSubscriber(this)
+        listener.onTerminated()
     }
 
     /**
@@ -91,6 +113,7 @@ class WokwiSession(
      * propagation if they support that behavior.
      */
     override fun messageReceived(message: String): Boolean {
+        if (synchronized(stateLock) { disposed }) return false
         return when (val result = ProtocolCodec.decode(message)) {
             InboundDecodeResult.Empty -> true
             is InboundDecodeResult.Malformed -> {
@@ -104,7 +127,7 @@ class WokwiSession(
     private fun handleIncomingMessage(message: InboundMessage): Boolean {
         return when (message) {
             is InboundMessage.Ready -> {
-                browserReady = true
+                synchronized(stateLock) { browserReady = true }
                 startInternal()
                 true
             }
@@ -112,9 +135,20 @@ class WokwiSession(
                 listener.onSwitchToBase64Requested()
                 true
             }
-            is InboundMessage.LoadResource -> {
-                loadResource(message)
+            is InboundMessage.SimulationRunning -> {
+                updateSimulationStatus(message.command)
                 true
+            }
+            is InboundMessage.SimulationPaused -> {
+                updateSimulationStatus(message.command)
+                true
+            }
+            is InboundMessage.SimulationStopped -> {
+                updateSimulationStatus(message.command)
+                true
+            }
+            is InboundMessage.LoadResource -> {
+                resources.trySend(message).isSuccess
             }
             is InboundMessage.UartData -> {
                 val bytes = message.toByteArray()
@@ -143,38 +177,60 @@ class WokwiSession(
     }
 
     private fun startInternal() {
-        simulationRunning = false
-
-        if (!browserReady || !startInvoked) return
-
+        val startConfig = synchronized(stateLock) {
+            if (disposed || !browserReady || !startInvoked) return
+            debuggerReady = false
+            simulationStatus = null
+            startSent = true
+            config
+        }
         val cmd = ProtocolCodec.encode(
             OutboundMessage.SimulatorStart(
-                diagram = config.diagram,
-                firmware = Base64.getEncoder().encodeToString(config.firmware),
-                firmwareFormat = config.firmwareFormat,
-                license = config.license,
-                pause = config.waitForDebugger,
-                gdbPort = config.gdbPort,
-                chips = config.customChips.takeIf { it.isNotEmpty() },
+                diagram = startConfig.diagram,
+                firmware = Base64.getEncoder().encodeToString(startConfig.firmware),
+                firmwareFormat = startConfig.firmwareFormat,
+                license = startConfig.license,
+                pause = startConfig.waitForDebugger,
+                gdbPort = startConfig.gdbPort,
+                chips = startConfig.customChips.takeIf { it.isNotEmpty() },
             )
         )
-        transport.send(cmd)
-        listener.onStarted(config)
+        if (sendIfActive(cmd)) listener.onStarted(startConfig)
     }
 
-    private fun loadResource(message: InboundMessage.LoadResource) {
-        val resource = Base64.getEncoder().encodeToString(resourceLoader.load(message))
-        val cmd = ProtocolCodec.encode(OutboundMessage.ResourceData(buffer = resource))
-        transport.send(cmd)
-
-        checkSimulationStartedRunning()
-    }
-
-    private fun checkSimulationStartedRunning() {
-        if (!simulationRunning) {
-            simulationRunning = true
-            listener.onRunning()
+    private suspend fun loadResource(message: InboundMessage.LoadResource) {
+        try {
+            val resource = Base64.getEncoder().encodeToString(resourceLoader.load(message))
+            currentCoroutineContext().ensureActive()
+            sendIfActive(ProtocolCodec.encode(OutboundMessage.ResourceData(buffer = resource)))
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            if (!synchronized(stateLock) { disposed }) listener.onResourceError(message, error)
         }
+    }
+
+    private fun updateSimulationStatus(status: String) {
+        val notifyDebuggerReady = synchronized(stateLock) {
+            if (disposed || !startSent || simulationStatus == status) return
+            simulationStatus = status
+            val initialized = status == InboundMessage.Command.SIM_RUN || status == InboundMessage.Command.SIM_PAUSE
+            (initialized && config.waitForDebugger && config.gdbPort != null && !debuggerReady).also {
+                if (it) debuggerReady = true
+            }
+        }
+        when (status) {
+            InboundMessage.Command.SIM_RUN -> listener.onRunning()
+            InboundMessage.Command.SIM_PAUSE -> listener.onPaused()
+            InboundMessage.Command.SIM_STOP -> listener.onStopped()
+        }
+        if (notifyDebuggerReady) listener.onDebuggerReady()
+    }
+
+    private fun sendIfActive(message: String): Boolean = synchronized(stateLock) {
+        if (disposed) return@synchronized false
+        transport.send(message)
+        true
     }
 
     private fun handleGdbEvent(event: GdbEvent) {
@@ -187,11 +243,11 @@ class WokwiSession(
     }
 
     private fun sendGdbMessage(message: String) {
-        transport.send(ProtocolCodec.encode(OutboundMessage.Gdb(message = message)))
+        sendIfActive(ProtocolCodec.encode(OutboundMessage.Gdb(message = message)))
     }
 
     private fun sendGdbBreak() {
-        transport.send(ProtocolCodec.encode(OutboundMessage.GdbBreak()))
+        sendIfActive(ProtocolCodec.encode(OutboundMessage.GdbBreak()))
     }
 
     /**
@@ -201,8 +257,23 @@ class WokwiSession(
         /** Called after a simulator startup payload has been sent to Wokwi. */
         fun onStarted(config: WokwiSessionStartConfig) {}
 
-        /** Called once when the session first observes resource loading activity for a start cycle. */
+        /** Wokwi acknowledged that firmware is running (`sim:run`). */
         fun onRunning() {}
+
+        /** Wokwi acknowledged that the initialized simulator is paused (`sim:pause`). */
+        fun onPaused() {}
+
+        /** Wokwi stopped the current simulation (`sim:stop`); the browser can still be restarted. */
+        fun onStopped() {}
+
+        /** Called once per debug start after Wokwi acknowledges run/pause with a bound GDB port. */
+        fun onDebuggerReady() {}
+
+        /** The host disposed this session. Terminal notification for lifecycle waiters. */
+        fun onTerminated() {}
+
+        /** Resource fetching failed; infrastructure errors are separate from protocol decoding errors. */
+        fun onResourceError(message: InboundMessage.LoadResource, error: Throwable) {}
 
         /** Called when Wokwi emits UART bytes. */
         fun onUartData(bytes: ByteArray) {}

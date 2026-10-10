@@ -6,6 +6,7 @@ import com.github.jozott00.wokwiintellij.core.ports.ResourceLoader
 import com.github.jozott00.wokwiintellij.core.ports.WokwiTransport
 import com.github.jozott00.wokwiintellij.core.protocol.InboundDecodeResult
 import com.github.jozott00.wokwiintellij.core.protocol.InboundMessage
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,6 +25,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class WokwiSessionTest {
@@ -105,7 +107,7 @@ class WokwiSessionTest {
     }
 
     @Test
-    fun `load resource sends resource data and reports running once`() {
+    fun `resource responses do not imply simulator readiness`() {
         val transport = FakeTransport()
         val listener = RecordingListener()
         val requestedUrls = mutableListOf<String>()
@@ -128,7 +130,7 @@ class WokwiSessionTest {
         val firstPayload = Json.parseToJsonElement(transport.sentMessages.first()).jsonObject
         assertEquals("resourceData", firstPayload["command"]?.jsonPrimitive?.contentOrNull)
         assertEquals("aGVsbG8=", firstPayload["buffer"]?.jsonPrimitive?.contentOrNull)
-        assertEquals(1, listener.runningCount)
+        assertEquals(0, listener.runningCount)
     }
 
     @Test
@@ -248,14 +250,110 @@ class WokwiSessionTest {
         assertEquals(emptyList(), transport.sentMessages)
     }
 
+    @Test
+    fun `debug readiness comes from actual status once per start without resource requests`() {
+        val transport = FakeTransport()
+        val listener = RecordingListener()
+        val session = createSession(transport, listener, gdbPort = 3333)
+        transport.receive("""{"command":"sim:pause"}""")
+        assertEquals(0, listener.debuggerReadyCount)
+        session.start()
+        transport.receive("""{"command":"start"}""")
+        transport.receive("""{"command":"sim:pause"}""")
+        transport.receive("""{"command":"sim:pause"}""")
+        transport.receive("""{"command":"sim:run"}""")
+        transport.receive("""{"command":"sim:pause"}""")
+        assertEquals(1, listener.debuggerReadyCount)
+        assertEquals(1, listener.runningCount)
+        assertEquals(2, listener.pausedCount)
+
+        session.start()
+        transport.receive("""{"command":"sim:pause"}""")
+        assertEquals(2, listener.debuggerReadyCount)
+        transport.receive("""{"command":"sim:stop"}""")
+        assertEquals(1, listener.stoppedCount)
+        session.dispose()
+    }
+
+    @Test
+    fun `status without a bound gdb port does not announce debugger readiness`() {
+        val transport = FakeTransport()
+        val listener = RecordingListener()
+        val session = createSession(transport, listener)
+        session.start()
+        transport.receive("""{"command":"start"}""")
+        transport.receive("""{"command":"sim:run"}""")
+        assertEquals(1, listener.runningCount)
+        assertEquals(0, listener.debuggerReadyCount)
+        session.dispose()
+    }
+
+    @Test
+    fun `dispose cancels owned jobs and suppresses late resource responses and starts`() = runBlocking {
+        val parent = SupervisorJob()
+        val transport = FakeTransport()
+        val listener = RecordingListener()
+        val resource = CompletableDeferred<ByteArray>()
+        val session = createSession(transport, listener, resourceLoader = ResourceLoader { resource.await() },
+            coroutineScope = CoroutineScope(parent + Dispatchers.Unconfined))
+        assertEquals(1, parent.children.count())
+        transport.receive("""{"command":"loadResource","url":"https://example.com/rom.bin"}""")
+        session.dispose()
+        session.dispose()
+        resource.complete(byteArrayOf(1))
+        session.start()
+        parent.children.toList().forEach { it.join() }
+        assertEquals(0, parent.children.count())
+        assertTrue(parent.isActive)
+        assertEquals(emptyList(), transport.sentMessages)
+        assertEquals(1, listener.terminatedCount)
+        assertFalse(session.messageReceived("""{"command":"start"}"""))
+        parent.cancel()
+    }
+
+    @Test
+    fun `resource replies preserve request order while loading asynchronously`() {
+        val transport = FakeTransport()
+        val first = CompletableDeferred<ByteArray>()
+        val requested = mutableListOf<String>()
+        val session = createSession(transport, resourceLoader = ResourceLoader {
+            requested.add(it.url)
+            if (it.url == "first") first.await() else byteArrayOf(2)
+        })
+        transport.receive("""{"command":"loadResource","url":"first"}""")
+        transport.receive("""{"command":"loadResource","url":"second"}""")
+        assertEquals(listOf("first"), requested)
+        assertTrue(transport.sentMessages.isEmpty())
+        first.complete(byteArrayOf(1))
+        assertEquals(listOf("first", "second"), requested)
+        assertEquals(listOf("AQ==", "Ag=="), transport.sentMessages.map {
+            Json.parseToJsonElement(it).jsonObject["buffer"]!!.jsonPrimitive.contentOrNull
+        })
+        session.dispose()
+    }
+
+    @Test
+    fun `resource failure is reported without implying running`() {
+        val transport = FakeTransport()
+        val listener = RecordingListener()
+        val error = IllegalStateException("resource unavailable")
+        val session = createSession(transport, listener, resourceLoader = ResourceLoader { throw error })
+        transport.receive("""{"command":"loadResource","url":"https://example.com/rom.bin"}""")
+        assertEquals(listOf<Throwable>(error), listener.resourceErrors)
+        assertEquals(0, listener.runningCount)
+        assertEquals(emptyList(), transport.sentMessages)
+        session.dispose()
+    }
+
     private fun createSession(
         transport: FakeTransport,
         listener: RecordingListener = RecordingListener(),
         resourceLoader: ResourceLoader = ResourceLoader { ByteArray(0) },
         gdbServer: GdbServer? = null,
         gdbPort: Int? = null,
+        coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
     ) = WokwiSession(
-        coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        coroutineScope = coroutineScope,
         transport = transport,
         initialConfig = WokwiSessionStartConfig(
             license = "license-key",
@@ -279,6 +377,18 @@ class WokwiSessionTest {
     private class RecordingListener : WokwiSession.Listener {
         val startedConfigs = mutableListOf<WokwiSessionStartConfig>()
         var runningCount = 0
+        var debuggerReadyCount = 0
+        var pausedCount = 0
+        var stoppedCount = 0
+        var terminatedCount = 0
+        val resourceErrors = mutableListOf<Throwable>()
+        override fun onDebuggerReady() { debuggerReadyCount++ }
+        override fun onPaused() { pausedCount++ }
+        override fun onStopped() { stoppedCount++ }
+        override fun onTerminated() { terminatedCount++ }
+        override fun onResourceError(message: InboundMessage.LoadResource, error: Throwable) {
+            resourceErrors.add(error)
+        }
         val uartBytes = mutableListOf<ByteArray>()
         val gdbErrors = mutableListOf<GdbEvent.Error>()
         val malformedMessages = mutableListOf<InboundDecodeResult.Malformed>()
