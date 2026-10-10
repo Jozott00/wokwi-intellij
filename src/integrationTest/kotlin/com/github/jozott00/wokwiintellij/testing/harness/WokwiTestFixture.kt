@@ -107,6 +107,12 @@ internal fun runIsolatedWokwiIde(project: ProjectFixture, license: String?, addi
         artifactsPublishingEnabled = false
         logs = logsDir
         addVMOptionsPatch {
+            // Apply only to explicitly opted-in test IDEs on runners with restricted user namespaces.
+            if (System.getenv("WOKWI_TEST_DISABLE_JCEF_SANDBOX").equals("true", ignoreCase = true)) {
+                addSystemProperty("ide.browser.jcef.sandbox.enable", "false")
+            }
+            // Keep browser startup failures in the redacted diagnostic exports.
+            addSystemProperty("ide.browser.jcef.log.level", "warning")
             // The platform adds essential plugins and transitive dependencies automatically.
             // Performance Testing supplies Starter/Driver's transport, not simulator behavior.
             val nativePlugins = if (ide == TestIde.CLION)

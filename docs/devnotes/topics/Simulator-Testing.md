@@ -278,6 +278,16 @@ fork and Dependabot pull requests skip the job because the Actions license
 secret is unavailable. Draft releases wait for E2E success too.
 `run-ui-tests.yml` also supports manual dispatch. Both entry points run on Linux
 under Xvfb using `WOKWI_TEST_LICENSE`; the Build caller passes only that secret.
+Hosted Ubuntu restricts unprivileged user namespaces, so the workflow sets
+`WOKWI_TEST_DISABLE_JCEF_SANDBOX=true`. The harness passes
+`ide.browser.jcef.sandbox.enable=false` only to that isolated test IDE; without
+the opt-in it retains the platform default. The override disables Chromium's
+sandbox inside the disposable test IDE, avoiding JCEF's suspended-browser health
+state without changing the runner's global AppArmor settings. Local Linux runs
+with the same namespace restriction can use the same environment variable.
+Browser logging runs at warning level and is included in the redacted text
+exports. Failure screenshots from Starter's numbered `*_screenshot` directories
+are uploaded as PNG files alongside the text diagnostics.
 Updated revisions cancel an older E2E run for the same event and PR or branch.
 Starter replaces the previous
 Remote Robot startup/health-check orchestration. Start with this single platform;

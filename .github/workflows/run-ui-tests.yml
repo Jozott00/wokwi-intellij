@@ -45,6 +45,9 @@ jobs:
         env:
           WOKWI_TEST_LICENSE: ${{ secrets.WOKWI_TEST_LICENSE }}
           WOKWI_TEST_GDB: /usr/bin/avr-gdb
+          # Hosted Ubuntu restricts the user namespaces required by JCEF's sandbox.
+          # Apply the workaround only to the isolated test IDE, not the runner globally.
+          WOKWI_TEST_DISABLE_JCEF_SANDBOX: 'true'
         run: xvfb-run -a -s '-screen 0 1920x1080x24' ./gradlew integrationTest --no-configuration-cache
       - name: Upload test reports and redacted diagnostics
         if: always()
@@ -60,4 +63,5 @@ jobs:
             build/wokwi-tests/**/ide-errors.txt
             build/wokwi-tests/**/ide-logs
             build/wokwi-tests/**/screenshot*
+            build/wokwi-tests/**/*_screenshot/**/*.png
           retention-days: 7
