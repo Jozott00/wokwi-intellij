@@ -33,9 +33,7 @@ so bundled Vintage tests do not interfere with discovery.
 ## Prerequisites
 
 See [Testing](Testing.md) for Gradle commands, source-set conventions and shared
-environment setup. The infrastructure smoke test checks SDK-free project setup,
-JCEF availability, memory-only credential insertion and the Run-console adapter
-using invalid credentials; live feature tests exercise actual firmware.
+environment setup.
 
 Live tests require an editor/plugin license in `WOKWI_TEST_LICENSE` (not a CLI
 token). Shared local environment setup and CI precedence are documented in
@@ -70,8 +68,8 @@ transport), plus the platform's essential plugins and required transitive
 dependencies. The runner sets `idea.load.plugins.id` on this launch only, using
 the platform's plugin-subset selection. This keeps unrelated bundled Ultimate
 plugins out of the test run without maintaining a version-dependent denylist.
-It still downloads the full IDE distribution. This internal platform setting
-is checked by the IDE smoke and live tests when upgrading the target IDE.
+It still downloads the full IDE distribution. Validate this internal platform
+setting when upgrading the target IDE.
 Feature tests needing another plugin can opt in:
 
 ```kotlin
@@ -84,11 +82,11 @@ runWokwiTest(projectFixture, additionalPluginIds = setOf("com.intellij.java")) {
 
 ```kotlin
 @Tag("live-wokwi")
-class SerialOutputTest {
-    @Test fun `firmware prints expected output`() =
+class FeatureTest {
+    @Test fun `simulation produces expected output`() =
         runWokwiTest(projectFixture) {
             simulator.start()
-            console.awaitText(expectedOutput)
+            console.awaitText("Expected feature output\n")
             simulator.stopAndAwaitTermination()
         }
 }
@@ -102,7 +100,7 @@ composed helpers rather than requiring inheritance or a general scenario DSL.
 | --- | --- |
 | `ProjectFixture` / `Fixtures` | Describe committed project inputs, verify hashes, create a writable copy |
 | `runWokwiTest` | Validate credentials, launch the IDE, install the plugin, run the block and guarantee cleanup |
-| `WokwiTestFixture` | Receiver exposing Driver, copied project path, artifacts path and golden output |
+| `WokwiTestFixture` | Receiver exposing Driver, copied project path, artifacts path, console and simulator actions |
 | `SimulatorActions` | Show the Wokwi tool window, then start, restart, toggle watch and stop through registered plugin actions |
 | `RunConsole` | Read rendered output, wait for text, capture checkpoints and detect premature process exit |
 | `ConsoleSnapshot` / `ConsoleCheckpoint` | Execution identity, accumulated text and output coordinates |
@@ -119,8 +117,11 @@ UI operations that hide the view.
 
 Feature tests assert observable results from actual firmware execution, such as
 UART text rendered in the IDE console. A session's “started” callback or a fake
-UART event cannot satisfy those assertions. Keep expected output in reviewable
-fixture data and check clean termination.
+UART event cannot satisfy those assertions. Define small, scenario-specific
+expectations directly in each feature test and check clean termination. A fixture
+can support multiple tests with different assertions. Larger golden outputs may
+live in optional fixture files, loaded explicitly by tests that need them; the
+harness does not require an expected-output file.
 
 `RunConsole` waits for accumulated exact text, including text arriving across
 multiple writes. It preserves line endings. It fails early if the process exits
@@ -134,12 +135,12 @@ that requires detecting that exact case should add document-generation tracking.
 ## Add a feature test
 
 1. Add a folder under `testData/simulator` with `wokwi.toml`, `diagram.json`,
-   firmware/ELF, firmware source, `expected.txt`, a regeneration script and README.
+   firmware/ELF, firmware source, a regeneration script and README.
    Commit precompiled artifacts so contributors do not need every embedded toolchain.
    Omit `.idea`; the harness creates the IDE project configuration automatically.
-2. Create `SHA256SUMS` covering every simulation input and expected output. Add a
-   `ProjectFixture` descriptor to `Fixtures` in the `fixtures` package. Hashes are
-   checked before IDE startup.
+2. Create `SHA256SUMS` covering every simulation input and any optional golden
+   files. Add a `ProjectFixture` descriptor to `Fixtures` in the `fixtures`
+   package. Hashes are checked before IDE startup.
 3. Add a Jupiter test at the `testing` root, tagged `live-wokwi`, using
    `runWokwiTest(Fixtures.yourFixture)`.
    Assert a feature-specific observable result, then stop or rely on guaranteed cleanup.
@@ -148,17 +149,19 @@ that requires detecting that exact case should add document-generation tracking.
    and lifetime with KDoc. Keep Driver/version details inside adapters.
 
 For restart coverage, take `val before = console.checkpoint()`, invoke
-`simulator.restart()`, then call `console.awaitText(expectedOutput, after = before)`.
+`simulator.restart()`, then assert the test's expected text with
+`console.awaitText("Expected feature output\n", after = before)`.
 For file-edit/watch coverage, introduce a focused project-edit helper that refreshes
 VFS and waits for a reload. Debugger, serial-input and custom-chip helpers can be
 added the same way when their first tests need them. Remote calls must use public
 methods and supported return types; Driver cannot directly call suspend functions.
 [Official remote API restrictions](https://plugins.jetbrains.com/docs/intellij/integration-tests-api.html).
 
-Each fixture's README documents its board, clock, UART settings, pinned compiler
-and binary regeneration. Mutations operate on copied files, never the committed
-fixture. Keep expected output in reviewable test data rather than synthesizing
-success inside the harness.
+Keep concrete test scenarios, hardware details, expected messages and binary
+regeneration instructions in their tests and fixture READMEs. This guide covers
+the reusable harness and shared conventions. Mutations operate on copied files,
+never the committed fixture. Keep expectations in the feature test or explicitly
+loaded golden files rather than synthesizing success inside the harness.
 [Official testdata guidance](https://plugins.jetbrains.com/docs/intellij/test-project-and-testdata-directories.html).
 
 ## Lifecycle, failures and credentials
@@ -187,9 +190,8 @@ The runner installs credentials in the
 isolated IDE's PasswordSafe with `memoryOnly=true`, and executes the receiver
 block in a Driver context. It stops an active process in `finally` and closes the
 IDE through Starter, forcing termination if shutdown fails. Cleanup failures are
-attached to the original assertion rather than replacing it. The license-free
-smoke test uses the same lifecycle and checks that an invalid license terminates
-the process before firmware runs.
+attached to the original assertion rather than replacing it. The same lifecycle
+can launch the IDE for infrastructure checks without installing a license.
 
 `IdeErrors` overrides `CIServer.reportTestFailure` through Starter's DI container
 and collects failures from background reporting threads. After shutdown, any IDE

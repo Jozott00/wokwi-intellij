@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "author": "Wokwi IntelliJ Tests",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 0, "left": 0, "attrs": {} },
+    { "type": "chip-integration-printer", "id": "printer", "top": 0, "left": 280, "attrs": {} }
+  ],
+  "connections": [
+    ["uno:5V", "printer:VCC", "red", []],
+    ["uno:GND.1", "printer:GND", "black", []]
+  ]
+}

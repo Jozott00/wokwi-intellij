@@ -22,8 +22,7 @@ data class ProjectFixture(val name: String, val relativePath: String) {
             require(digest == fields[0]) { "Fixture checksum mismatch: ${fields[1]}" }
             fields[1]
         }
-        require(inputs.containsAll(listOf("wokwi.toml", "diagram.json", "expected.txt"))) { "Incomplete fixture: $name" }
-        require(source.resolve("expected.txt").readText().isNotBlank()) { "Empty expected output: $name" }
+        require(inputs.containsAll(listOf("wokwi.toml", "diagram.json"))) { "Incomplete fixture: $name" }
         (inputs + "SHA256SUMS").distinct().forEach { relativePath ->
             val output = destination.resolve(relativePath)
             Files.createDirectories(output.parent)

@@ -1,0 +1,8 @@
+[wokwi]
+version = 1
+firmware = "firmware.hex"
+elf = "firmware.elf"
+
+[[chip]]
+name = "integration-printer"
+binary = "chips/printer.chip.wasm"

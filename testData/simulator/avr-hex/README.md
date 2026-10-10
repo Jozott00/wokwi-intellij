@@ -7,6 +7,7 @@ An Arduino Uno / ATmega328P at 16 MHz executes the bare-metal `main.c` and print
 No bootloader or
 Arduino libraries are required. `firmware.hex` and `firmware.elf` come from the
 same build; tests load the HEX file through the production configuration path.
+`HexFirmwareTest` defines its expected UART text directly in the test.
 
 ## Regeneration
 
@@ -24,10 +25,10 @@ From this directory, with that toolchain extracted:
 
 ```sh
 AVR_GCC=/path/to/avr/bin/avr-gcc AVR_OBJCOPY=/path/to/avr/bin/avr-objcopy sh build.sh
-shasum -a 256 wokwi.toml diagram.json main.c firmware.hex firmware.elf expected.txt > SHA256SUMS
+shasum -a 256 wokwi.toml diagram.json main.c firmware.hex firmware.elf > SHA256SUMS
 ```
 
-Review changes to the source, golden output and artifacts together. ELF debug
+Review changes to the source, test assertions and artifacts together. ELF debug
 information can contain build paths; its hash may change when regenerated in a
 different directory. `SHA256SUMS` pins the exact committed inputs, not a guarantee
 that every host produces a byte-identical ELF. Tests verify all entries before

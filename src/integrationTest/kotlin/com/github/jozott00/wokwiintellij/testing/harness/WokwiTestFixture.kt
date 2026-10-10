@@ -33,8 +33,6 @@ class WokwiTestFixture internal constructor(
     val projectDirectory: Path,
     val artifactsDirectory: Path,
 ) {
-    /** Golden output produced by the committed firmware, read from expected.txt. */
-    val expectedOutput: String = projectDirectory.resolve("expected.txt").readText()
     /** Assertions against the real rendered console of the project's Wokwi execution. */
     val console = RunConsole { driver.readWokwiConsole(driver.singleProject()) }
     /** Registered plugin actions, including process termination waits. */
