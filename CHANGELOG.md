@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-30
+
 ### Added
 
 - Writable Run console: submit lines to the simulated UART by pressing Enter
@@ -94,7 +96,8 @@ most Intellij users.
 - wokwi.toml analysis support
 - Wokwi simulation debugging support
 
-[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/Jozott00/wokwi-intellij/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/Jozott00/wokwi-intellij/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/Jozott00/wokwi-intellij/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.5...v0.11.0
 [0.10.5]: https://github.com/Jozott00/wokwi-intellij/compare/v0.10.4...v0.10.5
